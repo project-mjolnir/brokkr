@@ -112,29 +112,36 @@ def decode_sunsaver_data(register_data):
 
     sunsaver_data = {}
     last_hi = None
-    for register_val, (var_name, var_type) in zip(
-            register_data, REGISTER_VARIABLES):
-        try:
-            if last_hi is None:
-                output_val = (
-                    CONVERSION_FUNCTIONS[var_type](register_val))
-            else:
-                output_val = (
-                    CONVERSION_FUNCTIONS[var_type](last_hi, register_val))
+    try:
+        for register_val, (var_name, var_type) in zip(
+                register_data, REGISTER_VARIABLES):
+            try:
+                if last_hi is None:
+                    output_val = (
+                        CONVERSION_FUNCTIONS[var_type](register_val))
+                else:
+                    output_val = (
+                        CONVERSION_FUNCTIONS[var_type](last_hi, register_val))
 
-            if var_type == "HI":
-                last_hi = register_val
-            else:
+                if var_type == "HI":
+                    last_hi = register_val
+                else:
+                    last_hi = None
+
+                if output_val is not None:
+                    var_name = var_name.replace("_lo", "").replace("_lo_", "_")
+                    sunsaver_data[var_name] = output_val
+            except Exception as e:  # Catch any conversion errors and return NA
+                print(f"{datetime.datetime.utcnow()!s} "
+                      f"Error decoding sunsaver data: {type(e)} {e} | "
+                      f"Data: {var_name} {register_val}")
+                sunsaver_data[var_name] = "NA"
                 last_hi = None
-
-            if output_val is not None:
-                var_name = var_name.replace("_lo", "").replace("_lo_", "_")
-                sunsaver_data[var_name] = output_val
-        except Exception as e:
-            print(f"{datetime.datetime.utcnow()!s} "
-                  f"Error decoding sunsaver data: {type(e)} {e}")
-            sunsaver_data[var_name] = "NA"
-            last_hi = None
+    except Exception as e:  # Catch overall errrors, e.g. modbus exceptions
+        print(f"{datetime.datetime.utcnow()!s} "
+              f"Error reading sunsaver data: {type(e)} {e} | "
+              f"Data: {register_data}")
+        sunsaver_data = {var_name[0]: "NA" for var_name in REGISTER_VARIABLES}
 
     return sunsaver_data
 
