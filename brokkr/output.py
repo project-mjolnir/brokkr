@@ -15,8 +15,10 @@ def write_line_csv(data, file):
             close_file = True
             data_csv = open(file, mode="a",
                             encoding="utf-8", newline="")
-        csv_writer = csv.DictWriter(data_csv, fieldnames=data.keys(),
-                                    dialect="unix", delimiter=",")
+        csv_writer = csv.DictWriter(
+            data_csv, fieldnames=data.keys(), extrasaction="ignore",
+            dialect="unix", delimiter=",", quoting=csv.QUOTE_MINIMAL,
+            strict=False)
         if not data_csv.tell():
             csv_writer.writeheader()
         csv_writer.writerow(data)

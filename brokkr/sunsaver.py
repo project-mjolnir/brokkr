@@ -61,12 +61,12 @@ CONVERSION_FUNCTIONS = {
     "F": lambda val: float(val),
     "B": lambda val: format(val, "b").zfill(16),
     "BL": lambda hi, lo: format(hi << 16 | lo, "b").zfill(32),
-    "V": lambda val: val * 100 * 2 ** -15,
-    "A": lambda val: val * 79.16 * 2 ** -15,
-    "Ah": lambda val: val * 0.1,
-    "AhL": lambda hi, lo: ((hi << 16) | lo) * 0.1,
-    "hL": lambda hi, lo: (hi << 16) | lo,
-    "W": lambda val: val * 989.5 * 2 ** -16,
+    "V": lambda val: round(val * 100 * 2 ** -15, 3),
+    "A": lambda val: round(val * 79.16 * 2 ** -15, 3),
+    "Ah": lambda val: round(val * 0.1, 1),
+    "AhL": lambda hi, lo: round(((hi << 16) | lo) * 0.1, 1),
+    "hL": lambda hi, lo: int((hi << 16) | lo),
+    "W": lambda val: round(val * 989.5 * 2 ** -16, 3),
     }
 
 
@@ -128,7 +128,7 @@ def decode_sunsaver_data(register_data):
                 last_hi = None
 
             if output_val is not None:
-                var_name = var_name.replace("_lo", "")
+                var_name = var_name.replace("_lo", "").replace("_lo_", "_")
                 sunsaver_data[var_name] = output_val
         except Exception as e:
             print(f"{datetime.datetime.utcnow()!s} "
