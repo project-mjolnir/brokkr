@@ -1,12 +1,15 @@
 """Routines to read data from a Sunsaver MPPT-15L charge controller."""
 
 import datetime
-from pathlib import Path
 
 import pymodbus.client.sync
+import serial.tools.list_ports
 
 
-REGISTER_VARIABLES = [
+USB_SERIAL_ADAPTER_PIDS = (24597,)
+
+
+REGISTER_VARIABLES = (
     ("adc_vb_f", "V"),
     ("adc_va_f", "V"),
     ("adc_vl_f", "V"),
@@ -52,7 +55,7 @@ REGISTER_VARIABLES = [
     ("alarm_Lo_daily", "BL"),
     ("vb_min", "V"),
     ("vb_max", "V"),
-    ]
+    )
 
 CONVERSION_FUNCTIONS = {
     None: lambda val: None,
@@ -71,7 +74,8 @@ CONVERSION_FUNCTIONS = {
     }
 
 
-def read_raw_sunsaver_data(start_offset=0x0008, port=None, unit=1):
+def read_raw_sunsaver_data(start_offset=0x0008, port=None,
+                           pids=USB_SERIAL_ADAPTER_PIDS, unit=0x01):
     """
     Read all useful register data from an attached SunSaver MPPT-15-L device.
 
@@ -81,42 +85,70 @@ def read_raw_sunsaver_data(start_offset=0x0008, port=None, unit=1):
        Register start offset (PDU address). The default is 0x0008.
     port : str or None, optional
         Serial port device to use. The default is None, which uses the first
-        device under ``/dev/ttyUSB*`` detected.
+        serial device matching the correct PID(s), or else the first detected.
+    pids : iterable of int, optional
+        If serial port device not specified, collection of PIDs (per USB spec)
+        to look for to find the expected USB to serial adapter.
+        By default, uses the values in `USB_SERIAL_ADAPTER_PIDS`.
     unit : int, optional
-        Unit number to request data from. The default is 1.
+        Unit ID to request data from. The default is ``0x01``.
 
     Returns
     -------
     register_data : pymodbbus.register_read_message.ReadHoldingRegisterResponce
-        Pymodbus data object reprisenting the read register data.
+        Pymodbus data object reprisenting the read register data, or None if
+        no data could be read and an exception was logged.
 
     """
-    try:
-        if port is None:
-            port = str(list(Path("/dev").glob("ttyUSB*"))[0])
-    except IndexError:
-        print(f"{datetime.datetime.utcnow()!s} "
-              "Error reading sunsaver data: No USB serial devices found.")
-        register_data = None
-    else:
+    # Automatically detect serial port to use
+    if port is None:
+        port_list = serial.tools.list_ports.comports()
+        if not port_list:
+            print(f"{datetime.datetime.utcnow()!s} "
+                  "Error reading sunsaver data: No serial devices found.")
+            return None
+        # Match device by PID if provided
+        if pids:
+            for port_object in port_list:
+                try:
+                    if port_object.pid in USB_SERIAL_ADAPTER_PIDS:
+                        port = port_object.device
+                        break
+                except Exception:  # Ignore any problems reading a device
+                    continue
+        # If we can't identify a device by pid, just try the first port
+        if not port:
+            port = port_list[0].device
+
+    # Read charge controller data over serial Modbus
+    mppt_client = pymodbus.client.sync.ModbusSerialClient(
+        method="rtu", port=port, stopbits=2, bytesize=8, parity="N",
+        baudrate=9600, strict=False)
+    if mppt_client.connect():
         try:
-            mppt_client = pymodbus.client.sync.ModbusSerialClient(
-                method="rtu", port=port, stopbits=2, bytesize=8, parity="N",
-                baudrate=9600, strict=True)
-            mppt_client.connect()
             register_data = mppt_client.read_holding_registers(
                 start_offset, 45, unit=unit)
-        except Exception as e:  # Log errors rather than giving up entirely
+            if isinstance(register_data, BaseException):
+                raise register_data
+        # Catch and log errors reading register data
+        except Exception as e:
             print(f"{datetime.datetime.utcnow()!s} "
-                  f"Error reading sunsaver data: {type(e)} {e}")
-            register_data = None
+                  f"Error reading sunsaver registers: {type(e)} {e}")
+            return None
+        finally:
+            mppt_client.close()
+    else:
+        print(f"{datetime.datetime.utcnow()!s} "
+              f"Error reading sunsaver data: Cannot connect to device {port}")
+        return None
     return register_data
 
 
 def decode_sunsaver_data(register_data):
+    # Handle both register object and a simple list of register values
     try:
         register_data.registers[0]
-    except AttributeError:  # If not a data structure, just a list
+    except AttributeError:
         pass
     else:
         register_data = register_data.registers
@@ -142,13 +174,15 @@ def decode_sunsaver_data(register_data):
                 if output_val is not None:
                     var_name = var_name.replace("_lo", "").replace("_lo_", "_")
                     sunsaver_data[var_name] = output_val
-            except Exception as e:  # Catch any conversion errors and return NA
+            # Catch any conversion errors and return NA
+            except Exception as e:
                 print(f"{datetime.datetime.utcnow()!s} "
                       f"Error decoding sunsaver data: {type(e)} {e} | "
                       f"Data: {var_name} {register_val}")
                 sunsaver_data[var_name] = "NA"
                 last_hi = None
-    except Exception as e:  # Catch overall errrors, e.g. modbus exceptions
+    # Catch overall errrors, e.g. modbus exceptions
+    except Exception as e:
         if register_data is not None:
             print(f"{datetime.datetime.utcnow()!s} "
                   f"Error handling sunsaver data: {type(e)} {e} | "
