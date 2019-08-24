@@ -8,6 +8,7 @@ Monitor and log sensor and sunsaver status data.
 import argparse
 import datetime
 import signal
+from pathlib import Path
 import time
 import threading
 
@@ -26,16 +27,23 @@ def quit_handler(signo, _frame):
     EXIT_EVENT.set()
 
 
+def set_quit_signal_handler(handler, signals=("TERM", "HUP", "INT", "BREAK")):
+    for signal_type in signals:
+        try:
+            signal.signal(getattr(signal, "SIG" + signal_type), handler)
+        except AttributeError:  # Windows doesn't have SIGHUP
+            continue
+
+
 def get_status_data():
     current_time = datetime.datetime.utcnow()
     ping_succeeded = sensor.ping()
+    charge_data = sunsaver.get_sunsaver_data()
 
     status_data = {
         "time": current_time,
         "ping": ping_succeeded,
         }
-
-    charge_data = sunsaver.get_sunsaver_data()
     status_data = {**status_data, **charge_data}
     return status_data
 
@@ -48,8 +56,8 @@ def log_status_data(output_filename, verbose=False):
     return status_data
 
 
-def start_logging_status_data(output_filename="data.csv", time_interval=60,
-                              verbose=False):
+def start_logging_status_data(output_filename,
+                              time_interval=60, verbose=False):
     start_time = time.monotonic()
     while not EXIT_EVENT.is_set():
         try:
@@ -67,17 +75,13 @@ def start_logging_status_data(output_filename="data.csv", time_interval=60,
 if __name__ == "__main__":
     arg_parser = argparse.ArgumentParser(
         description="Log data at regular intervals about the HAMMA2 system.")
-    arg_parser.add_argument("output_filename", nargs="?", default="data.csv",
+    arg_parser.add_argument("output_filename", type=Path,
                             help="The filename to save the data to.")
     arg_parser.add_argument("--interval", action="store", default=60,
                             type=int, dest="time_interval",
                             help="Interval between status checks, in s.")
     arg_parser.add_argument("-v", "--verbose", action="store_true",
                             help="If passed, will print all data recieved.")
+    set_quit_signal_handler(quit_handler)
     parsed_args = arg_parser.parse_args()
-    for signal_type in ("TERM", "HUP", "INT", "BREAK"):
-        try:
-            signal.signal(getattr(signal, "SIG" + signal_type), quit_handler)
-        except AttributeError:  # Windows doesn't have SIGHUP
-            continue
     start_logging_status_data(**vars(parsed_args))

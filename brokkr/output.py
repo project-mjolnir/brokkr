@@ -13,8 +13,7 @@ def write_line_csv(data, file):
             data_csv = file
         else:
             close_file = True
-            data_csv = open(file, mode="a",
-                            encoding="utf-8", newline="")
+            data_csv = open(file, mode="a", encoding="utf-8", newline="")
         csv_writer = csv.DictWriter(
             data_csv, fieldnames=data.keys(), extrasaction="ignore",
             dialect="unix", delimiter=",", quoting=csv.QUOTE_MINIMAL,
