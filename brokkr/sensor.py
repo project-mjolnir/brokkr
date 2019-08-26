@@ -17,4 +17,4 @@ def ping(host="10.10.10.1"):
     command = ["ping", param, "1", "-w", "1", host]
 
     return subprocess.run(command, stdout=subprocess.DEVNULL,
-                          stderr=subprocess.DEVNULL).returncode == 0
+                          stderr=subprocess.DEVNULL).returncode
