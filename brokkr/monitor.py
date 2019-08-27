@@ -7,18 +7,21 @@ Monitor and log sensor and sunsaver status data.
 # Standard library imports
 import argparse
 import datetime
-import signal
+import os
 from pathlib import Path
-import time
+import signal
 import threading
+import time
 
 # Local imports
-import sunsaver
-import sensor
 import output
+import sensor
+import sunsaver
 
 
 EXIT_EVENT = threading.Event()
+
+DEFAULT_DATA_PATH = Path().home() / "data" / "monitor"
 
 
 def quit_handler(signo, _frame):
@@ -48,20 +51,25 @@ def get_status_data():
     return status_data
 
 
-def log_status_data(output_filename, verbose=False):
+def log_status_data(output_path, verbose=False):
     status_data = get_status_data()
     if verbose:
         print(status_data)
-    output.write_line_csv(status_data, output_filename)
+    if not output_path.suffix:
+        output_path = output.determine_output_filename(output_path)
+    output.write_line_csv(status_data, output_path)
     return status_data
 
 
-def start_logging_status_data(output_filename,
+def start_logging_status_data(output_path=Path(DEFAULT_DATA_PATH),
                               time_interval=60, verbose=False):
     start_time = time.monotonic()
+    if not output_path.suffix:
+        os.makedirs(output_path, exist_ok=True)
+
     while not EXIT_EVENT.is_set():
         try:
-            log_status_data(output_filename, verbose=verbose)
+            log_status_data(output_path, verbose=verbose)
         except Exception as e:  # Keep logging if an error occurs
             print(f"{datetime.datetime.utcnow()!s} "
                   f"Main-level error occured: {type(e)} {e}")
@@ -75,7 +83,8 @@ def start_logging_status_data(output_filename,
 if __name__ == "__main__":
     arg_parser = argparse.ArgumentParser(
         description="Log data at regular intervals about the HAMMA2 system.")
-    arg_parser.add_argument("output_filename", type=Path,
+    arg_parser.add_argument("output_path", nargs="?", type=Path,
+                            default=DEFAULT_DATA_PATH,
                             help="The filename to save the data to.")
     arg_parser.add_argument("--interval", action="store", default=60,
                             type=int, dest="time_interval",

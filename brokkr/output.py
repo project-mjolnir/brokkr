@@ -3,17 +3,25 @@ Routines to write out collected status data to a CSV file.
 """
 
 import csv
+import datetime
 import io
+from pathlib import Path
 
 
-def write_line_csv(data, file):
+def determine_output_filename(output_path):
+    output_path = (Path(output_path)
+                   / (str(datetime.datetime.utcnow().date()) + ".csv"))
+    return output_path
+
+
+def write_line_csv(data, out_file):
     try:
-        if isinstance(file, io.IOBase):
+        if isinstance(out_file, io.IOBase):
             close_file = False
-            data_csv = file
+            data_csv = out_file
         else:
             close_file = True
-            data_csv = open(file, mode="a", encoding="utf-8", newline="")
+            data_csv = open(out_file, mode="a", encoding="utf-8", newline="")
         csv_writer = csv.DictWriter(
             data_csv, fieldnames=data.keys(), extrasaction="ignore",
             dialect="unix", delimiter=",", quoting=csv.QUOTE_MINIMAL,
