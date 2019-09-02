@@ -14,14 +14,13 @@ import threading
 import time
 
 # Local imports
+from config import CONFIG
 import output
 import sensor
 import sunsaver
 
 
 EXIT_EVENT = threading.Event()
-
-DEFAULT_DATA_PATH = Path().home() / "data" / "monitor"
 
 
 def quit_handler(signo, _frame):
@@ -51,7 +50,8 @@ def get_status_data():
     return status_data
 
 
-def log_status_data(output_path, verbose=False):
+def log_status_data(output_path=CONFIG["monitor"]["output_path"],
+                    verbose=CONFIG["verbose"]):
     status_data = get_status_data()
     if verbose:
         print(status_data)
@@ -61,8 +61,10 @@ def log_status_data(output_path, verbose=False):
     return status_data
 
 
-def start_logging_status_data(output_path=Path(DEFAULT_DATA_PATH),
-                              time_interval=60, verbose=False):
+def start_logging_status_data(
+        output_path=CONFIG["monitor"]["output_path"],
+        time_interval=CONFIG["monitor"]["interval_s"],
+        verbose=CONFIG["verbose"]):
     start_time = time.monotonic()
     if not output_path.suffix:
         os.makedirs(output_path, exist_ok=True)
@@ -84,9 +86,10 @@ if __name__ == "__main__":
     arg_parser = argparse.ArgumentParser(
         description="Log data at regular intervals about the HAMMA2 system.")
     arg_parser.add_argument("output_path", nargs="?", type=Path,
-                            default=DEFAULT_DATA_PATH,
+                            default=CONFIG["monitor"]["output_path"],
                             help="The filename to save the data to.")
-    arg_parser.add_argument("--interval", action="store", default=60,
+    arg_parser.add_argument("--interval", action="store",
+                            default=CONFIG["monitor"]["interval_s"],
                             type=int, dest="time_interval",
                             help="Interval between status checks, in s.")
     arg_parser.add_argument("-v", "--verbose", action="store_true",

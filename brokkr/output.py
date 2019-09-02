@@ -2,15 +2,23 @@
 Routines to write out collected status data to a CSV file.
 """
 
+# Standard library imports
 import csv
 import datetime
 import io
 from pathlib import Path
 
+# Local imports
+from config import CONFIG
 
-def determine_output_filename(output_path):
+
+def determine_output_filename(output_path=CONFIG["monitor"]["output_path"],
+                              prefix=CONFIG["general"]["name_prefix"]):
     output_path = (Path(output_path)
-                   / (str(datetime.datetime.utcnow().date()) + ".csv"))
+                   / ("{prefix}{number}_{date!s}.csv".format(
+                           prefix=prefix,
+                           number=CONFIG["site"]["number"],
+                           date=datetime.datetime.utcnow().date())))
     return output_path
 
 

@@ -1,10 +1,14 @@
 """Routines to read data from a Sunsaver MPPT-15L charge controller."""
 
+# Standard library imports
 import datetime
 
+# Third party imports
 import pymodbus.client.sync
 import serial.tools.list_ports
 
+# Local imports
+from config import CONFIG
 
 USB_SERIAL_ADAPTER_PIDS = (24597,)
 
@@ -74,8 +78,11 @@ CONVERSION_FUNCTIONS = {
     }
 
 
-def read_raw_sunsaver_data(start_offset=0x0008, port=None,
-                           pids=USB_SERIAL_ADAPTER_PIDS, unit=0x01):
+def read_raw_sunsaver_data(
+        start_offset=CONFIG["monitor"]["sunsaver"]["start_offset"],
+        port=CONFIG["monitor"]["sunsaver"]["port"],
+        pids=CONFIG["monitor"]["sunsaver"]["pid_list"],
+        unit=CONFIG["monitor"]["sunsaver"]["unit"]):
     """
     Read all useful register data from an attached SunSaver MPPT-15-L device.
 
@@ -89,7 +96,7 @@ def read_raw_sunsaver_data(start_offset=0x0008, port=None,
     pids : iterable of int, optional
         If serial port device not specified, collection of PIDs (per USB spec)
         to look for to find the expected USB to serial adapter.
-        By default, uses the values in `USB_SERIAL_ADAPTER_PIDS`.
+        By default, uses the values in the config file `pid_list` variable.
     unit : int, optional
         Unit ID to request data from. The default is ``0x01``.
 
@@ -101,7 +108,7 @@ def read_raw_sunsaver_data(start_offset=0x0008, port=None,
 
     """
     # Automatically detect serial port to use
-    if port is None:
+    if not port:
         port_list = serial.tools.list_ports.comports()
         if not port_list:
             print(f"{datetime.datetime.utcnow()!s} "
