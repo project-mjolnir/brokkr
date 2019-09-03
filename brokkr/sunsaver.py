@@ -10,8 +10,6 @@ import serial.tools.list_ports
 # Local imports
 from config import CONFIG
 
-USB_SERIAL_ADAPTER_PIDS = (24597,)
-
 
 REGISTER_VARIABLES = (
     ("adc_vb_f", "V"),
@@ -118,7 +116,7 @@ def read_raw_sunsaver_data(
         if pids:
             for port_object in port_list:
                 try:
-                    if port_object.pid in USB_SERIAL_ADAPTER_PIDS:
+                    if port_object.pid in pids:
                         port = port_object.device
                         break
                 except Exception:  # Ignore any problems reading a device

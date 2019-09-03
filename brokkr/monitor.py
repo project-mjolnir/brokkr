@@ -20,6 +20,7 @@ import sensor
 import sunsaver
 
 
+START_TIME = time.monotonic_ns()
 EXIT_EVENT = threading.Event()
 
 
@@ -39,11 +40,13 @@ def set_quit_signal_handler(handler, signals=("TERM", "HUP", "INT", "BREAK")):
 
 def get_status_data():
     current_time = datetime.datetime.utcnow()
+    run_time = round((time.monotonic_ns() - START_TIME) / 1e9, 1)
     ping_succeeded = sensor.ping()
     charge_data = sunsaver.get_sunsaver_data()
 
     status_data = {
         "time": current_time,
+        "runtime": run_time,
         "ping": ping_succeeded,
         }
     status_data = {**status_data, **charge_data}
@@ -65,7 +68,6 @@ def start_logging_status_data(
         output_path=CONFIG["monitor"]["output_path"],
         time_interval=CONFIG["monitor"]["interval_s"],
         verbose=CONFIG["verbose"]):
-    start_time = time.monotonic()
     if not output_path.suffix:
         os.makedirs(output_path, exist_ok=True)
 
@@ -75,10 +77,11 @@ def start_logging_status_data(
         except Exception as e:  # Keep logging if an error occurs
             print(f"{datetime.datetime.utcnow()!s} "
                   f"Main-level error occured: {type(e)} {e}")
-        end_time = (time.monotonic() + time_interval
-                    - (time.monotonic() - start_time) % time_interval)
-        while not EXIT_EVENT.is_set() and time.monotonic() < end_time:
-            EXIT_EVENT.wait(min([1, end_time - time.monotonic()]))
+        next_time = (time.monotonic_ns() + time_interval * 1e9
+                     - (time.monotonic_ns() - START_TIME)
+                     % (time_interval * 1e9))
+        while not EXIT_EVENT.is_set() and time.monotonic_ns() < next_time:
+            EXIT_EVENT.wait(min([1, (next_time - time.monotonic_ns()) / 1e9]))
     EXIT_EVENT.clear()
 
 
