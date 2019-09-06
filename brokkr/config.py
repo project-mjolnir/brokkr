@@ -24,8 +24,8 @@ DEFAULT_CONFIG = {
     "verbose": False,
     "general": {
         "name_prefix": "hamma",
+        "output_path": str(OUTPUT_PATH).replace(os.sep, "/"),
         "sensor_ip": "10.10.10.1",
-        "output_path": str(OUTPUT_PATH).replace(os.sep, "/")
         },
     "monitor": {
         "interval_s": 60,
