@@ -7,21 +7,21 @@ import datetime
 import os
 from pathlib import Path
 import threading
-import time
 
 # Local imports
 from config import CONFIG
 import output
 import sensor
 import sunsaver
+import utils
 
 
-START_TIME = time.monotonic_ns()
+START_TIME = utils.monotonic_ns()
 
 
 def get_status_data():
     current_time = datetime.datetime.utcnow()
-    run_time = round((time.monotonic_ns() - START_TIME) / 1e9, 1)
+    run_time = round((utils.monotonic_ns() - START_TIME) / 1e9, 1)
     ping_succeeded = sensor.ping()
     charge_data = sunsaver.get_sunsaver_data()
 
@@ -59,9 +59,9 @@ def start_logging_status_data(
         except Exception as e:  # Keep logging if an error occurs
             print(f"{datetime.datetime.utcnow()!s} "
                   f"Main-level error occured: {type(e)} {e}")
-        next_time = (time.monotonic_ns() + time_interval * 1e9
-                     - (time.monotonic_ns() - START_TIME)
+        next_time = (utils.monotonic_ns() + time_interval * 1e9
+                     - (utils.monotonic_ns() - START_TIME)
                      % (time_interval * 1e9))
-        while not exit_event.is_set() and time.monotonic_ns() < next_time:
-            exit_event.wait(min([1, (next_time - time.monotonic_ns()) / 1e9]))
+        while not exit_event.is_set() and utils.monotonic_ns() < next_time:
+            exit_event.wait(min([1, (next_time - utils.monotonic_ns()) / 1e9]))
     exit_event.clear()
