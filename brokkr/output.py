@@ -6,10 +6,14 @@ Routines to write out collected status data to a CSV file.
 import csv
 import datetime
 import io
+import logging
 from pathlib import Path
 
 # Local imports
 from config import CONFIG
+
+
+logger = logging.getLogger(__name__)
 
 
 def determine_output_filename(output_path=CONFIG["monitor"]["output_path"],
@@ -37,9 +41,19 @@ def write_line_csv(data, out_file):
         if not data_csv.tell():
             csv_writer.writeheader()
         csv_writer.writerow(data)
+        logger.debug("Monitoring data successfully written to CSV")
+        return True
+    except Exception as e:
+        logger.error("%s writing monitoring data to local CSV at %s: %s",
+                     type(e), out_file, e)
+        logger.info("Details:", exc_info=1)
+        logger.info("Attempted to write data:\n%s", data)
+        return False
     finally:
         if close_file:
             try:
                 data_csv.close()
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning("%s attempting to close monitoring CSV %s: %s",
+                               type(e), out_file, e)
+                logger.info("Details:", exc_info=1)

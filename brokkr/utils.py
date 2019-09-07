@@ -10,7 +10,7 @@ def time_ns():
     try:
         return time.time_ns()
     except AttributeError:
-        return (int(time.time()) * 1e9)
+        return int(time.time()) * 1e9
 
 
 def monotonic_ns():
@@ -18,4 +18,4 @@ def monotonic_ns():
     try:
         return time.monotonic_ns()
     except AttributeError:
-        return (int(time.monotonic()) * 1e9)
+        return int(time.monotonic()) * 1e9

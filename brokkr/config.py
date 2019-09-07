@@ -5,7 +5,7 @@ Baseline configuration for Brokkr plus tools and utilities.
 # Standard library imports
 import collections.abc
 import copy
-import datetime
+import logging
 import os
 from pathlib import Path
 
@@ -50,8 +50,9 @@ DEFAULT_CONFIG = {
         "network": "test",
         },
     }
-
 PATH_VARIABLES = (("general", "output_path"), ("monitor", "output_path"))
+
+logger = logging.getLogger(__name__)
 
 
 def get_config_path(config_file, config_dir=CONFIG_DIR):
@@ -95,9 +96,9 @@ def read_config_file(config_file, config_dir=CONFIG_DIR):
         initial_config = toml.load(get_config_path(config_file, config_dir))
     # Generate config file if it does not yet exist.
     except FileNotFoundError:
-        print(f"{datetime.datetime.utcnow()!s} "
-              f"Could not find existing {config_file} config file in "
-              f"{config_dir}; creating a fresh one.")
+        logger.warning("Could not find existing %s config file in %s; "
+                       "creating a fresh one.",
+                       config_file, str(config_dir).replace(os.sep, "/"))
         initial_config = toml.loads(
             generate_config_file(config_file, config_dir=config_dir))
     return initial_config
@@ -132,6 +133,7 @@ def render_config(config):
 
 
 def setup_config():
+    logger.info("Reading config...")
     config = {}
     for config_name in CONFIG_HIEARCHY:
         config[config_name] = read_config_file(config_name)
@@ -139,6 +141,7 @@ def setup_config():
     config["initial"] = rendered_config
     config["permenant"] = copy.deepcopy(rendered_config)
     config["current"] = copy.deepcopy(rendered_config)
+    logger.debug("Rendered config:\n%s", config["current"])
     return config
 
 

@@ -1,7 +1,7 @@
 """Routines to read data from a Sunsaver MPPT-15L charge controller."""
 
 # Standard library imports
-import datetime
+import logging
 
 # Third party imports
 import pymodbus.client.sync
@@ -75,6 +75,8 @@ CONVERSION_FUNCTIONS = {
     "W": lambda val: round(val * 989.5 * 2 ** -16, 3),
     }
 
+logger = logging.getLogger(__name__)
+
 
 def read_raw_sunsaver_data(
         start_offset=CONFIG["monitor"]["sunsaver"]["start_offset"],
@@ -109,26 +111,35 @@ def read_raw_sunsaver_data(
     if not port:
         port_list = serial.tools.list_ports.comports()
         if not port_list:
-            print(f"{datetime.datetime.utcnow()!s} "
-                  "Error reading sunsaver data: No serial devices found.")
+            logger.error(
+                "Error reading Sunsaver data: No serial devices found.")
             return None
         # Match device by PID if provided
         if pids:
             for port_object in port_list:
+                logger.debug("Checking serial port %s against pids %s...",
+                             port_object, pids)
                 try:
                     if port_object.pid in pids:
                         port = port_object.device
+                        logger.debug("Matched serial port %s with pid %s",
+                                     port_object.device, port_object.pid)
                         break
-                except Exception:  # Ignore any problems reading a device
-                    continue
+                except Exception as e:  # Ignore any problems reading a device
+                    logger.info("%s checking serial port %s: %s",
+                                type(e), port_object, e)
+                    logger.debug("Details:", exc_info=1)
         # If we can't identify a device by pid, just try the first port
         if not port:
             port = port_list[0].device
+            logger.debug("Cannot match device by PID; falling back to %s.",
+                         port_list[0])
 
     # Read charge controller data over serial Modbus
     mppt_client = pymodbus.client.sync.ModbusSerialClient(
         method="rtu", port=port, stopbits=2, bytesize=8, parity="N",
         baudrate=9600, strict=False)
+    logger.debug("Connecting to client %s", mppt_client)
     if mppt_client.connect():
         try:
             register_data = mppt_client.read_holding_registers(
@@ -137,15 +148,19 @@ def read_raw_sunsaver_data(
                 raise register_data
         # Catch and log errors reading register data
         except Exception as e:
-            print(f"{datetime.datetime.utcnow()!s} "
-                  f"Error reading sunsaver registers: {type(e)} {e}")
+            logger.error("%s reading register data for %s: %s",
+                         type(e), port, e)
+            logger.info("Details: %s", mppt_client, exc_info=1)
             return None
         finally:
+            logger.debug("Closing MPPT client connection")
             mppt_client.close()
     else:
-        print(f"{datetime.datetime.utcnow()!s} "
-              f"Error reading sunsaver data: Cannot connect to device {port}")
+        logger.error(
+            "Error reading register data: Cannot connect to device %s", port)
+        logger.info("Device info: %s", mppt_client)
         return None
+    logger.debug("Register data: %s", register_data)
     return register_data
 
 
@@ -154,9 +169,10 @@ def decode_sunsaver_data(register_data):
     try:
         register_data.registers[0]
     except AttributeError:
-        pass
+        logger.debug("Register_data passed as list.")
     else:
         register_data = register_data.registers
+        logger.debug("Register_data passed as object.")
 
     sunsaver_data = {}
     last_hi = None
@@ -181,17 +197,17 @@ def decode_sunsaver_data(register_data):
                     sunsaver_data[var_name] = output_val
             # Catch any conversion errors and return NA
             except Exception as e:
-                print(f"{datetime.datetime.utcnow()!s} "
-                      f"Error decoding sunsaver data: {type(e)} {e} | "
-                      f"Data: {var_name} {register_val}")
+                logger.warning("%s decoding register data %s for %s (%s): %s",
+                               type(e), register_val, var_name, var_type, e)
+                logger.debug("Details:", exc_info=1)
                 sunsaver_data[var_name] = "NA"
                 last_hi = None
     # Catch overall errrors, e.g. modbus exceptions
     except Exception as e:
         if register_data is not None:
-            print(f"{datetime.datetime.utcnow()!s} "
-                  f"Error handling sunsaver data: {type(e)} {e} | "
-                  f"Data: {register_data}")
+            logger.error("%s decoding register data for %s: %s",
+                         type(e), register_data, e)
+            logger.info("Details:", exc_info=1)
         sunsaver_data = {var_name[0]: "NA" for var_name in REGISTER_VARIABLES}
 
     return sunsaver_data
