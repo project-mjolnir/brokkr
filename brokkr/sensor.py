@@ -1,5 +1,5 @@
 """
-Routines to get status information from a HAMMA2 sensor over Ethernet.
+Functions to get status information from a HAMMA2 sensor over Ethernet.
 """
 
 # Standard library imports
@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 def ping(host=CONFIG["general"]["sensor_ip"],
-         timeout=CONFIG["monitor"]["sensor"]["ping_timeout_s"]):
+         timeout=CONFIG["monitor"]["sensor"]["timeout_ping_s"]):
     # Set the correct option for the number of packets based on platform.
     if platform.system().lower() == "windows":
         count_param = "-n"

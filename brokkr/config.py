@@ -21,17 +21,17 @@ OUTPUT_PATH = Path("~") / "data"
 
 DEFAULT_CONFIG = {
     "override": False,
-    "verbose": False,
     "general": {
         "name_prefix": "hamma",
         "output_path": str(OUTPUT_PATH).replace(os.sep, "/"),
         "sensor_ip": "10.10.10.1",
         },
     "monitor": {
-        "interval_s": 60,
+        "interval_log_s": 60,
+        "interval_sleep_s": 1,
         "output_path": str(OUTPUT_PATH / "monitoring").replace(os.sep, "/"),
         "sensor": {
-            "ping_timeout_s": 1,
+            "timeout_ping_s": 1,
             },
         "sunsaver": {
             "pid_list": [24597, ],

@@ -20,6 +20,8 @@ LOG_LEVEL_FILE = "INFO"
 LOG_LEVEL_CONSOLE = None
 LOG_LOCATION = Path.home() / "brokkr.log"
 
+SIGNALS_SET = ("SIG" + signame for signame in ("TERM", "HUP", "INT", "BREAK"))
+
 
 def quit_handler(signo, _frame):
     logger.info("Interrupted by signal %s; terminating Brokkr", signo)
@@ -27,10 +29,10 @@ def quit_handler(signo, _frame):
     EXIT_EVENT.set()
 
 
-def set_quit_signal_handler(handler, signals=("TERM", "HUP", "INT", "BREAK")):
+def set_quit_signal_handler(signal_handler, signals=SIGNALS_SET):
     for signal_type in signals:
         try:
-            signal.signal(getattr(signal, "SIG" + signal_type), handler)
+            signal.signal(getattr(signal, signal_type), signal_handler)
         except AttributeError:  # Windows doesn't have SIGHUP
             continue
 
@@ -41,7 +43,7 @@ def generate_argparser():
         argument_default=argparse.SUPPRESS)
     arg_parser.add_argument("--output_path", type=Path,
                             help="The filename to save the data to.")
-    arg_parser.add_argument("--interval", type=int, dest="time_interval",
+    arg_parser.add_argument("--interval", type=int, dest="monitor_interval",
                             help="Interval between status checks, in s.")
     arg_parser.add_argument("--log-level-file", type=str,
                             default=LOG_LEVEL_FILE,
@@ -97,4 +99,4 @@ import monitor
 # Start the mainloop
 set_quit_signal_handler(quit_handler)
 logger.debug("Entering mainloop...")
-monitor.start_logging_status_data(exit_event=EXIT_EVENT, **vars(parsed_args))
+monitor.start_monitoring(exit_event=EXIT_EVENT, **vars(parsed_args))

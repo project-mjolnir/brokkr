@@ -1,4 +1,6 @@
-"""Routines to read data from a Sunsaver MPPT-15L charge controller."""
+"""
+Functions to read data from a Sunsaver MPPT-15L charge controller.
+"""
 
 # Standard library imports
 import logging
@@ -10,6 +12,15 @@ import serial.tools.list_ports
 # Local imports
 from config import CONFIG
 
+
+SERIAL_PARAMS_SUNSAVERMPPT15L = {
+    "method": "rtu",
+    "stopbits": 2,
+    "bytesize": 8,
+    "parity": "N",
+    "baudrate": 9600,
+    "strict": False,
+    }
 
 REGISTER_VARIABLES = (
     ("adc_vb_f", "V"),
@@ -82,7 +93,8 @@ def read_raw_sunsaver_data(
         start_offset=CONFIG["monitor"]["sunsaver"]["start_offset"],
         port=CONFIG["monitor"]["sunsaver"]["port"],
         pids=CONFIG["monitor"]["sunsaver"]["pid_list"],
-        unit=CONFIG["monitor"]["sunsaver"]["unit"]):
+        unit=CONFIG["monitor"]["sunsaver"]["unit"],
+        ):
     """
     Read all useful register data from an attached SunSaver MPPT-15-L device.
 
@@ -137,13 +149,12 @@ def read_raw_sunsaver_data(
 
     # Read charge controller data over serial Modbus
     mppt_client = pymodbus.client.sync.ModbusSerialClient(
-        method="rtu", port=port, stopbits=2, bytesize=8, parity="N",
-        baudrate=9600, strict=False)
+        port=port, **SERIAL_PARAMS_SUNSAVERMPPT15L)
     logger.debug("Connecting to client %s", mppt_client)
     if mppt_client.connect():
         try:
             register_data = mppt_client.read_holding_registers(
-                start_offset, 45, unit=unit)
+                start_offset, len(REGISTER_VARIABLES), unit=unit)
             if isinstance(register_data, BaseException):
                 raise register_data
         # Catch and log errors reading register data

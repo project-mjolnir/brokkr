@@ -1,5 +1,5 @@
 """
-Routines to write out collected status data to a CSV file.
+Functions to write out collected monitoring data to a CSV file.
 """
 
 # Standard library imports
@@ -11,6 +11,15 @@ from pathlib import Path
 
 # Local imports
 from config import CONFIG
+
+
+CSV_PARAMS = {
+    "extrasaction": "ignore",
+    "dialect": "unix",
+    "delimiter": ",",
+    "quoting": csv.QUOTE_MINIMAL,
+    "strict": False,
+    }
 
 
 logger = logging.getLogger(__name__)
@@ -35,9 +44,7 @@ def write_line_csv(data, out_file):
             close_file = True
             data_csv = open(out_file, mode="a", encoding="utf-8", newline="")
         csv_writer = csv.DictWriter(
-            data_csv, fieldnames=data.keys(), extrasaction="ignore",
-            dialect="unix", delimiter=",", quoting=csv.QUOTE_MINIMAL,
-            strict=False)
+            data_csv, fieldnames=data.keys(), **CSV_PARAMS)
         if not data_csv.tell():
             csv_writer.writeheader()
         csv_writer.writerow(data)

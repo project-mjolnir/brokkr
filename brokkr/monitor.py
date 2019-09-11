@@ -1,5 +1,5 @@
 """
-Monitor and log sensor and sunsaver status data.
+High-level functions to monitor and record sensor and sunsaver status data.
 """
 
 # Standard library imports
@@ -37,8 +37,8 @@ def get_status_data():
     return status_data
 
 
-def log_status_data(output_path=CONFIG["monitor"]["output_path"],
-                    verbose=CONFIG["verbose"]):
+def record_status_data(output_path=CONFIG["monitor"]["output_path"],
+                    verbose=False):
     status_data = get_status_data()
     logger.debug("Status data: %s", status_data)
     if verbose:
@@ -51,25 +51,28 @@ def log_status_data(output_path=CONFIG["monitor"]["output_path"],
     return status_data
 
 
-def start_logging_status_data(
+def start_monitoring(
         output_path=CONFIG["monitor"]["output_path"],
-        time_interval=CONFIG["monitor"]["interval_s"],
-        verbose=CONFIG["verbose"],
-        exit_event=threading.Event()):
+        monitor_interval=CONFIG["monitor"]["interval_log_s"],
+        sleep_interval=CONFIG["monitor"]["interval_sleep_s"],
+        verbose=False,
+        exit_event=threading.Event(),
+        ):
     if not Path(output_path).suffix:
         logger.debug("Ensuring monitoring directory at: %s", output_path)
         os.makedirs(output_path, exist_ok=True)
 
     while not exit_event.is_set():
         try:
-            log_status_data(output_path, verbose=verbose)
+            record_status_data(output_path, verbose=verbose)
         except Exception as e:  # Keep logging if an error occurs
             logger.critical("%s caught at main level: %s",
                             type(e).__name__, e)
             logger.info("Details:", exc_info=1)
-        next_time = (utils.monotonic_ns() + time_interval * 1e9
+        next_time = (utils.monotonic_ns() + monitor_interval * 1e9
                      - (utils.monotonic_ns() - START_TIME)
-                     % (time_interval * 1e9))
+                     % (monitor_interval * 1e9))
         while not exit_event.is_set() and utils.monotonic_ns() < next_time:
-            exit_event.wait(min([1, (next_time - utils.monotonic_ns()) / 1e9]))
+            exit_event.wait(min([sleep_interval,
+                                 (next_time - utils.monotonic_ns()) / 1e9]))
     exit_event.clear()
