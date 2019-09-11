@@ -127,7 +127,7 @@ def read_raw_sunsaver_data(
                         break
                 except Exception as e:  # Ignore any problems reading a device
                     logger.info("%s checking serial port %s: %s",
-                                type(e), port_object, e)
+                                type(e).__name__, port_object, e)
                     logger.debug("Details:", exc_info=1)
         # If we can't identify a device by pid, just try the first port
         if not port:
@@ -149,7 +149,7 @@ def read_raw_sunsaver_data(
         # Catch and log errors reading register data
         except Exception as e:
             logger.error("%s reading register data for %s: %s",
-                         type(e), port, e)
+                         type(e).__name__, port, e)
             logger.info("Details: %s", mppt_client, exc_info=1)
             return None
         finally:
@@ -198,7 +198,8 @@ def decode_sunsaver_data(register_data):
             # Catch any conversion errors and return NA
             except Exception as e:
                 logger.warning("%s decoding register data %s for %s (%s): %s",
-                               type(e), register_val, var_name, var_type, e)
+                               type(e).__name__, register_val,
+                               var_name, var_type, e)
                 logger.debug("Details:", exc_info=1)
                 sunsaver_data[var_name] = "NA"
                 last_hi = None
@@ -206,7 +207,7 @@ def decode_sunsaver_data(register_data):
     except Exception as e:
         if register_data is not None:
             logger.error("%s decoding register data for %s: %s",
-                         type(e), register_data, e)
+                         type(e).__name__, register_data, e)
             logger.info("Details:", exc_info=1)
         sunsaver_data = {var_name[0]: "NA" for var_name in REGISTER_VARIABLES}
 

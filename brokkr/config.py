@@ -141,7 +141,7 @@ def setup_config():
     config["initial"] = rendered_config
     config["permenant"] = copy.deepcopy(rendered_config)
     config["current"] = copy.deepcopy(rendered_config)
-    logger.debug("Rendered config:\n%s", config["current"])
+    logger.debug("Rendered config: %s", config["current"])
     return config
 
 

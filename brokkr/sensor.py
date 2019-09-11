@@ -48,7 +48,7 @@ def ping(host=CONFIG["general"]["sensor_ip"],
         return -1
     except Exception as e:
         logger.warning("%s running ping command %s: %s",
-                       type(e), " ".join(command), e)
+                       type(e).__name__, " ".join(command), e)
         logger.info("Details:", exc_info=1)
         return -9
 

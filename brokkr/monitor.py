@@ -40,7 +40,7 @@ def get_status_data():
 def log_status_data(output_path=CONFIG["monitor"]["output_path"],
                     verbose=CONFIG["verbose"]):
     status_data = get_status_data()
-    logger.debug("Status data:\n%s", status_data)
+    logger.debug("Status data: %s", status_data)
     if verbose:
         print("Status data: {status_data}".format(status_data=status_data))
     if not output_path.suffix:
@@ -64,7 +64,8 @@ def start_logging_status_data(
         try:
             log_status_data(output_path, verbose=verbose)
         except Exception as e:  # Keep logging if an error occurs
-            logger.critical("%s caught at main level: %s", type(e), e)
+            logger.critical("%s caught at main level: %s",
+                            type(e).__name__, e)
             logger.info("Details:", exc_info=1)
         next_time = (utils.monotonic_ns() + time_interval * 1e9
                      - (utils.monotonic_ns() - START_TIME)

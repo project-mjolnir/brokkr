@@ -45,9 +45,9 @@ def write_line_csv(data, out_file):
         return True
     except Exception as e:
         logger.error("%s writing monitoring data to local CSV at %s: %s",
-                     type(e), out_file, e)
+                     type(e).__name__, out_file, e)
         logger.info("Details:", exc_info=1)
-        logger.info("Attempted to write data:\n%s", data)
+        logger.info("Attempted to write data: %s", data)
         return False
     finally:
         if close_file:
@@ -55,5 +55,5 @@ def write_line_csv(data, out_file):
                 data_csv.close()
             except Exception as e:
                 logger.warning("%s attempting to close monitoring CSV %s: %s",
-                               type(e), out_file, e)
+                               type(e).__name__, out_file, e)
                 logger.info("Details:", exc_info=1)
