@@ -40,10 +40,9 @@ def get_status_data():
 def log_status_data(output_path=CONFIG["monitor"]["output_path"],
                     verbose=CONFIG["verbose"]):
     status_data = get_status_data()
+    logger.debug("Status data:\n%s", status_data)
     if verbose:
-        logger.info("Status data:\n%s", status_data)
-    else:
-        logger.debug("Status data:\n%s", status_data)
+        print("Status data: {status_data}".format(status_data=status_data))
     if not output_path.suffix:
         output_path = output.determine_output_filename(output_path)
     logger.debug("Writing monitoring output to file: %s",
