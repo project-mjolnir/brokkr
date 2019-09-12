@@ -10,7 +10,7 @@ from pathlib import Path
 import threading
 
 # Local imports
-from config import CONFIG
+from config.main import CONFIG
 import output
 import sensor
 import sunsaver

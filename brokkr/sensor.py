@@ -8,7 +8,7 @@ import platform
 import subprocess
 
 # Local imports
-from config import CONFIG
+from config.main import CONFIG
 
 
 logger = logging.getLogger(__name__)
