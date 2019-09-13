@@ -23,6 +23,13 @@ def monotonic_ns():
         return int(time.monotonic()) * 1e9
 
 
+START_TIME = monotonic_ns()
+
+
+def start_time_offset(n_digits=1):
+    return round((monotonic_ns() - START_TIME) / 1e9, n_digits)
+
+
 def update_dict_recursive(base, update):
     for update_key, update_value in update.items():
         base_value = base.get(update_key, {})

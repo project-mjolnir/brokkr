@@ -3,6 +3,7 @@ High-level functions to monitor and record sensor and sunsaver status data.
 """
 
 # Standard library imports
+import collections
 import datetime
 import logging
 import os
@@ -17,27 +18,33 @@ import sunsaver
 import utils
 
 
-START_TIME = utils.monotonic_ns()
+_TRUTHY = "This is truthy"
+_FALSY = "This is falsy"
+StatusDataItem = collections.namedtuple(
+    'StatusDataItem', ("name", "fn", "unpack"))
+STATUS_DATA_ITEMS = (
+    StatusDataItem("time", datetime.datetime.utcnow, False),
+    StatusDataItem("runtime", utils.start_time_offset, False),
+    StatusDataItem("ping", sensor.ping, False),
+    StatusDataItem("sunsaver", sunsaver.get_sunsaver_data, True),
+    )
+
 logger = logging.getLogger(__name__)
 
 
-def get_status_data():
-    current_time = datetime.datetime.utcnow()
-    run_time = round((utils.monotonic_ns() - START_TIME) / 1e9, 1)
-    ping_result = sensor.ping()
-    charge_data = sunsaver.get_sunsaver_data()
-
-    status_data = {
-        "time": current_time,
-        "runtime": run_time,
-        "ping": ping_result,
-        }
-    status_data = {**status_data, **charge_data}
+def get_status_data(status_data_items=STATUS_DATA_ITEMS):
+    status_data = {}
+    for item in status_data_items:
+        output_data = item.fn()
+        if item.unpack:
+            status_data.update(output_data)
+        else:
+            status_data[item.name] = output_data
     return status_data
 
 
 def record_status_data(output_path=CONFIG["monitor"]["output_path"],
-                    verbose=False):
+                       verbose=False):
     status_data = get_status_data()
     logger.debug("Status data: %s", status_data)
     if verbose:
@@ -69,7 +76,7 @@ def start_monitoring(
                             type(e).__name__, e)
             logger.info("Details:", exc_info=1)
         next_time = (utils.monotonic_ns() + monitor_interval * 1e9
-                     - (utils.monotonic_ns() - START_TIME)
+                     - (utils.monotonic_ns() - utils.START_TIME)
                      % (monitor_interval * 1e9))
         while not exit_event.is_set() and utils.monotonic_ns() < next_time:
             exit_event.wait(min([sleep_interval,
