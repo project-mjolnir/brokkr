@@ -27,6 +27,7 @@ STATUS_DATA_ITEMS = (
     StatusDataItem("runtime", utils.start_time_offset, False),
     StatusDataItem("ping", sensor.ping, False),
     StatusDataItem("sunsaver", sunsaver.get_sunsaver_data, True),
+    StatusDataItem("hs", sensor.get_hs_data, True),
     )
 
 logger = logging.getLogger(__name__)

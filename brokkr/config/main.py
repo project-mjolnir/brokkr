@@ -18,15 +18,17 @@ DEFAULT_CONFIG = {
     "version": VERSION,
     config.base.LOCAL_OVERRIDE: False,
     "general": {
+        "ip_sensor": "10.10.10.1",
         "output_path": str(OUTPUT_PATH).replace(os.sep, "/"),
-        "sensor_ip": "10.10.10.1",
         },
     "monitor": {
         "interval_log_s": 60,
         "interval_sleep_s": 1,
-        "output_path": str(OUTPUT_PATH / "monitoring").replace(os.sep, "/"),
         "na_marker": "NA",
+        "output_path": str(OUTPUT_PATH / "monitoring").replace(os.sep, "/"),
         "sensor": {
+            "hs_port": 8084,
+            "hs_timeout_s": 2,
             "ping_timeout_s": 1,
             },
         "sunsaver": {
