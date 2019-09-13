@@ -94,13 +94,14 @@ def read_raw_sunsaver_data(
         port=CONFIG["monitor"]["sunsaver"]["port"],
         pids=CONFIG["monitor"]["sunsaver"]["pid_list"],
         unit=CONFIG["monitor"]["sunsaver"]["unit"],
+        **serial_params,
         ):
     """
     Read all useful register data from an attached SunSaver MPPT-15-L device.
 
     Parameters
     ----------
-    start_offset : hex, optional
+    start_offset : int or hex, optional
        Register start offset (PDU address). The default is 0x0008.
     port : str or None, optional
         Serial port device to use. The default is None, which uses the first
@@ -109,8 +110,11 @@ def read_raw_sunsaver_data(
         If serial port device not specified, collection of PIDs (per USB spec)
         to look for to find the expected USB to serial adapter.
         By default, uses the values in the config file `pid_list` variable.
-    unit : int, optional
+    unit : int or hex, optional
         Unit ID to request data from. The default is ``0x01``.
+    serial_params
+        Custom serial parameters to pass to the ModbusSerialClient.
+        By default, uses the recommended values to work with the SS MPPT-15L.
 
     Returns
     -------
@@ -148,8 +152,9 @@ def read_raw_sunsaver_data(
                          port_list[0])
 
     # Read charge controller data over serial Modbus
+    serial_params = {**SERIAL_PARAMS_SUNSAVERMPPT15L, **serial_params}
     mppt_client = pymodbus.client.sync.ModbusSerialClient(
-        port=port, **SERIAL_PARAMS_SUNSAVERMPPT15L)
+        port=port, **serial_params)
     logger.debug("Connecting to client %s", mppt_client)
     if mppt_client.connect():
         try:
@@ -175,7 +180,12 @@ def read_raw_sunsaver_data(
     return register_data
 
 
-def decode_sunsaver_data(register_data):
+def decode_sunsaver_data(
+        register_data,
+        na_marker=CONFIG["monitor"]["na_marker"],
+        register_variables=REGISTER_VARIABLES,
+        conversion_functions=CONVERSION_FUNCTIONS,
+        ):
     # Handle both register object and a simple list of register values
     try:
         register_data.registers[0]
@@ -189,14 +199,14 @@ def decode_sunsaver_data(register_data):
     last_hi = None
     try:
         for register_val, (var_name, var_type) in zip(
-                register_data, REGISTER_VARIABLES):
+                register_data, register_variables):
             try:
                 if last_hi is None:
                     output_val = (
-                        CONVERSION_FUNCTIONS[var_type](register_val))
+                        conversion_functions[var_type](register_val))
                 else:
                     output_val = (
-                        CONVERSION_FUNCTIONS[var_type](last_hi, register_val))
+                        conversion_functions[var_type](last_hi, register_val))
 
                 if var_type == "HI":
                     last_hi = register_val
@@ -208,24 +218,25 @@ def decode_sunsaver_data(register_data):
                     sunsaver_data[var_name] = output_val
             # Catch any conversion errors and return NA
             except Exception as e:
-                logger.warning("%s decoding register data %s for %s (%s): %s",
-                               type(e).__name__, register_val,
-                               var_name, var_type, e)
+                logger.warning("%s decoding %s register data %s to %s: %s",
+                               type(e).__name__, var_name,
+                               register_val, var_type, e)
                 logger.debug("Details:", exc_info=1)
-                sunsaver_data[var_name] = "NA"
+                sunsaver_data[var_name] = na_marker
                 last_hi = None
     # Catch overall errrors, e.g. modbus exceptions
     except Exception as e:
         if register_data is not None:
-            logger.error("%s decoding register data for %s: %s",
+            logger.error("%s decoding register data %s: %s",
                          type(e).__name__, register_data, e)
             logger.info("Details:", exc_info=1)
-        sunsaver_data = {var_name[0]: "NA" for var_name in REGISTER_VARIABLES}
+        sunsaver_data = {var_name[0]: na_marker
+                         for var_name in register_variables}
 
     return sunsaver_data
 
 
-def get_sunsaver_data(**kwargs):
+def get_sunsaver_data(na_marker=CONFIG["monitor"]["na_marker"], **kwargs):
     register_data = read_raw_sunsaver_data(**kwargs)
-    sunsaver_data = decode_sunsaver_data(register_data)
+    sunsaver_data = decode_sunsaver_data(register_data, na_marker=na_marker)
     return sunsaver_data

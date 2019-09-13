@@ -24,7 +24,6 @@ logger = logging.getLogger(__name__)
 def get_status_data():
     current_time = datetime.datetime.utcnow()
     run_time = round((utils.monotonic_ns() - START_TIME) / 1e9, 1)
-    logger.debug("Pinging sensor at %s", CONFIG["general"]["sensor_ip"])
     ping_result = sensor.ping()
     charge_data = sunsaver.get_sunsaver_data()
 

@@ -25,17 +25,20 @@ CSV_PARAMS = {
 logger = logging.getLogger(__name__)
 
 
-def determine_output_filename(output_path=CONFIG["monitor"]["output_path"],
-                              prefix=CONFIG["general"]["name_prefix"]):
+def determine_output_filename(
+        output_path=CONFIG["monitor"]["output_path"],
+        prefix=CONFIG["site"]["name_prefix"],
+        site_number=CONFIG["site"]["number"],
+        ):
     output_path = (Path(output_path)
-                   / ("{prefix}{number}_{date!s}.csv".format(
+                   / ("{prefix}{site_number}_{date!s}.csv".format(
                            prefix=prefix,
-                           number=CONFIG["site"]["number"],
+                           site_number=site_number,
                            date=datetime.datetime.utcnow().date())))
     return output_path
 
 
-def write_line_csv(data, out_file):
+def write_line_csv(data, out_file, **csv_params):
     try:
         if isinstance(out_file, io.IOBase):
             close_file = False
@@ -43,8 +46,9 @@ def write_line_csv(data, out_file):
         else:
             close_file = True
             data_csv = open(out_file, mode="a", encoding="utf-8", newline="")
+        csv_params = {**CSV_PARAMS, **csv_params}
         csv_writer = csv.DictWriter(
-            data_csv, fieldnames=data.keys(), **CSV_PARAMS)
+            data_csv, fieldnames=data.keys(), **csv_params)
         if not data_csv.tell():
             csv_writer.writeheader()
         csv_writer.writerow(data)

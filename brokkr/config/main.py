@@ -12,11 +12,12 @@ import config.base
 
 
 # General static constants
+VERSION = 1
 OUTPUT_PATH = Path("~") / "data"
 DEFAULT_CONFIG = {
+    "version": VERSION,
     config.base.LOCAL_OVERRIDE: False,
     "general": {
-        "name_prefix": "hamma",
         "output_path": str(OUTPUT_PATH).replace(os.sep, "/"),
         "sensor_ip": "10.10.10.1",
         },
@@ -24,8 +25,9 @@ DEFAULT_CONFIG = {
         "interval_log_s": 60,
         "interval_sleep_s": 1,
         "output_path": str(OUTPUT_PATH / "monitoring").replace(os.sep, "/"),
+        "na_marker": "NA",
         "sensor": {
-            "timeout_ping_s": 1,
+            "ping_timeout_s": 1,
             },
         "sunsaver": {
             "pid_list": [24597, ],
@@ -39,6 +41,7 @@ DEFAULT_CONFIG = {
         "longname": "Test Network (Default)",
         },
     "site": {
+        "name_prefix": "hamma",
         "number": "",
         "description": "Test Sensor (Default)",
         "network": "test",

@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 def ping(host=CONFIG["general"]["sensor_ip"],
-         timeout=CONFIG["monitor"]["sensor"]["timeout_ping_s"]):
+         timeout=CONFIG["monitor"]["sensor"]["ping_timeout_s"]):
     # Set the correct option for the number of packets based on platform.
     if platform.system().lower() == "windows":
         count_param = "-n"
@@ -42,8 +42,8 @@ def ping(host=CONFIG["general"]["sensor_ip"],
         ping_output = subprocess.run(command, timeout=timeout + 1,
                                      **extra_args)
     except subprocess.TimeoutExpired:
-        logger.info("Timeout expired running ping command %s",
-                    " ".join(command))
+        logger.info("Ping command subprocess timed out in %s s: %s",
+                    timeout, " ".join(command))
         logger.debug("Details:", exc_info=1)
         return -1
     except Exception as e:
