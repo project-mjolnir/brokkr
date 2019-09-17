@@ -10,7 +10,7 @@ import logging
 from pathlib import Path
 
 # Local imports
-from config.main import CONFIG
+from brokkr.config.main import CONFIG
 
 
 CSV_PARAMS = {

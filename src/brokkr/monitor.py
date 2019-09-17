@@ -11,11 +11,11 @@ from pathlib import Path
 import threading
 
 # Local imports
-from config.main import CONFIG
-import output
-import sensor
-import sunsaver
-import utils
+from brokkr.config.main import CONFIG
+import brokkr.output
+import brokkr.sensor
+import brokkr.sunsaver
+import brokkr.utils
 
 
 _TRUTHY = "This is truthy"
@@ -24,10 +24,10 @@ StatusDataItem = collections.namedtuple(
     'StatusDataItem', ("name", "fn", "unpack"))
 STATUS_DATA_ITEMS = (
     StatusDataItem("time", datetime.datetime.utcnow, False),
-    StatusDataItem("runtime", utils.start_time_offset, False),
-    StatusDataItem("ping", sensor.ping, False),
-    StatusDataItem("sunsaver", sunsaver.get_sunsaver_data, True),
-    StatusDataItem("hs", sensor.get_hs_data, True),
+    StatusDataItem("runtime", brokkr.utils.start_time_offset, False),
+    StatusDataItem("ping", brokkr.sensor.ping, False),
+    StatusDataItem("sunsaver", brokkr.sunsaver.get_sunsaver_data, True),
+    StatusDataItem("hs", brokkr.sensor.get_hs_data, True),
     )
 
 logger = logging.getLogger(__name__)
@@ -51,10 +51,10 @@ def record_status_data(output_path=CONFIG["monitor"]["output_path"],
     if verbose:
         print("Status data: {status_data}".format(status_data=status_data))
     if not output_path.suffix:
-        output_path = output.determine_output_filename(output_path)
+        output_path = brokkr.output.determine_output_filename(output_path)
     logger.debug("Writing monitoring output to file: %s",
                  str(output_path).replace(os.sep, "/"))
-    output.write_line_csv(status_data, output_path)
+    brokkr.output.write_line_csv(status_data, output_path)
     return status_data
 
 
@@ -76,10 +76,12 @@ def start_monitoring(
             logger.critical("%s caught at main level: %s",
                             type(e).__name__, e)
             logger.info("Details:", exc_info=1)
-        next_time = (utils.monotonic_ns() + monitor_interval * 1e9
-                     - (utils.monotonic_ns() - utils.START_TIME)
+        next_time = (brokkr.utils.monotonic_ns() + monitor_interval * 1e9
+                     - (brokkr.utils.monotonic_ns() - brokkr.utils.START_TIME)
                      % (monitor_interval * 1e9))
-        while not exit_event.is_set() and utils.monotonic_ns() < next_time:
-            exit_event.wait(min([sleep_interval,
-                                 (next_time - utils.monotonic_ns()) / 1e9]))
+        while (not exit_event.is_set()
+               and brokkr.utils.monotonic_ns() < next_time):
+            exit_event.wait(min(
+                [sleep_interval,
+                 (next_time - brokkr.utils.monotonic_ns()) / 1e9]))
     exit_event.clear()

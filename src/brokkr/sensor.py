@@ -11,7 +11,7 @@ import struct
 import subprocess
 
 # Local imports
-from config.main import CONFIG
+from brokkr.config.main import CONFIG
 
 
 HS_PACKET_SIZE = 60
@@ -105,8 +105,8 @@ def read_hs_packet(
             packet = sock.recv(buffer_size)
             logger.debug("Data recieved: %s", packet)
         except socket.timeout:
-            logger.info("Socket timed out in %s s while waiting for data",
-                        timeout)
+            logger.debug("Socket timed out in %s s while waiting for data",
+                         timeout)
             return None
         except Exception as e:
             logger.error("%s recieving H&S data on port %s: %s",

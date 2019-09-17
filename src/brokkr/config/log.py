@@ -7,7 +7,7 @@ import os
 from pathlib import Path
 
 # Local imports
-import config.base
+import brokkr.config.base
 
 
 # General static constants
@@ -15,7 +15,7 @@ LOG_FORMAT_DETAILED = ("{asctime}.{msecs:0>3.0f} | {relativeCreated:.0f} | "
                        "{levelname} | {name} | {message}")
 DEFAULT_LOG_LEVEL = "INFO"
 DEFAULT_CONFIG = {
-    config.base.LOCAL_OVERRIDE: False,
+    brokkr.config.base.LOCAL_OVERRIDE: False,
     "version": 1,
     "disable_existing_loggers": False,
     "formatters": {
@@ -41,19 +41,13 @@ DEFAULT_CONFIG = {
             "stream": "ext://sys.stdout",
             },
         },
-    "loggers": {
-        "brokkr": {
-            "level": DEFAULT_LOG_LEVEL,
-            "handlers": ["file"],
-            },
-        },
     "root": {
         "level": DEFAULT_LOG_LEVEL,
         "handlers": ["file"],
         },
     }
 PATH_VARIABLES = (("handlers", "file", "filename"), )
-CONFIG_HANDLER = config.base.ConfigHandler(
+CONFIG_HANDLER = brokkr.config.base.ConfigHandler(
     "log", DEFAULT_CONFIG, path_variables=PATH_VARIABLES, write_sections=False)
 
 # Master config dict; currently static

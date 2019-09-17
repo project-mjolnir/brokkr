@@ -8,7 +8,7 @@ import os
 from pathlib import Path
 
 # Local imports
-import config.base
+import brokkr.config.base
 
 
 # General static constants
@@ -16,7 +16,7 @@ VERSION = 1
 OUTPUT_PATH = Path("~") / "data"
 DEFAULT_CONFIG = {
     "version": VERSION,
-    config.base.LOCAL_OVERRIDE: False,
+    brokkr.config.base.LOCAL_OVERRIDE: False,
     "general": {
         "ip_sensor": "10.10.10.1",
         "output_path": str(OUTPUT_PATH).replace(os.sep, "/"),
@@ -50,7 +50,7 @@ DEFAULT_CONFIG = {
         },
     }
 PATH_VARIABLES = (("general", "output_path"), ("monitor", "output_path"))
-CONFIG_HANDLER = config.base.ConfigHandler(
+CONFIG_HANDLER = brokkr.config.base.ConfigHandler(
     "main", DEFAULT_CONFIG, path_variables=PATH_VARIABLES, write_sections=True)
 
 logger = logging.getLogger(__name__)

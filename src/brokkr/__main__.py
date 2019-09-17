@@ -13,7 +13,7 @@ import threading
 import time
 
 # Local imports
-from config.log import LOG_CONFIG
+from brokkr.config.log import LOG_CONFIG
 
 EXIT_EVENT = threading.Event()
 
@@ -88,9 +88,9 @@ for arg_name in ["log_level_file", "log_level_console"]:
         pass
 
 # Import top-level modules
-import monitor
+import brokkr.monitor
 
 # Start the mainloop
 set_quit_signal_handler(quit_handler)
 logger.debug("Entering mainloop...")
-monitor.start_monitoring(exit_event=EXIT_EVENT, **vars(parsed_args))
+brokkr.monitor.start_monitoring(exit_event=EXIT_EVENT, **vars(parsed_args))

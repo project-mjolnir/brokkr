@@ -10,7 +10,7 @@ import pymodbus.client.sync
 import serial.tools.list_ports
 
 # Local imports
-from config.main import CONFIG
+from brokkr.config.main import CONFIG
 
 
 SERIAL_PARAMS_SUNSAVERMPPT15L = {
