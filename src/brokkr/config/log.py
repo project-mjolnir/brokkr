@@ -35,14 +35,14 @@ DEFAULT_CONFIG = {
             },
         "console": {
             "class": "logging.StreamHandler",
-            "level": "WARNING",
+            "level": DEFAULT_LOG_LEVEL,
             "formatter": "detailed",
             "stream": "ext://sys.stdout",
             },
         },
     "root": {
         "level": DEFAULT_LOG_LEVEL,
-        "handlers": ["file"],
+        "handlers": ["file", "console"],
         },
     }
 PATH_VARIABLES = (("handlers", "file", "filename"), )

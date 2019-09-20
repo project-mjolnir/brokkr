@@ -8,12 +8,19 @@ Further, it can maintain a reverse SSH tunnel to an accessible server for remote
 ## Installation and Setup
 
 Built and tested under Python 3.7 (but should be compatible with Python >=3.6; lack thereof should be considered a bug) and recent (>= 2019) versions of the packages listed in the `requirements.txt` file.
+It works best on Linux, but is tested to be fully functional (aside from service features) on Windows (and should work equally macOS) under the Anaconda distribution.
 
-To read in data from the charge controller, the same must be connected via the serial to USB adapter, the Python packages ``pymodbus`` and ``pyserial`` are required, and if on most Linux systems, the following command must be run at some point after installing the system and creating an account to ensure the user is added to the correct permissions group to access the serial ports (make sure to log out and log back in after doing so):
+Following standard installation via ``pip`` (``venv`` highly recommended), the package will install the ``brokkr`` command, which controls installation (``brokkr install-service``)  and manual execution (via ``brokkr start``) of the brokkr client on all platforms.
+On reasonably modern Linux systems with ``systemd``, the ``brokkr install-service`` command will automatically install the client to run automatically as a service on startup with the rights of the current user (which can be controlled via the normal ``systemctl`` commands as well as the installed unit file).
+On Linux (not on Windows, and untested on macOS) you will need to add your user account to the correct group to access the serial ports, which can be done via the command
 
 ```bash
 sudo usermod -a -G dialout $USER
 ```
+
+Make sure to log out and back in after running the above command, so the correct rights get added to your account.
+
+
 
 ## Configuration
 
