@@ -5,22 +5,12 @@ Configuration to run Brokkr as a service for supported platforms (Linux).
 # Standard library imports
 import collections
 import configparser
-import getpass
-import logging
 from pathlib import Path
 import os
-import subprocess
 import sys
 
-
-def get_actual_username():
-    try:
-        username = os.environ["SUDO_USER"]
-        if username:
-            return username
-    except KeyError:
-        pass
-    return getpass.getuser()
+# Local imports
+import brokkr.utils.misc
 
 
 PlatformConfig = collections.namedtuple(
@@ -53,8 +43,8 @@ DEFAULT_CONTENTS_SYSTEMD = {
         "RestartSec": str(15),
         "TimeoutStartSec": str(30),
         "TimeoutStopSec": str(30),
-        "User": get_actual_username(),
-        "Group": get_actual_username(),
+        "User": brokkr.utils.misc.get_actual_username(),
+        "Group": brokkr.utils.misc.get_actual_username(),
         },
     "Install": {
         "WantedBy": "multi-user.target",
@@ -105,31 +95,3 @@ def write_service_config(service_config, platform=None, output_path=None):
     os.chown(output_path, 0, 0)
 
     return output_path
-
-
-def install_service_config(platform=None, output_path=None, verbose=False):
-    logging.basicConfig(stream=sys.stdout,
-                        level="DEBUG" if verbose else "INFO")
-    logging.debug("Installing Brokkr service...")
-    platform_config = get_platform_config(platform)
-    logging.debug("Using platform config settings: %s", platform_config)
-    logging.debug("Generating service configuration file...")
-    service_config = generate_service_config(platform)
-    logging.debug("Writing service configuration file to %s",
-                  output_path if output_path else platform_config.install_path)
-    output_path = write_service_config(service_config, platform, output_path)
-    logging.debug("Reloading systemd daemon...")
-    subprocess.run(("systemctl", "daemon-reload"), timeout=5, check=True)
-    logging.debug("Disabling chrony (if present)...")
-    subprocess.run(("systemctl", "disable", "chronyd"), timeout=5, check=False)
-    logging.debug("Disabling ntpd (if present)...")
-    subprocess.run(("systemctl", "disable", "ntpd"), timeout=5, check=False)
-    logging.debug("Enabling systemd-timesyncd...")
-    subprocess.run(("systemctl", "enable", "systemd-timesyncd"),
-                   timeout=5, check=True)
-    logging.debug("Enabling sshd...")
-    subprocess.run(("systemctl", "enable", "sshd"), timeout=5, check=True)
-    logging.debug("Enabling Brokkr service...")
-    subprocess.run(("systemctl", "enable", "brokkr"), timeout=5, check=True)
-    logging.info("Successfully installed Brokkr service to %s", output_path)
-    return service_config

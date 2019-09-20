@@ -12,7 +12,7 @@ from pathlib import Path
 import toml
 
 # Local imports
-import brokkr.utils
+import brokkr.utils.misc
 
 
 # General static constants
@@ -116,7 +116,7 @@ class ConfigHandler:
             if configs[config_name] and (
                     not self.config_types[config_name].local
                     or configs[config_name].get(LOCAL_OVERRIDE)):
-                rendered_config = brokkr.utils.update_dict_recursive(
+                rendered_config = brokkr.utils.misc.update_dict_recursive(
                     rendered_config, configs[config_name])
         for key_name in self.path_variables:
             inner_dict = rendered_config

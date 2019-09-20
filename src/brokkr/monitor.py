@@ -15,7 +15,7 @@ from brokkr.config.main import CONFIG
 import brokkr.output
 import brokkr.sensor
 import brokkr.sunsaver
-import brokkr.utils
+import brokkr.utils.misc
 
 
 _TRUTHY = "This is truthy"
@@ -24,7 +24,7 @@ StatusDataItem = collections.namedtuple(
     'StatusDataItem', ("name", "fn", "unpack"))
 STATUS_DATA_ITEMS = (
     StatusDataItem("time", datetime.datetime.utcnow, False),
-    StatusDataItem("runtime", brokkr.utils.start_time_offset, False),
+    StatusDataItem("runtime", brokkr.utils.misc.start_time_offset, False),
     StatusDataItem("ping", brokkr.sensor.ping, False),
     StatusDataItem("sunsaver", brokkr.sunsaver.get_sunsaver_data, True),
     StatusDataItem("hs", brokkr.sensor.get_hs_data, True),
@@ -77,12 +77,13 @@ def start_monitoring(
             logger.critical("%s caught at main level: %s",
                             type(e).__name__, e)
             logger.info("Details:", exc_info=1)
-        next_time = (brokkr.utils.monotonic_ns() + monitor_interval * 1e9
-                     - (brokkr.utils.monotonic_ns() - brokkr.utils.START_TIME)
+        next_time = (brokkr.utils.misc.monotonic_ns() + monitor_interval * 1e9
+                     - (brokkr.utils.misc.monotonic_ns()
+                        - brokkr.utils.misc.START_TIME)
                      % (monitor_interval * 1e9))
         while (not exit_event.is_set()
-               and brokkr.utils.monotonic_ns() < next_time):
+               and brokkr.utils.misc.monotonic_ns() < next_time):
             exit_event.wait(min(
                 [sleep_interval,
-                 (next_time - brokkr.utils.monotonic_ns()) / 1e9]))
+                 (next_time - brokkr.utils.misc.monotonic_ns()) / 1e9]))
     exit_event.clear()

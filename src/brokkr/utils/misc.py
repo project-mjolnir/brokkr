@@ -4,6 +4,8 @@ General utility functions for Brokkr.
 
 # Standard library imports
 import collections.abc
+import getpass
+import os
 import time
 
 
@@ -41,3 +43,13 @@ def update_dict_recursive(base, update):
         else:
             base[update_key] = update_value
     return base
+
+
+def get_actual_username():
+    try:
+        username = os.environ["SUDO_USER"]
+        if username:
+            return username
+    except KeyError:
+        pass
+    return getpass.getuser()
