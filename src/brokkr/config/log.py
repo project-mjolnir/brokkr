@@ -3,7 +3,6 @@ Logging configuration for Brokkr; loaded first before anything else.
 """
 
 # Standard library imports
-import os
 from pathlib import Path
 
 # Local imports
@@ -30,7 +29,7 @@ DEFAULT_CONFIG = {
             "class": "logging.handlers.RotatingFileHandler",
             "level": DEFAULT_LOG_LEVEL,
             "formatter": "detailed",
-            "filename": str(Path("~") / "brokkr.log").replace(os.sep, "/"),
+            "filename": (Path("~") / "brokkr.log").as_posix(),
             "maxBytes": int(1e7),
             "backupCount": 11,
             },

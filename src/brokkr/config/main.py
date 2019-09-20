@@ -4,7 +4,6 @@ Main configuration for Brokkr; loaded after logging starts.
 
 # Standard library imports
 import logging
-import os
 from pathlib import Path
 
 # Local imports
@@ -19,13 +18,13 @@ DEFAULT_CONFIG = {
     brokkr.config.base.LOCAL_OVERRIDE: False,
     "general": {
         "ip_sensor": "10.10.10.1",
-        "output_path": str(OUTPUT_PATH).replace(os.sep, "/"),
+        "output_path": OUTPUT_PATH.as_posix(),
         },
     "monitor": {
         "interval_log_s": 60,
         "interval_sleep_s": 1,
         "na_marker": "NA",
-        "output_path": str(OUTPUT_PATH / "monitoring").replace(os.sep, "/"),
+        "output_path": (OUTPUT_PATH / "monitoring").as_posix(),
         "sensor": {
             "hs_port": 8084,
             "hs_timeout_s": 2,
@@ -57,7 +56,7 @@ logger = logging.getLogger(__name__)
 
 
 logger.debug("Reading Brokkr configs at %s",
-             str(CONFIG_HANDLER.config_dir).replace(os.sep, "/"))
+             CONFIG_HANDLER.config_dir.as_posix())
 
 # Master config dict; currently static
 CONFIGS = CONFIG_HANDLER.read_configs()

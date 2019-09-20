@@ -50,10 +50,11 @@ def record_status_data(output_path=CONFIG["monitor"]["output_path"],
     logger.debug("Status data: %s", status_data)
     if verbose:
         print("Status data: {status_data}".format(status_data=status_data))
+    output_path = Path(output_path)
     if not output_path.suffix:
         output_path = brokkr.output.determine_output_filename(output_path)
     logger.debug("Writing monitoring output to file: %s",
-                 str(output_path).replace(os.sep, "/"))
+                 output_path.as_posix())
     brokkr.output.write_line_csv(status_data, output_path)
     return status_data
 
