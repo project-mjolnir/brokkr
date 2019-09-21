@@ -49,11 +49,25 @@ def generate_argparser_main():
 
     # Parser for the install-all subcommand
     parser_install_all = subparsers.add_parser(
-        "install-all", help="Install all elements needed to run Brokkr.")
+        "install-all", help="Install all elements needed to run Brokkr")
     parser_install_all.add_argument(
-        "--no-install-service", action="store_true",
-        help="If passed, will not install the Brokkr client service")
+        "--no-install-services", action="store_true",
+        help="If passed, will not install the Brokkr and AutoSSH services")
     parser_install_all.add_argument(
+        "-v", "--verbose", action="store_true",
+        help="If passed, will print details of the exact actions executed")
+
+    # Parser for the install-autossh subcommand
+    parser_install_autossh = subparsers.add_parser(
+        "install-autossh", help="Install AutoSSH as a systemd service",
+        argument_default=argparse.SUPPRESS)
+    parser_install_autossh.add_argument(
+        "--skip-package-install", action="store_true",
+        help="Don't attempt to install distro package, just service unit")
+    parser_install_autossh.add_argument(
+        "--platform", choices=("linux", ),
+        help="Manually override automatic platform detection")
+    parser_install_autossh.add_argument(
         "-v", "--verbose", action="store_true",
         help="If passed, will print details of the exact actions executed")
 
@@ -86,9 +100,6 @@ def generate_argparser_main():
         "--platform", choices=("linux", ),
         help="Manually override automatic platform detection")
     parser_install_service.add_argument(
-        "--output-path", type=Path,
-        help="A custom filename and path to which to save the service file")
-    parser_install_service.add_argument(
         "-v", "--verbose", action="store_true",
         help="If passed, will print details of the exact actions executed")
 
@@ -98,7 +109,7 @@ def generate_argparser_main():
     parser_reset.add_argument(
         "config_type", nargs="?", default="all",
         choices=("all", "main", "log"),
-        help="Which config type to reset. By default, resets all of them.")
+        help="Which config type to reset. By default, resets all of them")
     parser_reset.add_argument(
         "-v", "--verbose", action="store_true",
         help="If passed, will print details of the exact actions executed")
@@ -126,6 +137,9 @@ def main():
     elif subcommand == "install-all":
         import brokkr.utils.install
         brokkr.utils.install.install_all(**vars(parsed_args))
+    elif subcommand == "install-autossh":
+        import brokkr.utils.install
+        brokkr.utils.install.install_autossh(**vars(parsed_args))
     elif subcommand == "install-config":
         import brokkr.utils.install
         brokkr.utils.install.install_config_files(**vars(parsed_args))
@@ -137,7 +151,7 @@ def main():
         brokkr.utils.install.install_firewall_ports(**vars(parsed_args))
     elif subcommand == "install-service":
         import brokkr.utils.install
-        brokkr.utils.install.install_service(**vars(parsed_args))
+        brokkr.utils.install.install_brokkr_service(**vars(parsed_args))
     elif subcommand == "reset":
         import brokkr.utils.install
         brokkr.utils.install.reset_config(**vars(parsed_args))
