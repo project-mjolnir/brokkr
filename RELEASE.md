@@ -17,7 +17,7 @@
 15. Upload to live PyPI (if uploading to PyPI): ``python -m twine upload dist/*``
 16. Tag release: ``git tag -a vX.Y.Z -m "Brokkr version X.Y.Z"``
 17. Clean release files: ``git clean -xfd``
-18. If new minor version, create release branch ``vX.Y`` to maintain deployed version
+18. If new minor version, create release branch ``vX.Y.x`` to maintain deployed version
 19. If new minor version, in ``master`` branch update ``brokkr/_version.py`; increment minor and add ``dev0``
-20. Commit change back to dev mode on ``master``: ``git commit -am "Begin development of X.Y"``
+20. Commit change back to dev mode on ``master``: ``git commit -am "Begin development of version X.Y.x"``
 21. Push changes upstream and to user repo: ``git push upstream master --follow-tags && git push origin master``
