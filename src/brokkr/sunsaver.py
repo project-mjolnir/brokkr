@@ -214,7 +214,8 @@ def decode_sunsaver_data(
                     last_hi = None
 
                 if output_val is not None:
-                    var_name = var_name.replace("_lo", "").replace("_lo_", "_")
+                    var_name = (var_name.lower()
+                                .replace("_lo", "").replace("_lo_", "_"))
                     sunsaver_data[var_name] = output_val
             # Catch any conversion errors and return NA
             except Exception as e:
@@ -230,8 +231,10 @@ def decode_sunsaver_data(
             logger.error("%s decoding register data %s: %s",
                          type(e).__name__, register_data, e)
             logger.info("Details:", exc_info=1)
-        sunsaver_data = {var_name[0]: na_marker
-                         for var_name in register_variables}
+        sunsaver_data = {
+            var_name.lower().replace("_lo", "").replace("_lo_", "_"): na_marker
+            for var_name, var_type in register_variables
+            if var_type and var_type != "HI"}
 
     return sunsaver_data
 
