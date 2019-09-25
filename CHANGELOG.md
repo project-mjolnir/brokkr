@@ -1,6 +1,16 @@
 # Brokkr Changelog
 
 
+## Version 0.2.1 (2019-09-24)
+
+Bugfix release with the following changes:
+
+* Fix incorrect lengths of NA data for charge controller and sensor H&S packets
+* Force (Auto)SSH to keep retrying on failed port forwarding
+* Improve (Auto)SSH responsiveness, robustness and performance
+
+
+
 Version 0.2.0 (2019-09-20)
 
 Major feature and infrastructure release with numerous improvements.

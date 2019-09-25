@@ -149,7 +149,8 @@ def decode_hs_packet(
             logger.error("%s decoding H&S data %s: %s",
                          type(e).__name__, packet, e)
             logger.info("Details:", exc_info=1)
-        hs_dict = {var_name[0]: na_marker for var_name in hs_variables}
+        hs_dict = {var_name: na_marker
+                   for var_name, var_type in hs_variables if var_type}
     return hs_dict
 
 
