@@ -30,7 +30,7 @@ setuptools.setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     keywords="iot lightning sensor remote control research m2m raspberry pi",
-    url="https://github.com/CAM-Gerlach/brokkr",
+    url="https://github.com/hamma-dev/brokkr",
     packages=setuptools.find_packages("src"),
     package_dir={"": "src"},
     python_requires=">=3.6",
