@@ -1,3 +1,4 @@
 pymodbus
 pyserial
+serviceinstaller; sys_platform == "linux"
 toml

@@ -7,12 +7,14 @@ import logging
 import subprocess
 import sys
 
+# Third party imports
+import serviceinstaller
+
 # Local imports
 import brokkr.config.autossh
 import brokkr.config.log
 import brokkr.config.main
 import brokkr.config.service
-import brokkr.config.systemd
 import brokkr.utils.misc
 
 
@@ -75,38 +77,6 @@ def install_distro_package(package_name, verbose=None):
     return False
 
 
-def install_service(service_settings, service_filename, services_enable=None,
-                    services_disable=None, platform=None, verbose=None):
-    log_setup(verbose)
-
-    logging.debug("Installing %s service...", service_filename)
-    platform_config = brokkr.config.systemd.get_platform_config(platform)
-    logging.debug("Using platform config settings: %s", platform_config)
-    logging.debug("Generating service configuration file...")
-    service_config = brokkr.config.systemd.generate_systemd_config(
-        service_settings, platform)
-    logging.debug("Writing service configuration file to %s",
-                  platform_config.install_path / service_filename)
-    output_path = brokkr.config.systemd.write_systemd_config(
-        service_config, service_filename, platform)
-
-    logging.debug("Reloading systemd daemon...")
-    subprocess.run(("systemctl", "daemon-reload"), timeout=5, check=True)
-
-    for service in services_disable:
-        logging.debug("Disabling %s (if enabled)...", service)
-        subprocess.run(("systemctl", "disable", service),
-                       timeout=5, check=False)
-
-    for service in (*services_enable, service_filename):
-        logging.debug("Enabling %s...", service)
-        subprocess.run(("systemctl", "enable", service),
-                       timeout=5, check=True)
-
-    logging.info("Successfully installed %s service to %s",
-                 service_filename, output_path)
-
-
 def install_autossh(skip_package_install=False, platform=None, verbose=None):
     log_setup(verbose)
 
@@ -115,9 +85,9 @@ def install_autossh(skip_package_install=False, platform=None, verbose=None):
         if not install_succeeded:
             return install_succeeded
 
-    install_service(
+    serviceinstaller.install_service(
         brokkr.config.autossh.AUTOSSH_SERVICE_DEFAULTS,
-        brokkr.config.autossh.AUTOSSH_SERVICE_FILENAME,
+        service_filename=brokkr.config.autossh.AUTOSSH_SERVICE_FILENAME,
         services_enable=brokkr.config.autossh.AUTOSSH_SERVICES_ENABLE,
         services_disable=brokkr.config.autossh.AUTOSSH_SERVICES_DISABLE,
         platform=platform,
@@ -128,9 +98,9 @@ def install_autossh(skip_package_install=False, platform=None, verbose=None):
 def install_brokkr_service(platform=None, verbose=None):
     log_setup(verbose)
 
-    install_service(
+    serviceinstaller.install_service(
         brokkr.config.service.BROKKR_SERVICE_DEFAULTS,
-        brokkr.config.service.BROKKR_SERVICE_FILENAME,
+        service_filename=brokkr.config.service.BROKKR_SERVICE_FILENAME,
         services_enable=brokkr.config.service.BROKKR_SERVICES_ENABLE,
         services_disable=brokkr.config.service.BROKKR_SERVICES_DISABLE,
         platform=platform,
