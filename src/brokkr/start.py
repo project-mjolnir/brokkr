@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """
 Startup code for running the Brokkr client mainloop as an application.
 """
@@ -76,3 +77,7 @@ def start_brokkr(log_level_file=None, log_level_console=None, **monitor_args):
     set_quit_signal_handler(quit_handler)
     logger.debug("Entering mainloop...")
     brokkr.monitor.start_monitoring(exit_event=EXIT_EVENT, **monitor_args)
+
+
+if __name__ == "__main__":
+    start_brokkr()

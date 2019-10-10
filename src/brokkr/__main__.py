@@ -132,8 +132,8 @@ def main():
     elif subcommand == "help":
         parser_main.print_help()
     elif subcommand == "start":
-        import brokkr.startup
-        brokkr.startup.start_brokkr(**vars(parsed_args))
+        import brokkr.start
+        brokkr.start.start_brokkr(**vars(parsed_args))
     elif subcommand == "install-all":
         import brokkr.utils.install
         brokkr.utils.install.install_all(**vars(parsed_args))
