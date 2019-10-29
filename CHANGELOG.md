@@ -1,6 +1,15 @@
 # Brokkr Changelog
 
 
+## Version 0.2.2 (2019-10-28)
+
+Bugfix release with the following changes:
+
+* Avoid bug on debian-like platforms manually enabling ``ssshd`` that should already be started automatically
+* Require `serviceinstaller` >= 0.1.1 to fix other similar install bugs and issues
+
+
+
 ## Version 0.2.1 (2019-09-24)
 
 Bugfix release with the following changes:
