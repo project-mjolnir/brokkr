@@ -32,5 +32,5 @@ BROKKR_SERVICE_DEFAULTS = {
         },
     }
 
-BROKKR_SERVICES_ENABLE = ("sshd.service", "systemd-timesyncd.service")
+BROKKR_SERVICES_ENABLE = ("systemd-timesyncd.service", )
 BROKKR_SERVICES_DISABLE = ("chronyd.service", "ntpd.service")
