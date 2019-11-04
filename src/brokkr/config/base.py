@@ -89,7 +89,11 @@ class ConfigHandler:
             for section in include_sections:
                 config_data[section] = copy.deepcopy(
                     self.defaults[section])
-        return self.write_config_data(config_name, config_data=config_data)
+
+        if config_name == self.config_types[config_name].default:
+            return config_data
+        else:
+            return self.write_config_data(config_name, config_data=config_data)
 
     def read_config(self, config_name):
         if self.config_types[config_name].default:
