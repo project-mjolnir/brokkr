@@ -3,7 +3,7 @@
 Main-level command handling routine for running brokkr on the command line.
 """
 
-# Standard library modules
+# Standard library imports
 import argparse
 from pathlib import Path
 

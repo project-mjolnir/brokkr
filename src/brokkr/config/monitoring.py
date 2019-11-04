@@ -6,8 +6,8 @@ Programmatic configuration for the monitoring routine and its data items.
 import datetime
 
 # Local imports
-import brokkr.sensor
-import brokkr.sunsaver
+import brokkr.monitoring.sensor
+import brokkr.monitoring.sunsaver
 
 
 STATUS_DATA_ITEMS = {
@@ -20,15 +20,15 @@ STATUS_DATA_ITEMS = {
         "unpack": False,
         },
     "ping": {
-        "function": brokkr.sensor.ping,
+        "function": brokkr.monitoring.sensor.ping,
         "unpack": False,
         },
     "sunsaver": {
-        "function": brokkr.sunsaver.get_sunsaver_data,
+        "function": brokkr.monitoring.sunsaver.get_sunsaver_data,
         "unpack": True,
         },
     "hs": {
-        "function": brokkr.sensor.get_hs_data,
+        "function": brokkr.monitoring.sensor.get_hs_data,
         "unpack": True,
         },
     }

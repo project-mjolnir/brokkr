@@ -3,7 +3,7 @@
 Startup code for running the Brokkr client mainloop as an application.
 """
 
-# Standard library modules
+# Standard library imports
 import copy
 import logging
 import logging.config
@@ -71,12 +71,13 @@ def start_brokkr(log_level_file=None, log_level_console=None, **monitor_args):
     logger.debug("Arguments: %s", monitor_args)
 
     # Import top-level modules
-    import brokkr.monitor
+    import brokkr.monitoring.monitor
 
     # Start the mainloop
     set_quit_signal_handler(quit_handler)
     logger.debug("Entering mainloop...")
-    brokkr.monitor.start_monitoring(exit_event=EXIT_EVENT, **monitor_args)
+    brokkr.monitoring.monitor.start_monitoring(
+        exit_event=EXIT_EVENT, **monitor_args)
 
 
 if __name__ == "__main__":
