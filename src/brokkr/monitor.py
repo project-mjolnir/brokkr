@@ -3,8 +3,6 @@ High-level functions to monitor and record sensor and sunsaver status data.
 """
 
 # Standard library imports
-import collections
-import datetime
 import logging
 import os
 from pathlib import Path
@@ -13,34 +11,25 @@ import threading
 # Local imports
 from brokkr.config.main import CONFIG
 import brokkr.output
-import brokkr.sensor
-import brokkr.sunsaver
 import brokkr.utils.misc
 
-
-_TRUTHY = "This is truthy"
-_FALSY = "This is falsy"
-StatusDataItem = collections.namedtuple(
-    'StatusDataItem', ("name", "fn", "unpack"))
-STATUS_DATA_ITEMS = (
-    StatusDataItem("time", datetime.datetime.utcnow, False),
-    StatusDataItem("runtime", brokkr.utils.misc.start_time_offset, False),
-    StatusDataItem("ping", brokkr.sensor.ping, False),
-    StatusDataItem("sunsaver", brokkr.sunsaver.get_sunsaver_data, True),
-    StatusDataItem("hs", brokkr.sensor.get_hs_data, True),
-    )
 
 logger = logging.getLogger(__name__)
 
 
-def get_status_data(status_data_items=STATUS_DATA_ITEMS):
+def get_status_data(status_data_items=None):
+    if status_data_items is None:
+        # Only import if needed to avoid dependency on pyserial and pymodbus
+        import brokkr.config.monitoring
+        status_data_items = brokkr.config.monitoring.STATUS_DATA_ITEMS
+
     status_data = {}
-    for item in status_data_items:
-        output_data = item.fn()
-        if item.unpack:
+    for item_name, item_params in status_data_items.items():
+        output_data = item_params["function"]()
+        if item_params["unpack"]:
             status_data.update(output_data)
         else:
-            status_data[item.name] = output_data
+            status_data[item_name] = output_data
     return status_data
 
 
