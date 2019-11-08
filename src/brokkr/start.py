@@ -51,10 +51,10 @@ def setup_log_levels(log_config, file_level=None, console_level=None):
     return log_config
 
 
-def start_brokkr(log_level_file=None, log_level_console=None, **monitor_args):
-    logging.Formatter.converter = time.gmtime
-
+def start_brokkr(log_level_file=None, log_level_console=None,
+                 monitor_args=None):
     # Load and set logging config
+    logging.Formatter.converter = time.gmtime
     from brokkr.config.log import LOG_CONFIG
     log_config = copy.deepcopy(LOG_CONFIG)
     if any((log_level_file, log_level_console)):
@@ -70,7 +70,9 @@ def start_brokkr(log_level_file=None, log_level_console=None, **monitor_args):
         logger.debug("Using manual log levels: %s (file) | %s (console)",
                      log_level_file, log_level_console)
     logger.debug("Logging config: %s", log_config)
-    logger.debug("Arguments: %s", monitor_args)
+    logger.debug("Monitor arguments: %s", monitor_args)
+    if monitor_args is None:
+        monitor_args = {}
 
     # Import top-level modules
     import brokkr.monitoring.monitor

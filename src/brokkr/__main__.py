@@ -5,7 +5,6 @@ Main-level command handling routine for running brokkr on the command line.
 
 # Standard library imports
 import argparse
-from pathlib import Path
 
 
 def generate_argparser_main():
@@ -32,20 +31,27 @@ def generate_argparser_main():
         "start", help="Start the monitoring, processing and control client",
         argument_default=argparse.SUPPRESS)
     parser_start.add_argument(
-        "--output-path", type=Path,
-        help="A custom filename and path to which to save the monitor data")
-    parser_start.add_argument(
-        "--interval", type=int, dest="monitor_interval",
-        help="Interval between status checks, in s")
-    parser_start.add_argument(
         "--log-level-file", type=str,
         help="Level of messages to log to disk")
     parser_start.add_argument(
         "--log-level-console", type=str,
         help="Level of messages to log to the console")
-    parser_start.add_argument(
-        "-v", "--verbose", action="store_true",
-        help="If passed, will print the data logged to the console")
+
+    # Parser for the monitor subcommand
+    parser_monitor = subparsers.add_parser(
+        "monitor", help="Start just the monitoring client",
+        argument_default=argparse.SUPPRESS)
+    parser_monitor.add_argument(
+        "--output-path", nargs="?", default=None, const=True,
+        help=("Doesn't write anything if not passed; "
+              "if passed without an argument, writes to the default data dir; "
+              "if passed a path to a custom data dir, writes data there"))
+    parser_monitor.add_argument(
+        "--monitor-interval-s", type=int,
+        help="Interval between status checks, in s")
+    parser_monitor.add_argument(
+        "-v", "--verbose", action="count",
+        help="Print the data logged to the console; pass -vv for debug info")
 
     # Parser for the install-all subcommand
     parser_install_all = subparsers.add_parser(
@@ -134,6 +140,9 @@ def main():
     elif subcommand == "start":
         import brokkr.start
         brokkr.start.start_brokkr(**vars(parsed_args))
+    elif subcommand == "monitor":
+        import brokkr.monitoring.monitor
+        brokkr.monitoring.monitor.main(**vars(parsed_args))
     elif subcommand == "install-all":
         import brokkr.utils.install
         brokkr.utils.install.install_all(**vars(parsed_args))
