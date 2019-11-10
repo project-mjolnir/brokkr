@@ -11,11 +11,13 @@ import setuptools
 PROJECT_NAME = "brokkr"
 
 
-with open("README.md", "r", encoding="utf-8") as readme_file:
+with open(Path(__file__).resolve().parent / "README.md",
+          "r", encoding="utf-8") as readme_file:
     long_description = readme_file.read()
 
 version = {}
-with open(Path("src") / PROJECT_NAME / "_version.py",
+with open(Path(__file__).resolve().parent
+          / "src" / PROJECT_NAME / "_version.py",
           "r", encoding="utf-8") as version_file:
     exec(version_file.read(), version)
 
