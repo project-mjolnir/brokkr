@@ -19,7 +19,7 @@ AUTOSSH_SERVICE_DEFAULTS = {
             '/usr/bin/autossh -M 0 -o "StrictHostKeyChecking no" '
             '-o "CheckHostIP no" -o "UserKnownHostsFile /dev/null" '
             '-o "ExitOnForwardFailure yes" -o "TCPKeepAlive yes" '
-            '-o "ServerAliveInterval 60" -o "ServerAliveCountMax 2" '
+            '-o "ServerAliveInterval 60" -o "ServerAliveCountMax 3" '
             '-N -T -R 10000:localhost:22 proxy'
             ),
         "Restart": "always",
