@@ -50,8 +50,9 @@ def generate_argparser_main():
         "--monitor-interval-s", type=int,
         help="Interval between status checks, in s")
     parser_monitor.add_argument(
-        "-v", "--verbose", action="count",
-        help="Print the data logged to the console; pass -vv for debug info")
+        "-v", "--verbose", action="count", default=0,
+        help=("Verbosity level; only errors by default, -v for basic info, "
+              "-vv for detailed info and -vvv for debug info"))
 
     # Parser for the install-all subcommand
     parser_install_all = subparsers.add_parser(
@@ -141,8 +142,8 @@ def main():
         import brokkr.start
         brokkr.start.start_brokkr(**vars(parsed_args))
     elif subcommand == "monitor":
-        import brokkr.monitoring.monitor
-        brokkr.monitoring.monitor.main(**vars(parsed_args))
+        import brokkr.start
+        brokkr.start.start_monitoring(**vars(parsed_args))
     elif subcommand == "install-all":
         import brokkr.utils.install
         brokkr.utils.install.install_all(**vars(parsed_args))

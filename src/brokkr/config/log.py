@@ -11,7 +11,7 @@ import brokkr.config.base
 
 # General static constants
 LOG_FORMAT_DETAILED = ("{asctime}.{msecs:0>3.0f} | {levelname} | {name} | "
-                       "{message} ({relativeCreated:.0f} ms)")
+                       "{message} (T+{relativeCreated:.0f} ms)")
 DEFAULT_LOG_LEVEL = "INFO"
 DEFAULT_CONFIG = {
     brokkr.config.base.LOCAL_OVERRIDE: False,

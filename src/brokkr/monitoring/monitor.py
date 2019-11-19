@@ -80,23 +80,3 @@ def start_monitoring(
                 [sleep_interval,
                  (next_time - brokkr.utils.misc.monotonic_ns()) / 1e9]))
     exit_event.clear()
-
-
-def main(verbose=False, **monitor_args):
-    if monitor_args.get("output_path", None) is True:
-        monitor_args.pop("output_path", None)
-
-    log_args = {"format": "{message}", "style": "{"}
-    if verbose and verbose == 1:
-        log_args["level"] = logging.INFO
-    elif verbose and verbose >= 2:
-        log_args["level"] = logging.DEBUG
-    else:
-        log_args["level"] = logging.WARNING
-    logging.basicConfig(**log_args)
-    logger.info("Starting Brokkr monitoring...")
-
-    try:
-        start_monitoring(**monitor_args)
-    except KeyboardInterrupt:
-        logger.info("Keyboard interrupt recieved; exiting Brokkr...")

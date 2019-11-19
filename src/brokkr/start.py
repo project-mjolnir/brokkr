@@ -51,8 +51,28 @@ def setup_log_levels(log_config, file_level=None, console_level=None):
     return log_config
 
 
-def start_brokkr(log_level_file=None, log_level_console=None,
-                 monitor_args=None):
+def setup_basic_log_config(verbose=False):
+    # Setup logging config
+    log_args = {"format": "{levelname} | {name} | {message}",
+                "style": "{"}
+    if verbose and verbose == 1:
+        log_level = logging.INFO
+    elif verbose and verbose >= 2:
+        log_level = logging.DEBUG
+        if verbose >= 3:
+            log_args["level"] = logging.DEBUG
+    else:
+        log_level = logging.WARNING
+
+    # Initialize logging
+    logging.basicConfig(**log_args)
+    if verbose <= 2:
+        package_logger = logging.getLogger("brokkr")
+        package_logger.setLevel(log_level)
+    return log_level
+
+
+def setup_full_log_config(log_level_file=None, log_level_console=None):
     # Load and set logging config
     logging.Formatter.converter = time.gmtime
     from brokkr.config.log import LOG_CONFIG
@@ -61,27 +81,47 @@ def start_brokkr(log_level_file=None, log_level_console=None,
         log_config = setup_log_levels(
             log_config, log_level_file, log_level_console)
     logging.config.dictConfig(log_config)
+    return log_config
+
+
+def start_monitoring(verbose=None, **monitor_args):
+    # Drop output_path arg if true to use default path in function signature
+    if monitor_args.get("output_path", None) is True:
+        monitor_args.pop("output_path", None)
+
+    # Setup logging if not already configured
+    if verbose is not None:
+        setup_basic_log_config(verbose)
+    logger = logging.getLogger(__name__)
+
+    # Print logging information
+    logger.info("Starting monitoring system...")
+    logger.debug("Monitor arguments: %s", monitor_args)
+
+    # Start the mainloop
+    import brokkr.monitoring.monitor
+    set_quit_signal_handler(quit_handler)
+    logger.debug("Entering monitoring mainloop...")
+    brokkr.monitoring.monitor.start_monitoring(
+        exit_event=EXIT_EVENT, **monitor_args)
+
+
+def start_brokkr(log_level_file=None, log_level_console=None, **monitor_args):
+    # Setup logging
+    log_config = setup_full_log_config(
+        log_level_file=log_level_file, log_level_console=log_level_console)
     logger = logging.getLogger(__name__)
 
     # Print logging information
     import brokkr
     logger.info("Starting Brokkr version %s...", brokkr.__version__)
     if any((log_level_file, log_level_console)):
-        logger.debug("Using manual log levels: %s (file) | %s (console)",
+        logger.debug("Using manual log levels: %s (file), %s (console)",
                      log_level_file, log_level_console)
     logger.debug("Logging config: %s", log_config)
-    logger.debug("Monitor arguments: %s", monitor_args)
-    if monitor_args is None:
-        monitor_args = {}
 
-    # Import top-level modules
-    import brokkr.monitoring.monitor
-
-    # Start the mainloop
-    set_quit_signal_handler(quit_handler)
-    logger.debug("Entering mainloop...")
-    brokkr.monitoring.monitor.start_monitoring(
-        exit_event=EXIT_EVENT, **monitor_args)
+    # Start monitoring system
+    start_monitoring(verbose=None, **monitor_args)
 
 
 if __name__ == "__main__":
