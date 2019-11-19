@@ -1,6 +1,14 @@
 # Brokkr Changelog
 
 
+## Version 0.2.3 (2019-11-18)
+
+Bugfix release with the following change:
+
+* Fix pseudo-underflow in temperature data due to incorrect int interpretation
+
+
+
 ## Version 0.2.2 (2019-10-28)
 
 Bugfix release with the following changes:
