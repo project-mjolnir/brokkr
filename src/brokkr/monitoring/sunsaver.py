@@ -198,6 +198,7 @@ def decode_sunsaver_data(
 
     sunsaver_data = {}
     last_hi = None
+    error_count = 0
     try:
         for register_val, (var_name, var_type) in zip(
                 register_data, register_variables):
@@ -220,12 +221,20 @@ def decode_sunsaver_data(
                     sunsaver_data[var_name] = output_val
             # Catch any conversion errors and return NA
             except Exception as e:
-                logger.warning("%s decoding %s register data %s to %s: %s",
-                               type(e).__name__, var_name,
-                               register_val, var_type, e)
-                logger.debug("Details:", exc_info=1)
+                if error_count < 1:
+                    logger.warning("%s decoding %s register data %s to %s: %s",
+                                   type(e).__name__, var_name,
+                                   register_val, var_type, e)
+                    logger.info("Details:", exc_info=1)
+                else:
+                    logger.info("%s decoding %s register data %s to %s: %s",
+                                type(e).__name__, var_name,
+                                register_val, var_type, e)
+                    logger.debug("Details:", exc_info=1)
+
                 sunsaver_data[var_name] = na_marker
                 last_hi = None
+                error_count += 1
     # Catch overall errrors, e.g. modbus exceptions
     except Exception as e:
         if register_data is not None:
@@ -236,6 +245,10 @@ def decode_sunsaver_data(
             var_name.lower().replace("_lo", "").replace("_lo_", "_"): na_marker
             for var_name, var_type in register_variables
             if var_type and var_type != "HI"}
+
+    if error_count > 1:
+        logger.warning("%s additional decode errors were suppressed.",
+                       error_count - 1)
 
     return sunsaver_data
 

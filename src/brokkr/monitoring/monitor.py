@@ -55,7 +55,7 @@ def start_monitoring(
         exit_event = threading.Event()
 
     if output_path is not None and not Path(output_path).suffix:
-        logger.debug("Ensuring monitoring directory at: %s", output_path)
+        logger.info("Ensuring monitoring directory at: %s", output_path)
         os.makedirs(output_path, exist_ok=True)
 
     while not exit_event.is_set():

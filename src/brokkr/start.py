@@ -19,7 +19,7 @@ SIGNALS_SET = ("SIG" + signame for signame in ("TERM", "HUP", "INT", "BREAK"))
 
 def quit_handler(signo, _frame):
     logger = logging.getLogger(__name__)
-    logger.info("Interrupted by signal %s; terminating Brokkr", signo)
+    logger.warning("Interrupted by signal %s; terminating Brokkr", signo)
     logging.shutdown()
     EXIT_EVENT.set()
 
@@ -96,7 +96,7 @@ def start_monitoring(verbose=None, **monitor_args):
 
     # Print logging information
     logger.info("Starting monitoring system...")
-    logger.debug("Monitor arguments: %s", monitor_args)
+    logger.info("Monitor arguments: %s", monitor_args)
 
     # Start the mainloop
     import brokkr.monitoring.monitor
@@ -116,7 +116,7 @@ def start_brokkr(log_level_file=None, log_level_console=None, **monitor_args):
     import brokkr
     logger.info("Starting Brokkr version %s...", brokkr.__version__)
     if any((log_level_file, log_level_console)):
-        logger.debug("Using manual log levels: %s (file), %s (console)",
+        logger.info("Using manual log levels: %s (file), %s (console)",
                      log_level_file, log_level_console)
     logger.debug("Logging config: %s", log_config)
 

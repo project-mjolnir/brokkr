@@ -69,12 +69,12 @@ def ping(host=CONFIG["general"]["ip_sensor"],
         ping_output = subprocess.run(command, timeout=timeout + 1,
                                      **extra_args)
     except subprocess.TimeoutExpired:
-        logger.info("Ping command subprocess timed out in %s s: %s",
+        logger.warning("Ping command subprocess timed out in %s s: %s",
                     timeout, " ".join(command))
         logger.debug("Details:", exc_info=1)
         return -1
     except Exception as e:
-        logger.warning("%s running ping command %s: %s",
+        logger.error("%s running ping command %s: %s",
                        type(e).__name__, " ".join(command), e)
         logger.info("Details:", exc_info=1)
         return -9
@@ -117,7 +117,7 @@ def read_hs_packet(
         packet = packet[:packet_size]
         logger.debug("Packet: %s", packet.hex())
     else:
-        logger.info("Null H&S data responce returned: %s", packet)
+        logger.warning("Null H&S data responce returned: %s", packet)
         packet = None
     return packet
 
@@ -130,6 +130,7 @@ def decode_hs_packet(
         conversion_functions=HS_CONVERSION_FUNCTIONS,
         ):
     hs_dict = {}
+    error_count = 0
     try:
         decoded_vals = struct.unpack(struct_str, packet)
         for var_name, var_type, val in zip(*zip(*hs_variables), decoded_vals):
@@ -139,10 +140,19 @@ def decode_hs_packet(
                     hs_dict[var_name] = output_val
             # Handle errors decoding specific values
             except Exception as e:
-                logger.warning("%s decoding %s H&S data %s to %s: %s",
-                               type(e).__name__, val, var_name, var_type, e)
-                logger.debug("Details:", exc_info=1)
+                if error_count < 1:
+                    logger.warning("%s decoding %s H&S data %s to %s: %s",
+                                   type(e).__name__, val,
+                                   var_name, var_type, e)
+                    logger.info("Details:", exc_info=1)
+                else:
+                    logger.info("%s decoding %s H&S data %s to %s: %s",
+                                type(e).__name__, val,
+                                var_name, var_type, e)
+                    logger.debug("Details:", exc_info=1)
+
                 hs_dict[var_name] = na_marker
+                error_count += 1
     # Handle overall decoding errors
     except Exception as e:
         if packet is not None:
@@ -151,6 +161,10 @@ def decode_hs_packet(
             logger.info("Details:", exc_info=1)
         hs_dict = {var_name: na_marker
                    for var_name, var_type in hs_variables if var_type}
+
+    if error_count > 1:
+        logger.warning("%s total decode errors were occured.", error_count)
+
     return hs_dict
 
 
