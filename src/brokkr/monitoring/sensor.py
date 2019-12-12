@@ -70,12 +70,12 @@ def ping(host=CONFIG["general"]["ip_sensor"],
                                      **extra_args)
     except subprocess.TimeoutExpired:
         logger.warning("Ping command subprocess timed out in %s s: %s",
-                    timeout, " ".join(command))
+                       timeout, " ".join(command))
         logger.debug("Details:", exc_info=1)
         return -1
     except Exception as e:
         logger.error("%s running ping command %s: %s",
-                       type(e).__name__, " ".join(command), e)
+                     type(e).__name__, " ".join(command), e)
         logger.info("Details:", exc_info=1)
         return -9
 

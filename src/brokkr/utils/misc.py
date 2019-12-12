@@ -28,7 +28,7 @@ def monotonic_ns():
 START_TIME = monotonic_ns()
 
 
-def start_time_offset(n_digits=1):
+def start_time_offset(n_digits=3):
     return round((monotonic_ns() - START_TIME) / 1e9, n_digits)
 
 
