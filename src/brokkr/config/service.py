@@ -19,7 +19,7 @@ BROKKR_SERVICE_DEFAULTS = {
         "After": (
             "time-sync.target network-online.target multi-user.target "
             "sshd.service systemd-time-wait-sync.service "
-            "systemd-timesyncd.service, autossh-brokkr.service"
+            "systemd-timesyncd.service autossh-brokkr.service"
             ),
         },
     "Service": {
