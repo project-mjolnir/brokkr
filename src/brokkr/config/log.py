@@ -14,7 +14,6 @@ LOG_FORMAT_DETAILED = ("{asctime}.{msecs:0>3.0f} | {levelname} | {name} | "
                        "{message} (T+{relativeCreated:.0f} ms)")
 DEFAULT_LOG_LEVEL = "INFO"
 DEFAULT_CONFIG = {
-    brokkr.config.base.LOCAL_OVERRIDE: False,
     "version": 1,
     "disable_existing_loggers": False,
     "formatters": {
@@ -47,7 +46,7 @@ DEFAULT_CONFIG = {
     }
 PATH_VARIABLES = (("handlers", "file", "filename"), )
 CONFIG_HANDLER = brokkr.config.base.ConfigHandler(
-    "log", DEFAULT_CONFIG, path_variables=PATH_VARIABLES, write_sections=False)
+    "log", DEFAULT_CONFIG, path_variables=PATH_VARIABLES)
 
 # Master config dict; currently static
 LOG_CONFIGS = CONFIG_HANDLER.read_configs()

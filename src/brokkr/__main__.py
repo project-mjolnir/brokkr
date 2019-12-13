@@ -111,13 +111,13 @@ def generate_argparser_main():
         help="If passed, will print details of the exact actions executed")
 
     # Parser for the reset subcommand
-    parser_reset = subparsers.add_parser(
-        "reset", help="Reset brokkr logging and main configuration files")
-    parser_reset.add_argument(
-        "config_type", nargs="?", default="all",
+    parser_reset_config = subparsers.add_parser(
+        "reset-config", help="Reset brokkr-managed configuration files")
+    parser_reset_config.add_argument(
+        "--config-type", nargs="?", default="all",
         choices=("all", "main", "log"),
-        help="Which config type to reset. By default, resets all of them")
-    parser_reset.add_argument(
+        help="Which config type to reset; by default, resets all of them")
+    parser_reset_config.add_argument(
         "-v", "--verbose", action="store_true",
         help="If passed, will print details of the exact actions executed")
 
@@ -162,7 +162,7 @@ def main():
     elif subcommand == "install-service":
         import brokkr.utils.install
         brokkr.utils.install.install_brokkr_service(**vars(parsed_args))
-    elif subcommand == "reset":
+    elif subcommand == "reset-config":
         import brokkr.utils.install
         brokkr.utils.install.reset_config(**vars(parsed_args))
     else:
