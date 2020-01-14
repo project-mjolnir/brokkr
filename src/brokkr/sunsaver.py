@@ -157,27 +157,36 @@ def read_raw_sunsaver_data(
     mppt_client = pymodbus.client.sync.ModbusSerialClient(
         port=port, **serial_params)
     logger.debug("Connecting to client %s", mppt_client)
-    if mppt_client.connect():
-        try:
-            register_data = mppt_client.read_holding_registers(
-                start_offset, len(REGISTER_VARIABLES), unit=unit)
-            if isinstance(register_data, BaseException):
-                raise register_data
-        # Catch and log errors reading register data
-        except Exception as e:
-            logger.error("%s reading register data for %s: %s",
-                         type(e).__name__, port, e)
-            logger.info("Details: %s", mppt_client, exc_info=1)
+    try:
+        connect_successful = mppt_client.connect()
+        if connect_successful:
+            try:
+                register_data = mppt_client.read_holding_registers(
+                    start_offset, len(REGISTER_VARIABLES), unit=unit)
+                if isinstance(register_data, BaseException):
+                    raise register_data
+            # Catch and log errors reading register data
+            except Exception as e:
+                logger.error("%s reading register data for %s: %s",
+                             type(e).__name__, port, e)
+                logger.info("Details: %s", mppt_client, exc_info=1)
+                return None
+            finally:
+                logger.debug("Closing MPPT client connection")
+                mppt_client.close()
+        else:
+            # Raise an error if connect not successful
+            logger.error(
+                "Error reading register data: Cannot connect to device %s",
+                port)
+            logger.info("Device info: %s", mppt_client)
             return None
-        finally:
-            logger.debug("Closing MPPT client connection")
-            mppt_client.close()
-    else:
-        logger.error(
-            "Error reading register data: Cannot connect to device %s", port)
-        logger.info("Device info: %s", mppt_client)
+        logger.debug("Register data: %s", register_data)
+    except Exception as e:
+        logger.error("%s connecting to charge controller device %s: %s",
+                     type(e).__name__, port, e)
+        logger.info("Details: %s", mppt_client, exc_info=1)
         return None
-    logger.debug("Register data: %s", register_data)
     return register_data
 
 
