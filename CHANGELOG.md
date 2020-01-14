@@ -1,6 +1,14 @@
 # Brokkr Changelog
 
 
+## Version 0.2.4 (2019-01-14)
+
+Bugfix release with the following change:
+
+* Fix low-level system I/O error connecting to Modbus device not being caught
+
+
+
 ## Version 0.2.3 (2019-11-18)
 
 Bugfix release with the following change:
@@ -13,8 +21,8 @@ Bugfix release with the following change:
 
 Bugfix release with the following changes:
 
-* Avoid bug on debian-like platforms manually enabling ``ssshd`` that should already be started automatically
-* Require `serviceinstaller` >= 0.1.1 to fix other similar install bugs and issues
+* Avoid bug on debian-like platforms manually enabling ``ssshd``
+* Require `serviceinstaller` >= 0.1.1 to fix other similar install bugs/issues
 
 
 
