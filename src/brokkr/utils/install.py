@@ -1,5 +1,5 @@
 """
-Setup and installation utilities for Brokkr.
+Installation commands and utilities for Brokkr.
 """
 
 # Standard library imports
@@ -16,6 +16,7 @@ import brokkr.config.log
 import brokkr.config.main
 import brokkr.config.service
 import brokkr.utils.misc
+from brokkr.utils.misc import basic_logging
 
 
 DISTRO_INSTALL_COMMANDS = (
@@ -50,19 +51,7 @@ FIREWALL_COMMANDS_WINDOWS = {
     }
 
 
-def log_setup(verbose=None):
-    if verbose is None:
-        logging_level = 99
-    elif verbose:
-        logging_level = "DEBUG"
-    else:
-        logging_level = "INFO"
-    logging.basicConfig(stream=sys.stdout, level=logging_level)
-
-
-def install_distro_package(package_name, verbose=None):
-    log_setup(verbose)
-
+def install_distro_package(package_name):
     logging.debug("Installing %s...", package_name)
     for command in DISTRO_INSTALL_COMMANDS:
         logging.debug("Trying %s...", command("")[0])
@@ -77,9 +66,8 @@ def install_distro_package(package_name, verbose=None):
     return False
 
 
-def install_autossh(skip_package_install=False, platform=None, verbose=None):
-    log_setup(verbose)
-
+@basic_logging
+def install_autossh(skip_package_install=False, platform=None):
     if not skip_package_install:
         install_succeeded = install_distro_package("autossh")
         if not install_succeeded:
@@ -95,9 +83,8 @@ def install_autossh(skip_package_install=False, platform=None, verbose=None):
     return True
 
 
-def install_brokkr_service(platform=None, verbose=None):
-    log_setup(verbose)
-
+@basic_logging
+def install_brokkr_service(platform=None):
     serviceinstaller.install_service(
         brokkr.config.service.BROKKR_SERVICE_DEFAULTS,
         service_filename=brokkr.config.service.BROKKR_SERVICE_FILENAME,
@@ -107,9 +94,8 @@ def install_brokkr_service(platform=None, verbose=None):
     )
 
 
-def install_config_files(verbose=None):
-    log_setup(verbose)
-
+@basic_logging
+def install_config_files():
     logging.debug("Installing log config...")
     brokkr.config.log.CONFIG_HANDLER.read_configs()
     logging.debug("Installing main config...")
@@ -118,9 +104,8 @@ def install_config_files(verbose=None):
                  brokkr.config.main.CONFIG_HANDLER.config_dir)
 
 
-def install_dialout(verbose=None):
-    log_setup(verbose)
-
+@basic_logging
+def install_dialout():
     logging.debug("Enabling serial port access for user %s...",
                   brokkr.utils.misc.get_actual_username())
     subprocess.run(("usermod", "-a", "-G", "dialout",
@@ -130,8 +115,8 @@ def install_dialout(verbose=None):
                  brokkr.utils.misc.get_actual_username())
 
 
-def install_firewall_ports(ports_to_open=PORTS_TO_OPEN, verbose=None):
-    log_setup(verbose)
+@basic_logging
+def install_firewall_ports(ports_to_open=PORTS_TO_OPEN):
     logging.debug("Opening firewall ports: %s", ports_to_open)
 
     if sys.platform.startswith("linux"):
@@ -168,8 +153,8 @@ def install_firewall_ports(ports_to_open=PORTS_TO_OPEN, verbose=None):
     logging.info("Attempted to open firewall ports: %s", ports_to_open)
 
 
-def install_all(no_install_services=False, verbose=None):
-    log_setup(verbose)
+@basic_logging
+def install_all(no_install_services=False):
     logging.debug("Installing all Brokkr external componenets...")
 
     install_config_files()
@@ -184,8 +169,8 @@ def install_all(no_install_services=False, verbose=None):
             install_brokkr_service()
 
 
-def reset_config(config_type="all", verbose=None):
-    log_setup(verbose)
+@basic_logging
+def reset_config(config_type="all"):
     logging.debug("Resetting Brokkr configuration: %s", config_type)
 
     for config, handler in (("log", brokkr.config.log.CONFIG_HANDLER),

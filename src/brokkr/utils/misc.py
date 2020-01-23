@@ -4,9 +4,12 @@ General utility functions for Brokkr.
 
 # Standard library imports
 import collections.abc
+import functools
 import getpass
+import logging
 import os
 import time
+import sys
 
 
 def time_ns():
@@ -30,6 +33,28 @@ START_TIME = monotonic_ns()
 
 def start_time_offset(n_digits=3):
     return round((monotonic_ns() - START_TIME) / 1e9, n_digits)
+
+
+def setup_basic_logging(verbose=None):
+    log_format = "{message}"
+    if verbose is None:
+        logging_level = 99
+    elif verbose:
+        logging_level = "DEBUG"
+        log_format = "{levelname}: ({name}) {message}"
+    else:
+        logging_level = "INFO"
+    logging.basicConfig(stream=sys.stdout, level=logging_level,
+                        format=log_format, style="{")
+
+
+def basic_logging(func):
+    @functools.wraps(func)
+    def _basic_logging(*args, verbose=None, **kwargs):
+        setup_basic_logging(verbose=verbose)
+        value = func(*args, **kwargs)
+        return value
+    return _basic_logging
 
 
 def update_dict_recursive(base, update):
