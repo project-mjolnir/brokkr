@@ -84,7 +84,7 @@ def install_autossh(skip_package_install=False, platform=None):
 
 
 @basic_logging
-def install_brokkr_service(platform=None):
+def install_service(platform=None):
     serviceinstaller.install_service(
         brokkr.config.service.BROKKR_SERVICE_DEFAULTS,
         service_filename=brokkr.config.service.BROKKR_SERVICE_FILENAME,
@@ -95,7 +95,7 @@ def install_brokkr_service(platform=None):
 
 
 @basic_logging
-def install_config_files():
+def install_config():
     logging.debug("Installing log config...")
     brokkr.config.log.CONFIG_HANDLER.read_configs()
     logging.debug("Installing main config...")
@@ -116,7 +116,7 @@ def install_dialout():
 
 
 @basic_logging
-def install_firewall_ports(ports_to_open=PORTS_TO_OPEN):
+def install_firewall(ports_to_open=PORTS_TO_OPEN):
     logging.debug("Opening firewall ports: %s", ports_to_open)
 
     if sys.platform.startswith("linux"):
@@ -157,27 +157,13 @@ def install_firewall_ports(ports_to_open=PORTS_TO_OPEN):
 def install_all(no_install_services=False):
     logging.debug("Installing all Brokkr external componenets...")
 
-    install_config_files()
+    install_config()
 
     if sys.platform.startswith("linux") or sys.platform.startswith("win"):
-        install_firewall_ports()
+        install_firewall()
 
     if sys.platform.startswith("linux"):
         install_dialout()
         if not no_install_services:
             install_autossh()
-            install_brokkr_service()
-
-
-@basic_logging
-def reset_config(config_type="all"):
-    logging.debug("Resetting Brokkr configuration: %s", config_type)
-
-    for config, handler in (("log", brokkr.config.log.CONFIG_HANDLER),
-                            ("main", brokkr.config.main.CONFIG_HANDLER)):
-        if config_type in ("all", config):
-            logging.debug("Restting %s config...", config)
-            for config_subtype in handler.config_types:
-                handler.generate_config(config_subtype)
-
-    logging.info("Reset Brokker configuration: %s", config_type)
+            install_service()
