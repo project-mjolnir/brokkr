@@ -10,6 +10,7 @@ import brokkr.config.base
 
 
 # General static constants
+CONFIG_VERSION = 1
 LOG_FORMAT_DETAILED = ("{asctime}.{msecs:0>3.0f} | {levelname} | {name} | "
                        "{message} (T+{relativeCreated:.0f} ms)")
 DEFAULT_LOG_LEVEL = "INFO"
@@ -46,7 +47,10 @@ DEFAULT_CONFIG = {
     }
 PATH_VARIABLES = (("handlers", "file", "filename"), )
 CONFIG_HANDLER = brokkr.config.base.ConfigHandler(
-    "log", DEFAULT_CONFIG, path_variables=PATH_VARIABLES)
+    "log",
+    defaults=DEFAULT_CONFIG,
+    path_variables=PATH_VARIABLES,
+    )
 
 # Master config dict; currently static
 LOG_CONFIGS = CONFIG_HANDLER.read_configs()

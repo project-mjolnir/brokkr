@@ -20,6 +20,7 @@ import brokkr.utils.misc
 CONFIG_EXTENSIONS = ("toml", "json")
 DEFAULT_CONFIG_DIR = Path().home() / ".config" / "brokkr"
 OVERRIDE_CONFIG = "override_config"
+VERSION_KEY = "config_version"
 EMPTY_CONFIG = ("config_is_empty", True)
 
 ConfigType = collections.namedtuple(
@@ -43,12 +44,14 @@ class ConfigHandler:
                  path_variables=(),
                  config_types=DEFAULT_CONFIG_TYPES,
                  config_dir=DEFAULT_CONFIG_DIR,
+                 config_version=None,
                  ):
         self.name = name
         self.defaults = defaults
         self.path_variables = path_variables
         self.config_types = config_types
         self.config_dir = Path(config_dir)
+        self.config_version = config_version
 
     def get_config_path(self, config_name):
         config_extension = self.config_types[config_name].extension
@@ -66,8 +69,13 @@ class ConfigHandler:
             return
         if config_data is None:
             config_data = self.defaults
-        elif not config_data:
+        elif (not config_data and self.config_version is None
+              and config_extension == "json"):
             config_data = {EMPTY_CONFIG[0]: EMPTY_CONFIG[1]}
+
+        if self.config_version is not None:
+            config_data = {**{VERSION_KEY: self.config_version}, **config_data}
+
         os.makedirs(self.config_dir, exist_ok=True)
         with open(self.get_config_path(config_name), mode="w",
                   encoding="utf-8", newline="\n") as config_file:

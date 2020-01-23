@@ -11,9 +11,9 @@ import brokkr.config.base
 
 
 # General static constants
+CONFIG_VERSION = 1
 OUTPUT_PATH = Path("~") / "data"
 DEFAULT_CONFIG = {
-    "version": 1,
     "general": {
         "ip_sensor": "10.10.10.1",
         "output_path": OUTPUT_PATH.as_posix(),
@@ -43,7 +43,11 @@ DEFAULT_CONFIG = {
     }
 PATH_VARIABLES = (("general", "output_path"), ("monitor", "output_path"))
 CONFIG_HANDLER = brokkr.config.base.ConfigHandler(
-    "main", DEFAULT_CONFIG, path_variables=PATH_VARIABLES)
+    "main",
+    defaults=DEFAULT_CONFIG,
+    path_variables=PATH_VARIABLES,
+    config_version=CONFIG_VERSION,
+    )
 
 logger = logging.getLogger(__name__)
 
