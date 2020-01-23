@@ -16,6 +16,7 @@ OUTPUT_PATH = Path("~") / "data"
 DEFAULT_CONFIG = {
     "general": {
         "ip_sensor": "10.10.10.1",
+        "name_prefix": "hamma",
         "output_path": OUTPUT_PATH.as_posix(),
         },
     "monitor": {
@@ -34,11 +35,6 @@ DEFAULT_CONFIG = {
             "start_offset": 0x0008,
             "unit": 0x01,
             },
-        },
-    "site": {
-        "name_prefix": "hamma",
-        "number": "",
-        "description": "Test Sensor (Default)",
         },
     }
 PATH_VARIABLES = (("general", "output_path"), ("monitor", "output_path"))

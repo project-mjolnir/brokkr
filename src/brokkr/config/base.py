@@ -40,7 +40,7 @@ class ConfigHandler:
 
     def __init__(self,
                  name,
-                 defaults,
+                 defaults=None,
                  path_variables=(),
                  config_types=DEFAULT_CONFIG_TYPES,
                  config_dir=DEFAULT_CONFIG_DIR,
@@ -52,6 +52,9 @@ class ConfigHandler:
         self.config_types = config_types
         self.config_dir = Path(config_dir)
         self.config_version = config_version
+
+        if self.defaults is None:
+            self.defaults = {}
 
     def get_config_path(self, config_name):
         config_extension = self.config_types[config_name].extension

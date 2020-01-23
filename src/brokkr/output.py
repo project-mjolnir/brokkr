@@ -11,6 +11,7 @@ from pathlib import Path
 
 # Local imports
 from brokkr.config.main import CONFIG
+import brokkr.config.unit
 
 
 CSV_PARAMS = {
@@ -27,14 +28,14 @@ logger = logging.getLogger(__name__)
 
 def determine_output_filename(
         output_path=CONFIG["monitor"]["output_path"],
-        prefix=CONFIG["site"]["name_prefix"],
-        site_number=CONFIG["site"]["number"],
+        prefix=CONFIG["general"]["name_prefix"],
+        unit_number=brokkr.config.unit.CONFIG["number"],
         ):
     output_path = (Path(output_path)
-                   / ("{prefix}{site_number}_{date!s}.csv".format(
-                           prefix=prefix,
-                           site_number=site_number,
-                           date=datetime.datetime.utcnow().date())))
+                   / ("{prefix}{unit_number}_{date!s}.csv".format(
+                       prefix=prefix,
+                       unit_number=unit_number,
+                       date=datetime.datetime.utcnow().date())))
     return output_path
 
 

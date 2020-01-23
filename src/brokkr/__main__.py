@@ -100,7 +100,7 @@ def generate_argparser_main():
         help="Manually override automatic platform detection")
     script_parsers.append(parser_install_service)
 
-    # Parser for the reset subcommand
+    # Parser for the configure-reset subcommand
     parser_configure_reset = subparsers.add_parser(
         "configure-reset", help="Reset brokkr-managed configuration files")
     parser_configure_reset.add_argument(
@@ -108,6 +108,20 @@ def generate_argparser_main():
         choices=("all", "main", "log"),
         help="Which config type to reset; by default, resets all of them")
     script_parsers.append(parser_configure_reset)
+
+    # Parser for the configure-unit subcommand
+    parser_configure_unit = subparsers.add_parser(
+        "configure-unit", help="Set up per-unit configuration")
+    parser_configure_unit.add_argument(
+        "number", type=int,
+        help="The unit number of this particular Brokkr client")
+    parser_configure_unit.add_argument(
+        "network_interface",
+        help="The network interface for uplink on particular Brokkr client")
+    parser_configure_unit.add_argument(
+        "--description", default="",
+        help="An optional description of this particular Brokkr client")
+    script_parsers.append(parser_configure_unit)
 
     # Add verbose parameter to all script-like subcommands
     for script_parser in script_parsers:

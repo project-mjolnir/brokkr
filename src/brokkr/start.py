@@ -107,6 +107,11 @@ def start_monitoring(verbose=None, **monitor_args):
 
 
 def start_brokkr(log_level_file=None, log_level_console=None, **monitor_args):
+    # Avoid users trying to start Brokkr without setting up the unit config
+    import brokkr.config.unit
+    if len(brokkr.config.unit.CONFIGS["local"]) <= 1:
+        raise RuntimeError("No unit config file found, exiting.")
+
     # Setup logging
     log_config = setup_full_log_config(
         log_level_file=log_level_file, log_level_console=log_level_console)
@@ -117,7 +122,7 @@ def start_brokkr(log_level_file=None, log_level_console=None, **monitor_args):
     logger.info("Starting Brokkr version %s...", brokkr.__version__)
     if any((log_level_file, log_level_console)):
         logger.info("Using manual log levels: %s (file), %s (console)",
-                     log_level_file, log_level_console)
+                    log_level_file, log_level_console)
     logger.debug("Logging config: %s", log_config)
 
     # Start monitoring system
