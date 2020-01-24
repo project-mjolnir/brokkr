@@ -66,7 +66,7 @@ class ConfigHandler:
             config_name += ("." + config_extension)
         return Path(self.config_dir) / config_name
 
-    def write_config_data(self, config_name, config_data=None):
+    def write_config(self, config_name, config_data=None):
         config_extension = self.config_types[config_name].extension
         if config_extension is None:
             return
@@ -94,7 +94,7 @@ class ConfigHandler:
             config_data = self.defaults
         if self.config_types[config_name].override:
             config_data[OVERRIDE_CONFIG] = False
-        self.write_config_data(config_name, config_data=config_data)
+        self.write_config(config_name, config_data=config_data)
         return config_data
 
     def read_config(self, config_name):
@@ -126,7 +126,11 @@ class ConfigHandler:
             configs[config_name] = self.read_config(config_name)
         return configs
 
-    def render_config(self, configs, remove_override=False):
+    def render_config(self, configs=None, remove_override=False):
+        if configs is None:
+            configs = self.read_configs()
+
+        # Recursively build final config dict from succession of loaded configs
         rendered_config = copy.deepcopy(
             configs[list(self.config_types.keys())[0]])
         for config_name in list(self.config_types.keys())[1:]:
@@ -135,12 +139,16 @@ class ConfigHandler:
                     or configs[config_name].get(OVERRIDE_CONFIG)):
                 rendered_config = brokkr.utils.misc.update_dict_recursive(
                     rendered_config, configs[config_name])
+
+        # Format string paths as pathlib paths with username expanded
         for key_name in self.path_variables:
             inner_dict = rendered_config
             for key in key_name[:-1]:
                 inner_dict = inner_dict[key]
             inner_dict[key_name[-1]] = Path(
                 inner_dict[key_name[-1]]).expanduser()
+
+        # Remove key specifying whether to override the config from the result
         if remove_override:
             try:
                 del rendered_config[OVERRIDE_CONFIG]
