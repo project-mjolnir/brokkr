@@ -1,4 +1,4 @@
-﻿# Brokkr
+# Brokkr
 
 A Python package to receive science data and status information from a local HAMMA2 lightning sensor and a Sunsaver MPPT-15L charge controller, store it locally, and transmit it back to a central server (generally, but not necessarily one running the Sindri package).
 Further, it can maintain a reverse SSH tunnel to an accessible server for remote access, and receive and execute power, processing system and sensor control commands forwarded as custom binary TCP packets over said connection.

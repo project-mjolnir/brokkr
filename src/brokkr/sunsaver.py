@@ -4,6 +4,9 @@ Functions to read data from a Sunsaver MPPT-15L charge controller.
 
 # Standard library imports
 import logging
+import os
+from pathlib import Path
+import time
 
 # Third party imports
 import pymodbus.client.sync
@@ -125,32 +128,46 @@ def read_raw_sunsaver_data(
 
     """
     # Automatically detect serial port to use
-    if not port:
-        port_list = serial.tools.list_ports.comports()
-        if not port_list:
-            logger.error(
-                "Error reading Sunsaver data: No serial devices found.")
-            return None
-        # Match device by PID if provided
-        if pids:
-            for port_object in port_list:
-                logger.debug("Checking serial port %s against pids %s...",
-                             port_object, pids)
-                try:
-                    if port_object.pid in pids:
+    port_list = serial.tools.list_ports.comports()
+    # Ignore built-in ARM serial port
+    port_list = [port_object for port_object in port_list
+                 if not port_object.device.startswith("/dev/ttyAMA")]
+    if not port_list:
+        logger.error(
+            "Error reading Sunsaver data: No serial devices found.")
+        return None
+    # Match device by PID or port if provided
+    if port or pids:
+        for port_object in port_list:
+            logger.debug("Checking serial port %s against port %s, pid %s: %s",
+                         port_object.device, port, pids, port_object.__dict__)
+            try:
+                if (port_object.device == port
+                        or (pids and port_object.pid in pids)):
+                    if port:
+                        logger.debug("Matched serial port %s",
+                                     port_object.device)
+                    if pids:
                         port = port_object.device
                         logger.debug("Matched serial port %s with pid %s",
                                      port_object.device, port_object.pid)
-                        break
-                except Exception as e:  # Ignore any problems reading a device
-                    logger.info("%s checking serial port %s: %s",
-                                type(e).__name__, port_object, e)
-                    logger.debug("Details:", exc_info=1)
-        # If we can't identify a device by pid, just try the first port
-        if not port:
-            port = port_list[0].device
-            logger.debug("Cannot match device by PID; falling back to %s.",
-                         port_list[0])
+                    break
+                elif port_object.pid in pids:
+                    port = port_object.device
+                    break
+            except Exception as e:  # Ignore any problems reading a device
+                logger.debug("%s checking serial port %s: %s",
+                             type(e).__name__, port_object.__dict__, e)
+                logger.debug("Details:", exc_info=1)
+
+    # If we can't identify a device by pid, just try the first port
+    if not port:
+        port_object = port_list[0]
+        port = port_object.device
+        logger.debug("Can't match device by PID or port; falling back to %s",
+                     port)
+        logger.debug("Selected serial device %s: %s",
+                     port, port_object.__dict__)
 
     # Read charge controller data over serial Modbus
     serial_params = {**SERIAL_PARAMS_SUNSAVERMPPT15L, **serial_params}
@@ -158,7 +175,47 @@ def read_raw_sunsaver_data(
         port=port, **serial_params)
     logger.debug("Connecting to client %s", mppt_client)
     try:
-        connect_successful = mppt_client.connect()
+        try:
+            connect_successful = mppt_client.connect()
+        # If connecting to the device fails due to an OS-level problem
+        # e.g. being disconnected previously, attempt to reset it
+        except OSError as e:
+            logger.warning("%s connecting to charge controller device %s; "
+                           "attempting USB reset...", type(e).__name__, port)
+            try:
+                import fcntl
+                USBDEVFS_RESET = 21780
+                usb_num_parts = {}
+                for usb_num_part in ["busnum", "devnum"]:
+                    with open(Path(port_object.usb_device_path) / usb_num_part,
+                              "r", encoding="utf-8") as num_file:
+                        num_raw = num_file.readline()
+                    usb_num_parts[usb_num_part] = num_raw.strip().zfill(3)
+                usb_device_path = "/dev/bus/usb/{busnum}/{devnum}".format(
+                    **usb_num_parts)
+                logger.debug("Resetting USB device at %s", usb_device_path)
+                with open(usb_device_path, "w", os.O_WRONLY) as device_file:
+                    fcntl.ioctl(device_file, USBDEVFS_RESET, 0)
+            # Ignore error loading fcntl if on Windows as it isn't present
+            except ModuleNotFoundError:
+                logger.debug("Ignored error laoding fcntl, likely not present")
+            # Catch and log other exceptions trying to reset serial port
+            except Exception:
+                logger.warning("%s resetting charge controller device %s: %s",
+                               type(e).__name__, port, e)
+                logger.info("Device info: %s",
+                            port_object.__dict__, exc_info=1)
+            else:
+                # If successful, wait to allow the reset to take effect
+                logger.debug("Reset successful; sleeping for 5 s...")
+                for __ in range(5):
+                    time.sleep(1)
+
+            connect_successful = mppt_client.connect()
+            logger.warning("Successfully reset charge controller device %s; "
+                           "original error %s: %s",
+                           port, type(e).__name__, e)
+            logger.info("Device info: %s", port_object.__dict__, exc_info=1)
         if connect_successful:
             try:
                 register_data = mppt_client.read_holding_registers(
@@ -169,7 +226,8 @@ def read_raw_sunsaver_data(
             except Exception as e:
                 logger.error("%s reading register data for %s: %s",
                              type(e).__name__, port, e)
-                logger.info("Details: %s", mppt_client, exc_info=1)
+                logger.info("Device info: %s; Port info: %s",
+                            mppt_client, port_object.__dict__, exc_info=1)
                 return None
             finally:
                 logger.debug("Closing MPPT client connection")
@@ -179,13 +237,15 @@ def read_raw_sunsaver_data(
             logger.error(
                 "Error reading register data: Cannot connect to device %s",
                 port)
-            logger.info("Device info: %s", mppt_client)
+            logger.info("Device info: %s; Port info: %s",
+                        mppt_client, port_object.__dict__)
             return None
         logger.debug("Register data: %s", register_data)
     except Exception as e:
         logger.error("%s connecting to charge controller device %s: %s",
                      type(e).__name__, port, e)
-        logger.info("Details: %s", mppt_client, exc_info=1)
+        logger.info("Device info: %s; Port info: %s",
+                    mppt_client, port_object.__dict__, exc_info=1)
         return None
     return register_data
 

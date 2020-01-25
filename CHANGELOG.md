@@ -1,6 +1,17 @@
 # Brokkr Changelog
 
 
+## Version 0.2.5 (2019-01-24)
+
+Bugfix release with the following change:
+
+* Fix serious persistent error after disconnect/reconnecting charge controller
+* Improve serial port selection alg and ignore built-in ARM serial port
+* Improve logging messages selecting and connecting to serial port
+* Remove spurious Unicode BOM that somehow snuck into README
+
+
+
 ## Version 0.2.4 (2019-01-14)
 
 Bugfix release with the following change:
