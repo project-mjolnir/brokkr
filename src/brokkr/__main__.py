@@ -100,6 +100,11 @@ def generate_argparser_main():
         help="Manually override automatic platform detection")
     script_parsers.append(parser_install_service)
 
+    # Parser for the install-udev subcommand
+    parser_install_udev = subparsers.add_parser(
+        "install-udev", help="Enable full access to USB ports via udev rules")
+    script_parsers.append(parser_install_udev)
+
     # Parser for the configure-reset subcommand
     parser_configure_reset = subparsers.add_parser(
         "configure-reset", help="Reset brokkr-managed configuration files")

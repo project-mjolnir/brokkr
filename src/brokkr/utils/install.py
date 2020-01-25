@@ -4,6 +4,8 @@ Installation commands and utilities for Brokkr.
 
 # Standard library imports
 import logging
+import os
+from pathlib import Path
 import subprocess
 import sys
 
@@ -19,6 +21,7 @@ import brokkr.utils.misc
 from brokkr.utils.misc import basic_logging
 
 
+# General constants
 DISTRO_INSTALL_COMMANDS = (
     lambda package_name: ("apt-get", "-y", "install", package_name),
     lambda package_name: ("dnf", "-y", "install", package_name),
@@ -26,8 +29,8 @@ DISTRO_INSTALL_COMMANDS = (
     lambda package_name: ("pacman", "-S", "--noconfirm", package_name),
     )
 
+# Firewall constants
 PORTS_TO_OPEN = (("8084", "udp"), )
-
 FIREWALL_COMMANDS_LINUX = {
     "firewalld": lambda port, proto: (
         "firewall-cmd", f"--add-port={port}/{proto}"),
@@ -41,7 +44,6 @@ FIREWALL_COMMANDS_LINUX = {
 FIREWALL_COMMANDS_LINUX_AFTER = {
     "firewalld": ("firewall-cmd", "--runtime-to-permanent"),
     }
-
 FIREWALL_COMMANDS_WINDOWS = {
     "netsh": lambda port, proto: (
         "netsh", "advfirewall", "firewall", "add", "rule",
@@ -49,6 +51,15 @@ FIREWALL_COMMANDS_WINDOWS = {
         f"protocol={proto}", f"localport={port}",
         ),
     }
+
+# Udev constants
+UDEV_INSTALL_PATH = Path("etc", "udev", "rules.d")
+UDEV_FILENAME = "10-brokkr-usb.rules"
+UDEV_RULES = """
+# Enable brokkr client to reset and power up/down USB devices
+SUBSYSTEM=="usb", MODE="0660", GROUP="dialout"
+SUBSYSTEM=="usb-serial", MODE="0660", GROUP="dialout"
+"""
 
 
 def install_distro_package(package_name):
@@ -64,6 +75,20 @@ def install_distro_package(package_name):
             return True
     logging.error("Failed to install %s", package_name)
     return False
+
+
+def write_system_config_file(file_contents, filename, output_path):
+    output_path = Path(output_path)
+    os.makedirs(output_path, mode=0o755, exist_ok=True)
+    with open(output_path / filename, "w",
+              encoding="utf-8", newline="\n") as config_file:
+        config_file.write(file_contents)
+    os.chmod(output_path / filename, 0o644)
+    try:
+        os.chown(output_path / filename, 0, 0)
+    except AttributeError:
+        pass  # No chown on Windows
+    return output_path
 
 
 @basic_logging
@@ -154,6 +179,25 @@ def install_firewall(ports_to_open=PORTS_TO_OPEN):
 
 
 @basic_logging
+def install_udev(
+        udev_rules=UDEV_RULES,
+        udev_filename=UDEV_FILENAME,
+        udev_install_path=UDEV_INSTALL_PATH,
+        ):
+    logging.debug("Installing udev rules for USB access...")
+
+    if not sys.platform.startswith("linux"):
+        raise NotImplementedError("Udev rules are only implemented on Linux.")
+
+    write_system_config_file(udev_rules, udev_filename, udev_install_path)
+
+    # Reload udev to update configuration
+    subprocess.run(["udevadm", "control", "--reload-rules"],
+                   timeout=5, check=True)
+    subprocess.run(["udevadm", "trigger"], timeout=5, check=True)
+
+
+@basic_logging
 def install_all(no_install_services=False):
     logging.debug("Installing all Brokkr external componenets...")
 
@@ -164,6 +208,7 @@ def install_all(no_install_services=False):
 
     if sys.platform.startswith("linux"):
         install_dialout()
+        install_udev()
         if not no_install_services:
             install_autossh()
             install_service()
