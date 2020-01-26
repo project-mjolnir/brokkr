@@ -11,7 +11,7 @@ from pathlib import Path
 
 # Local imports
 from brokkr.config.main import CONFIG
-import brokkr.config.unit
+from brokkr.config.unit import UNIT_CONFIG
 
 
 CSV_PARAMS = {
@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 def determine_output_filename(
         output_path=CONFIG["monitor"]["output_path"],
         prefix=CONFIG["general"]["name_prefix"],
-        unit_number=brokkr.config.unit.CONFIG["number"],
+        unit_number=UNIT_CONFIG["number"],
         ):
     output_path = (Path(output_path)
                    / ("{prefix}{unit_number}_{date!s}.csv".format(

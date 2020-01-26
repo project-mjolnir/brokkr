@@ -1,5 +1,5 @@
 """
-Per-unit configuration for Brokkr, loaded first.
+Per-unit configuration for Brokkr, loaded early.
 """
 
 # Local imports
@@ -13,18 +13,15 @@ DEFAULT_CONFIG = {
     "network_interface": "wlan0",
     "description": "",
     }
-CONFIG_TYPES = {
-    **{"default": brokkr.config.base.DEFAULT_CONFIG_TYPES["default"]},
-    **{"local": brokkr.config.base.ConfigType(
-        include_default=False, override=False, extension="toml")},
-    }
+CONFIG_LEVELS = ["default", "local"]
+
 CONFIG_HANDLER = brokkr.config.base.ConfigHandler(
     "unit",
     defaults=DEFAULT_CONFIG,
-    config_types=CONFIG_TYPES,
+    config_levels=CONFIG_LEVELS,
     config_version=CONFIG_VERSION,
     )
 
 # Unit config dict; static
-CONFIGS = CONFIG_HANDLER.read_configs()
-CONFIG = CONFIG_HANDLER.render_config(CONFIGS)
+UNIT_CONFIGS = CONFIG_HANDLER.read_configs()
+UNIT_CONFIG = CONFIG_HANDLER.render_config(UNIT_CONFIGS)

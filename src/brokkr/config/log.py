@@ -13,6 +13,7 @@ import brokkr.config.base
 LOG_FORMAT_DETAILED = ("{asctime}.{msecs:0>3.0f} | {levelname} | {name} | "
                        "{message} (T+{relativeCreated:.0f} ms)")
 DEFAULT_LOG_LEVEL = "INFO"
+
 DEFAULT_CONFIG = {
     "version": 1,
     "disable_existing_loggers": False,
@@ -44,10 +45,13 @@ DEFAULT_CONFIG = {
         "handlers": ["file", "console"],
         },
     }
+CONFIG_LEVELS = ["default", "override"]
 PATH_VARIABLES = (("handlers", "file", "filename"), )
+
 CONFIG_HANDLER = brokkr.config.base.ConfigHandler(
     "log",
     defaults=DEFAULT_CONFIG,
+    config_levels=CONFIG_LEVELS,
     path_variables=PATH_VARIABLES,
     )
 

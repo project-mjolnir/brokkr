@@ -121,6 +121,8 @@ def install_service(platform=None):
 
 @basic_logging
 def install_config():
+    logging.debug("Installing unit config...")
+    brokkr.config.unit.CONFIG_HANDLER.read_configs()
     logging.debug("Installing log config...")
     brokkr.config.log.CONFIG_HANDLER.read_configs()
     logging.debug("Installing main config...")

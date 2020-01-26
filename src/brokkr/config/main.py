@@ -11,8 +11,9 @@ import brokkr.config.base
 
 
 # General static constants
-CONFIG_VERSION = 1
 OUTPUT_PATH = Path("~") / "data"
+
+CONFIG_VERSION = 1
 DEFAULT_CONFIG = {
     "general": {
         "ip_sensor": "10.10.10.1",
@@ -37,10 +38,13 @@ DEFAULT_CONFIG = {
             },
         },
     }
+CONFIG_LEVELS = ["default", "remote", "override"]
 PATH_VARIABLES = (("general", "output_path"), ("monitor", "output_path"))
+
 CONFIG_HANDLER = brokkr.config.base.ConfigHandler(
     "main",
     defaults=DEFAULT_CONFIG,
+    config_levels=CONFIG_LEVELS,
     path_variables=PATH_VARIABLES,
     config_version=CONFIG_VERSION,
     )

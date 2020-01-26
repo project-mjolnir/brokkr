@@ -113,9 +113,9 @@ def generate_argparser_main():
         choices=("all", "main", "log", "unit"),
         help="Which config names to reset; by default, resets all of them")
     parser_configure_reset.add_argument(
-        "--config-types", nargs="?", default="all",
+        "--config-levels", nargs="?", default="all",
         choices=("all", "remote", "local"),
-        help="Which config types to reset; by default, resets all of them")
+        help="Which config levels to reset; by default, resets all of them")
     script_parsers.append(parser_configure_reset)
 
     # Parser for the configure-unit subcommand

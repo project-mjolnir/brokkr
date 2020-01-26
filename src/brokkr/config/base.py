@@ -3,7 +3,6 @@ Baseline hiearchical configuration setup functions for Brokkr.
 """
 
 # Standard library imports
-import collections
 import copy
 import json
 import os
@@ -23,95 +22,123 @@ OVERRIDE_CONFIG = "override_config"
 VERSION_KEY = "config_version"
 EMPTY_CONFIG = ("config_is_empty", True)
 
-ConfigType = collections.namedtuple(
-    'ConfigType', ("include_default", "override", "extension"))
 
-DEFAULT_CONFIG_TYPES = {
-    "default": ConfigType(
-        include_default=True, override=False, extension=None),
-    "remote": ConfigType(
-        include_default=False, override=False, extension="json"),
-    "local": ConfigType(
-        include_default=True, override=True, extension="toml"),
+# Configuration level types
+CONFIG_PRESETS = {
+    "default": {"include_defaults": True, "extension": None},
+    "remote": {"extension": "json"},
+    "local": {},
+    "override": {"include_defaults": True, "override": True},
     }
 
 
-class ConfigHandler:
-
-    def __init__(self,
-                 name,
-                 defaults=None,
-                 path_variables=(),
-                 config_types=DEFAULT_CONFIG_TYPES,
-                 config_dir=DEFAULT_CONFIG_DIR,
-                 config_version=None,
-                 ):
+# Python 3.7: Replace with a dataclass
+class ConfigLevel:
+    def __init__(
+            self,
+            name,
+            append_name=True,
+            extension="toml",
+            path=None,
+            include_defaults=False,
+            override=False,
+            managed=True
+            ):
+        if path is not None:
+            path = Path(path)
         self.name = name
-        self.defaults = defaults
-        self.path_variables = path_variables
-        self.config_types = config_types
+        self.append_name = append_name
+        self.extension = extension
+        self.path = path
+        self.include_defaults = include_defaults
+        self.override = override
+        self.managed = managed
+
+
+class ConfigHandler:
+    def __init__(
+            self,
+            name,
+            defaults=None,
+            config_levels=("default", "local"),
+            config_dir=DEFAULT_CONFIG_DIR,
+            config_version=None,
+            path_variables=(),
+            ):
+        self.name = name
+        self.defaults = defaults if defaults is not None else {}
         self.config_dir = Path(config_dir)
         self.config_version = config_version
+        self.path_variables = path_variables
 
-        if self.defaults is None:
-            self.defaults = {}
+        # Set up preset config levels
+        self.config_levels = {}
+        for config_level in config_levels:
+            if not isinstance(config_level, ConfigLevel):
+                config_level = ConfigLevel(
+                    config_level, **CONFIG_PRESETS[config_level])
+            self.config_levels[config_level.name] = config_level
 
     def get_config_path(self, config_name):
-        config_extension = self.config_types[config_name].extension
-        if config_extension is None:
+        config_level = self.config_levels[config_name]
+        if config_level.extension is None:
             return None
-        if self.name not in config_name:
+        config_path = (config_level.path if config_level.path is not None
+                       else self.config_dir)
+        if config_level.append_name and self.name not in config_name:
             config_name = "_".join((self.name, config_name))
-        if "." not in config_name:
-            config_name += ("." + config_extension)
-        return Path(self.config_dir) / config_name
+        if config_name.split(".")[-1] != config_level.extension:
+            config_name += ("." + config_level.extension)
+        return Path(config_path / config_name)
 
-    def write_config(self, config_name, config_data=None):
-        config_extension = self.config_types[config_name].extension
-        if config_extension is None:
-            return
-        if config_data is None:
-            config_data = self.defaults
-        elif (not config_data and self.config_version is None
-              and config_extension == "json"):
-            config_data = {EMPTY_CONFIG[0]: EMPTY_CONFIG[1]}
-
-        if self.config_version is not None:
-            config_data = {**{VERSION_KEY: self.config_version}, **config_data}
-
-        os.makedirs(self.config_dir, exist_ok=True)
-        with open(self.get_config_path(config_name), mode="w",
+    def write_config(self, config_name, config_data):
+        config_path_full = self.get_config_path(config_name)
+        os.makedirs(config_path_full.parent, exist_ok=True)
+        with open(config_path_full, mode="w",
                   encoding="utf-8", newline="\n") as config_file:
-            if config_extension == "toml":
+            if self.config_levels[config_name].extension == "toml":
                 toml.dump(config_data, config_file)
-            elif config_extension == "json":
+            elif self.config_levels[config_name].extension == "json":
                 json.dump(config_data, config_file,
                           allow_nan=False, separators=(",", ":"))
+        return config_path_full
 
-    def generate_config(self, config_name):
-        config_data = {}
-        if self.config_types[config_name].include_default:
-            config_data = self.defaults
-        if self.config_types[config_name].override:
-            config_data[OVERRIDE_CONFIG] = False
-        self.write_config(config_name, config_data=config_data)
+    def generate_config(self, config_name, config_data=None):
+        config_level = self.config_levels[config_name]
+        if config_data is None:
+            config_data = (
+                self.defaults if config_level.include_defaults else {})
+        if self.config_levels[config_name].override:
+            config_data[OVERRIDE_CONFIG] = {
+                **{OVERRIDE_CONFIG: False}, **config_data}
+        if self.config_version is not None:
+            config_data = {**{VERSION_KEY: self.config_version}, **config_data}
+        # Prevent JSON errors from serializing/deserializing empty dict
+        if not config_data:
+            config_data = {EMPTY_CONFIG[0]: EMPTY_CONFIG[1]}
+
+        self.write_config(config_name, config_data)
         return config_data
 
     def read_config(self, config_name):
-        config_extension = self.config_types[config_name].extension
-        if config_extension is None:
+        config_level = self.config_levels[config_name]
+        if config_level.extension is None:
             return copy.deepcopy(self.defaults)
         try:
-            if config_extension == "toml":
+            if config_level.extension == "toml":
                 initial_config = toml.load(self.get_config_path(config_name))
-            elif config_extension == "json":
+            elif config_level.extension == "json":
                 with open(self.get_config_path(config_name), mode="r",
                           encoding="utf-8") as config_file:
                     initial_config = json.load(config_file)
-        # Generate config_name file if it does not yet exist.
+        # Generate or ignore config_name file if it does not yet exist
         except FileNotFoundError:
-            initial_config = self.generate_config(config_name)
-        # Delete empty config key if found to avoid unreadable empty JSONs
+            if config_level.managed:
+                initial_config = self.generate_config(config_name)
+            else:
+                initial_config = {}
+
+        # Delete empty config key, added to avoid unreadable empty JSONs
         try:
             del initial_config[EMPTY_CONFIG[0]]
         except KeyError:
@@ -121,7 +148,7 @@ class ConfigHandler:
     def read_configs(self, config_names=None):
         configs = {}
         if config_names is None:
-            config_names = self.config_types.keys()
+            config_names = self.config_levels.keys()
         for config_name in config_names:
             configs[config_name] = self.read_config(config_name)
         return configs
@@ -132,10 +159,10 @@ class ConfigHandler:
 
         # Recursively build final config dict from succession of loaded configs
         rendered_config = copy.deepcopy(
-            configs[list(self.config_types.keys())[0]])
-        for config_name in list(self.config_types.keys())[1:]:
+            configs[list(self.config_levels.keys())[0]])
+        for config_name in list(self.config_levels.keys())[1:]:
             if configs[config_name] and (
-                    not self.config_types[config_name].override
+                    not self.config_levels[config_name].override
                     or configs[config_name].get(OVERRIDE_CONFIG)):
                 rendered_config = brokkr.utils.misc.update_dict_recursive(
                     rendered_config, configs[config_name])
