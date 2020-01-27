@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Main command handling routine for running brokkr on the command line.
+Main-level command handling routine for running brokkr on the command line.
 """
 
 # Standard library imports
@@ -141,37 +141,61 @@ def generate_argparser_main():
     return parser_main
 
 
-def main():
+def parse_args(sys_argv=None):
     parser_main = generate_argparser_main()
-    parsed_args = parser_main.parse_args()
+    if sys_argv is None:
+        parsed_args = parser_main.parse_args()
+    else:
+        parsed_args = parser_main.parse_args(sys_argv)
+
+    # Get, format and remove subcommand
     subcommand = getattr(parsed_args, "subcommand_name", None)
     subcommand = (subcommand.replace("-", "_")
-                  if subcommand is not None else subcommand)
-
+                  if subcommand is not None else "")
     try:
         delattr(parsed_args, "subcommand_name")
     except Exception:  # Ignore any problem deleting the arg
         pass
 
-    if getattr(parsed_args, "version", None) or subcommand == "version":
+    # Override subcomamnd with version if passed
+    if getattr(parsed_args, "version", None):
+        subcommand = "version"
+
+    # Delete unneeded individual args
+    for arg_todelete in ["version", "subcommand_name"]:
+        try:
+            delattr(parsed_args, arg_todelete)
+        except Exception:  # Ignore any problem deleting the arg
+            pass
+
+    return subcommand, parsed_args
+
+
+def dispatch_command(subcommand, parsed_args):
+    if subcommand == "version":
         import brokkr
         print("Brokkr version " + str(brokkr.__version__))
     elif subcommand == "help":
-        parser_main.print_help()
+        generate_argparser_main().print_help()
     elif subcommand == "start":
         import brokkr.start
-        brokkr.start.start_brokkr(**vars(parsed_args))
+        brokkr.start.start_brokkr(**parsed_args)
     elif subcommand == "monitor":
         import brokkr.start
-        brokkr.start.start_monitoring(**vars(parsed_args))
+        brokkr.start.start_monitoring(**parsed_args)
     elif subcommand.startswith("install_"):
         import brokkr.utils.install
-        getattr(brokkr.utils.install, subcommand)(**vars(parsed_args))
+        getattr(brokkr.utils.install, subcommand)(**parsed_args)
     elif subcommand.startswith("configure_"):
         import brokkr.utils.configure
-        getattr(brokkr.utils.configure, subcommand)(**vars(parsed_args))
+        getattr(brokkr.utils.configure, subcommand)(**parsed_args)
     else:
-        parser_main.print_usage()
+        generate_argparser_main().print_usage()
+
+
+def main():
+    subcommand, parsed_args = parse_args()
+    dispatch_command(subcommand, vars(parsed_args))
 
 
 if __name__ == "__main__":

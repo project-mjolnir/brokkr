@@ -43,7 +43,7 @@ setuptools.setup(
         ],
     entry_points={
         "console_scripts": [
-            f"{PROJECT_NAME}={PROJECT_NAME}.utils.cli:main"]
+            f"{PROJECT_NAME}={PROJECT_NAME}.__main__:main"]
         },
     classifiers=[
         "Development Status :: 3 - Alpha",
