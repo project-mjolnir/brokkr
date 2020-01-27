@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Main-level command handling routine for running brokkr on the command line.
+Main command handling routine for running brokkr on the command line.
 """
 
 # Standard library imports
