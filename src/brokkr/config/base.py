@@ -144,10 +144,20 @@ class ConfigHandler:
         elif source["type"] == TYPE_CLI_ARGS:
             args = vars(brokkr.utils.cli.generate_argparser_main()
                         .parse_args())
-        for src_key, config_key in source["mapping"].items():
+        for src_key, config_keys in source["mapping"].items():
             config_value = args.get(src_key, None)
+
+            # Recursively set config keys
             if config_value is not None:
-                initial_config[config_key] = config_value
+                inner_dict = initial_config
+                for config_section in config_keys[:-1]:
+                    try:
+                        inner_dict = inner_dict[config_section]
+                    except KeyError:
+                        inner_dict[config_section] = {}
+                        inner_dict = inner_dict[config_section]
+                inner_dict[config_keys[-1]] = config_value
+
         return initial_config
 
     def _read_config_file(self, source):
