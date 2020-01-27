@@ -45,7 +45,7 @@ DEFAULT_CONFIG = {
         "handlers": ["file", "console"],
         },
     }
-CONFIG_LEVELS = ["default", "override"]
+CONFIG_LEVELS = ["defaults", "override"]
 PATH_VARIABLES = (("handlers", "file", "filename"), )
 
 CONFIG_HANDLER = brokkr.config.base.ConfigHandler(

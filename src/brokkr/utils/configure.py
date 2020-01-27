@@ -29,8 +29,9 @@ def configure_reset(config_names=ALL_RESET, config_levels=ALL_RESET):
         if config_names == ALL_RESET or config in config_names:
             for type_name, type_obj in handler.config_levels.items():
                 if ((config_levels == ALL_RESET or type_name in config_levels)
-                        and type_obj.extension is not None
-                        and type_obj.managed):
+                        and type_obj.source["type"] == (
+                            brokkr.config.base.TYPE_FILE)
+                        and type_obj.source.get("managed", True)):
                     logging.debug("Resetting %s configuration for %s",
                                   type_name, config)
                     handler.generate_config(type_name)

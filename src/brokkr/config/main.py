@@ -38,7 +38,7 @@ DEFAULT_CONFIG = {
             },
         },
     }
-CONFIG_LEVELS = ["default", "remote", "override"]
+CONFIG_LEVELS = ["defaults", "remote", "override"]
 PATH_VARIABLES = (("general", "output_path"), ("monitor", "output_path"))
 
 CONFIG_HANDLER = brokkr.config.base.ConfigHandler(

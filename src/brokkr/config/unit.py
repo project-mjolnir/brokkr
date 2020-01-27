@@ -13,7 +13,7 @@ DEFAULT_CONFIG = {
     "network_interface": "wlan0",
     "description": "",
     }
-CONFIG_LEVELS = ["default", "local"]
+CONFIG_LEVELS = ["defaults", "local"]
 
 CONFIG_HANDLER = brokkr.config.base.ConfigHandler(
     "unit",

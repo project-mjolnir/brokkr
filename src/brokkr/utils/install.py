@@ -17,6 +17,7 @@ import brokkr.config.autossh
 import brokkr.config.log
 import brokkr.config.main
 import brokkr.config.service
+import brokkr.config.unit
 import brokkr.utils.misc
 from brokkr.utils.misc import basic_logging
 
