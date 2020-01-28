@@ -128,8 +128,9 @@ def install_config():
     brokkr.config.log.CONFIG_HANDLER.read_configs()
     logging.debug("Installing main config...")
     brokkr.config.main.CONFIG_HANDLER.read_configs()
-    logging.info("Config files installed to %r",
-                 brokkr.config.main.CONFIG_HANDLER.config_dir)
+    logging.info(
+        "Config files installed to %r",
+        brokkr.config.main.CONFIG_HANDLER.default_config_path.as_posix())
 
 
 @basic_logging

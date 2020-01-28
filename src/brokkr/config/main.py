@@ -38,7 +38,7 @@ DEFAULT_CONFIG = {
             },
         },
     }
-CONFIG_LEVELS = ["defaults", "remote", "override"]
+CONFIG_LEVELS = ["defaults", "remote", "local"]
 PATH_VARIABLES = (("general", "output_path"), ("monitor", "output_path"))
 
 CONFIG_HANDLER = brokkr.config.base.ConfigHandler(
@@ -53,7 +53,7 @@ logger = logging.getLogger(__name__)
 
 
 logger.debug("Reading Brokkr config at %r",
-             CONFIG_HANDLER.config_dir.as_posix())
+             CONFIG_HANDLER.default_config_path.as_posix())
 
 # Master config dict; currently static
 CONFIGS = CONFIG_HANDLER.read_configs()

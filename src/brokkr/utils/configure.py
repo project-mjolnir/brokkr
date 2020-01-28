@@ -20,23 +20,25 @@ ALL_CONFIG_HANDLERS = {
     }
 
 ALL_RESET = "all"
-UNIT_CONFIG_LEVEL_MAIN = "local"
+UNIT_CONFIG_LEVEL = "local"
 
 
 @basic_logging
-def configure_reset(config_names=ALL_RESET, config_levels=ALL_RESET):
-    for config, handler in ALL_CONFIG_HANDLERS.items():
-        if config_names == ALL_RESET or config in config_names:
-            for type_name, type_obj in handler.config_levels.items():
-                if ((config_levels == ALL_RESET or type_name in config_levels)
-                        and type_obj.source["type"] == (
-                            brokkr.config.base.TYPE_FILE)
-                        and type_obj.source.get("managed", True)):
-                    logging.debug("Resetting %s configuration for %s",
-                                  type_name, config)
-                    handler.generate_config(type_name)
+def configure_reset(reset_names=ALL_RESET, reset_levels=ALL_RESET):
+    for config_name, handler in ALL_CONFIG_HANDLERS.items():
+        if reset_names == ALL_RESET or config_name in reset_names:
+            for level_name, level_source in handler.config_levels.items():
+                if reset_levels == ALL_RESET or level_name in reset_levels:
+                    try:
+                        if level_source._create:
+                            logging.debug("Resetting %s configuration for %s",
+                                          level_name, config_name)
+                            level_source.write_config()
+                    # Ignore levels that don't have the create attribute
+                    except AttributeError:
+                        pass
 
-    logging.info("Reset %s configuration for %s", config_levels, config_names)
+    logging.info("Reset %s configuration for %s", reset_levels, reset_names)
 
 
 @basic_logging
@@ -47,8 +49,8 @@ def configure_unit(number, network_interface, description=""):
         "description": description,
         }
     logging.debug("Setting up unit config with data: %r", unit_config)
-    brokkr.config.unit.CONFIG_HANDLER.generate_config(
-        config_name=UNIT_CONFIG_LEVEL_MAIN, config_data=unit_config)
+    unit_config_handler = brokkr.config.unit.CONFIG_HANDLER
+    unit_config_handler.config_levels[UNIT_CONFIG_LEVEL].write_config()
     logging.info("Unit config files updated in %r",
-                 brokkr.config.unit.CONFIG_HANDLER.config_dir)
+                 unit_config_handler.config_levels[UNIT_CONFIG_LEVEL]._path)
     return unit_config

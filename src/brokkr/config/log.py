@@ -45,7 +45,7 @@ DEFAULT_CONFIG = {
         "handlers": ["file", "console"],
         },
     }
-CONFIG_LEVELS = ["defaults", "override"]
+CONFIG_LEVELS = ["defaults", "local"]
 PATH_VARIABLES = (("handlers", "file", "filename"), )
 
 CONFIG_HANDLER = brokkr.config.base.ConfigHandler(
@@ -58,4 +58,4 @@ CONFIG_HANDLER = brokkr.config.base.ConfigHandler(
 # Master config dict; currently static
 LOG_CONFIGS = CONFIG_HANDLER.read_configs()
 
-LOG_CONFIG = CONFIG_HANDLER.render_config(LOG_CONFIGS, remove_override=True)
+LOG_CONFIG = CONFIG_HANDLER.render_config(LOG_CONFIGS)

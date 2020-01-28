@@ -109,11 +109,11 @@ def generate_argparser_main():
     parser_configure_reset = subparsers.add_parser(
         "configure-reset", help="Reset brokkr-managed configuration files")
     parser_configure_reset.add_argument(
-        "--config-names", nargs="?", default="all",
+        "--reset-names", nargs="?", default="all",
         choices=("all", "main", "log", "unit"),
         help="Which config names to reset; by default, resets all of them")
     parser_configure_reset.add_argument(
-        "--config-levels", nargs="?", default="all",
+        "--reset-levels", nargs="?", default="all",
         choices=("all", "remote", "local"),
         help="Which config levels to reset; by default, resets all of them")
     script_parsers.append(parser_configure_reset)
