@@ -46,9 +46,9 @@ def configure_unit(number, network_interface, description=""):
         "network_interface": network_interface,
         "description": description,
         }
-    logging.debug("Setting up unit config...")
+    logging.debug("Setting up unit config with data: %r", unit_config)
     brokkr.config.unit.CONFIG_HANDLER.generate_config(
         config_name=UNIT_CONFIG_LEVEL_MAIN, config_data=unit_config)
-    logging.info("Unit config files updated in %s",
+    logging.info("Unit config files updated in %r",
                  brokkr.config.unit.CONFIG_HANDLER.config_dir)
     return unit_config

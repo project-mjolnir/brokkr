@@ -52,12 +52,12 @@ CONFIG_HANDLER = brokkr.config.base.ConfigHandler(
 logger = logging.getLogger(__name__)
 
 
-logger.debug("Reading Brokkr config at %s",
+logger.debug("Reading Brokkr config at %r",
              CONFIG_HANDLER.config_dir.as_posix())
 
 # Master config dict; currently static
 CONFIGS = CONFIG_HANDLER.read_configs()
-logger.debug("Loaded config: %s", CONFIGS)
+logger.debug("Loaded config: %r", CONFIGS)
 
 CONFIG = CONFIG_HANDLER.render_config(CONFIGS)
-logger.info("Rendered config: %s", CONFIG)
+logger.info("Rendered config: %r", CONFIG)

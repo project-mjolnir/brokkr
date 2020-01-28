@@ -140,41 +140,33 @@ def read_raw_sunsaver_data(
     # Match device by PID or port if provided
     if port or pids:
         for port_object in port_list:
-            logger.debug("Checking serial port %s against port %s, pid %s: %s",
-                         port_object.device, port, pids, port_object.__dict__)
+            logger.debug("Checking serial device %s against port %r, pid %r",
+                         port_object, port, pids)
+            logger.debug("Device details: %r", port_object.__dict__)
             try:
                 if (port_object.device == port
                         or (pids and port_object.pid in pids)):
-                    if port:
-                        logger.debug("Matched serial port %s",
-                                     port_object.device)
-                    if pids:
-                        port = port_object.device
-                        logger.debug("Matched serial port %s with pid %s",
-                                     port_object.device, port_object.pid)
-                    break
-                elif port_object.pid in pids:
-                    port = port_object.device
+                    logger.debug("Matched serial device %s with pid %r",
+                                 port_object, port_object.pid)
                     break
             except Exception as e:  # Ignore any problems reading a device
-                logger.debug("%s checking serial port %s: %s",
-                             type(e).__name__, port_object.__dict__, e)
-                logger.debug("Details:", exc_info=1)
-
+                logger.debug("%s checking serial device %s: %s",
+                             type(e).__name__, port_object, e)
+                logger.debug("Error details:", exc_info=1)
+                logger.debug("Device details: %r", port_object.__dict__)
     # If we can't identify a device by pid, just try the first port
-    if not port:
+    else:
         port_object = port_list[0]
-        port = port_object.device
         logger.debug("Can't match device by PID or port; falling back to %s",
-                     port)
-        logger.debug("Selected serial device %s: %s",
-                     port, port_object.__dict__)
+                     port_object)
+        logger.debug("Device details: %r", port_object.__dict__)
 
     # Read charge controller data over serial Modbus
     serial_params = {**SERIAL_PARAMS_SUNSAVERMPPT15L, **serial_params}
     mppt_client = pymodbus.client.sync.ModbusSerialClient(
-        port=port, **serial_params)
-    logger.debug("Connecting to client %s", mppt_client)
+        port=port_object.device, **serial_params)
+    logger.debug("Connecting to client %r", mppt_client)
+    logger.debug("Client details: %r", mppt_client.__dict__)
     try:
         try:
             connect_successful = mppt_client.connect()
@@ -182,7 +174,8 @@ def read_raw_sunsaver_data(
         # e.g. being disconnected previously, attempt to reset it
         except OSError as e:
             logger.warning("%s connecting to charge controller device %s; "
-                           "attempting USB reset...", type(e).__name__, port)
+                           "attempting USB reset...",
+                           type(e).__name__, port_object)
             try:
                 import fcntl
                 USBDEVFS_RESET = 21780
@@ -194,18 +187,18 @@ def read_raw_sunsaver_data(
                     usb_num_parts[usb_num_part] = num_raw.strip().zfill(3)
                 usb_device_path = "/dev/bus/usb/{busnum}/{devnum}".format(
                     **usb_num_parts)
-                logger.debug("Resetting USB device at %s", usb_device_path)
+                logger.debug("Resetting USB device at %r", usb_device_path)
                 with open(usb_device_path, "w", os.O_WRONLY) as device_file:
                     fcntl.ioctl(device_file, USBDEVFS_RESET, 0)
             # Ignore error loading fcntl if on Windows as it isn't present
             except ModuleNotFoundError:
-                logger.debug("Ignored error laoding fcntl, likely not present")
+                logger.debug("Ignored error loading fcntl, likely not present")
             # Catch and log other exceptions trying to reset serial port
             except Exception:
                 logger.warning("%s resetting charge controller device %s: %s",
-                               type(e).__name__, port, e)
-                logger.info("Device info: %s",
-                            port_object.__dict__, exc_info=1)
+                               type(e).__name__, port_object, e)
+                logger.info("Error details:", exc_info=1)
+                logger.info("Device details: %r", port_object.__dict__)
             else:
                 # If successful, wait to allow the reset to take effect
                 logger.debug("Reset successful; sleeping for 5 s...")
@@ -215,8 +208,10 @@ def read_raw_sunsaver_data(
             connect_successful = mppt_client.connect()
             logger.warning("Successfully reset charge controller device %s; "
                            "original error %s: %s",
-                           port, type(e).__name__, e)
-            logger.info("Device info: %s", port_object.__dict__, exc_info=1)
+                           port_object, type(e).__name__, e)
+            logger.info("Error details:", exc_info=1)
+            logger.info("Device details: %r", port_object.__dict__)
+            logger.info("Client details: %r", mppt_client.__dict__)
         if connect_successful:
             try:
                 register_data = mppt_client.read_holding_registers(
@@ -226,9 +221,10 @@ def read_raw_sunsaver_data(
             # Catch and log errors reading register data
             except Exception as e:
                 logger.error("%s reading register data for %s: %s",
-                             type(e).__name__, port, e)
-                logger.info("Device info: %s; Port info: %s",
-                            mppt_client, port_object.__dict__, exc_info=1)
+                             type(e).__name__, port_object, e)
+                logger.info("Error details:", exc_info=1)
+                logger.info("Device details: %r", port_object.__dict__)
+                logger.info("Client details: %r", mppt_client.__dict__)
                 return None
             finally:
                 logger.debug("Closing MPPT client connection")
@@ -237,16 +233,17 @@ def read_raw_sunsaver_data(
             # Raise an error if connect not successful
             logger.error(
                 "Error reading register data: Cannot connect to device %s",
-                port)
-            logger.info("Device info: %s; Port info: %s",
-                        mppt_client, port_object.__dict__)
+                port_object)
+            logger.info("Device details: %r", port_object.__dict__)
+            logger.info("Client details: %r", mppt_client.__dict__)
             return None
         logger.debug("Register data: %s", register_data)
     except Exception as e:
         logger.error("%s connecting to charge controller device %s: %s",
-                     type(e).__name__, port, e)
-        logger.info("Device info: %s; Port info: %s",
-                    mppt_client, port_object.__dict__, exc_info=1)
+                     type(e).__name__, port_object, e)
+        logger.info("Error details:", exc_info=1)
+        logger.info("Device details: %r", port_object.__dict__)
+        logger.info("Client details: %r", mppt_client.__dict__)
         return None
     return register_data
 
@@ -292,15 +289,15 @@ def decode_sunsaver_data(
             # Catch any conversion errors and return NA
             except Exception as e:
                 if error_count < 1:
-                    logger.warning("%s decoding %s register data %s to %s: %s",
-                                   type(e).__name__, var_name,
-                                   register_val, var_type, e)
-                    logger.info("Details:", exc_info=1)
+                    logger.warning(
+                        "%s decoding data %r for register %r to %s: %s",
+                        type(e).__name__, register_val, var_name, var_type, e)
+                    logger.info("Error details:", exc_info=1)
                 else:
-                    logger.info("%s decoding %s register data %s to %s: %s",
-                                type(e).__name__, var_name,
-                                register_val, var_type, e)
-                    logger.debug("Details:", exc_info=1)
+                    logger.info(
+                        "%s decoding data %r for register %r to %s: %s",
+                        type(e).__name__, register_val, var_name, var_type, e)
+                    logger.debug("Error details:", exc_info=1)
 
                 sunsaver_data[var_name] = na_marker
                 last_hi = None
@@ -308,9 +305,10 @@ def decode_sunsaver_data(
     # Catch overall errrors, e.g. modbus exceptions
     except Exception as e:
         if register_data is not None:
-            logger.error("%s decoding register data %s: %s",
-                         type(e).__name__, register_data, e)
-            logger.info("Details:", exc_info=1)
+            logger.error("%s decoding register data: %s",
+                         type(e).__name__, e)
+            logger.info("Error details:", exc_info=1)
+            logger.info("Register data: %r", register_data)
         sunsaver_data = {
             var_name.lower().replace("_lo", "").replace("_lo_", "_"): na_marker
             for var_name, var_type in register_variables

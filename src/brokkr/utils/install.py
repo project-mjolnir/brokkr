@@ -128,7 +128,7 @@ def install_config():
     brokkr.config.log.CONFIG_HANDLER.read_configs()
     logging.debug("Installing main config...")
     brokkr.config.main.CONFIG_HANDLER.read_configs()
-    logging.info("Config files installed to %s",
+    logging.info("Config files installed to %r",
                  brokkr.config.main.CONFIG_HANDLER.config_dir)
 
 
@@ -145,7 +145,7 @@ def install_dialout():
 
 @basic_logging
 def install_firewall(ports_to_open=PORTS_TO_OPEN):
-    logging.debug("Opening firewall ports: %s", ports_to_open)
+    logging.debug("Opening firewall ports: %r", ports_to_open)
 
     if sys.platform.startswith("linux"):
         firewall_commands = FIREWALL_COMMANDS_LINUX
@@ -165,7 +165,8 @@ def install_firewall(ports_to_open=PORTS_TO_OPEN):
                 logging.debug("%s not found on system.", name)
             except Exception:
                 logging.info("Error running %s ignored.", name)
-                logging.debug("Details:", exc_info=True)
+                logging.debug("Error details:", exc_info=True)
+                logging.debug("Command invocation: %s", " ".join(command))
 
     if sys.platform.startswith("linux"):
         for name, command in FIREWALL_COMMANDS_LINUX_AFTER.items():
@@ -176,9 +177,10 @@ def install_firewall(ports_to_open=PORTS_TO_OPEN):
                 logging.debug("%s not found on system.", name)
             except Exception:
                 logging.info("Error running followup %s ignored.", name)
-                logging.debug("Details:", exc_info=True)
+                logging.debug("Error details:", exc_info=True)
+                logging.debug("Command invocation: %s", " ".join(command))
 
-    logging.info("Attempted to open firewall ports: %s", ports_to_open)
+    logging.info("Attempted to open firewall ports: %r", ports_to_open)
 
 
 @basic_logging

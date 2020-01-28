@@ -53,19 +53,20 @@ def write_line_csv(data, out_file, **csv_params):
         if not data_csv.tell():
             csv_writer.writeheader()
         csv_writer.writerow(data)
-        logger.debug("Monitoring data successfully written to CSV")
+        logger.debug("Monitoring data successfully written to CSV at %r",
+                     out_file)
         return True
     except Exception as e:
-        logger.error("%s writing monitoring data to local CSV at %s: %s",
+        logger.error("%s writing monitoring data to local CSV at %r: %s",
                      type(e).__name__, out_file, e)
-        logger.info("Details:", exc_info=1)
-        logger.info("Attempted to write data: %s", data)
+        logger.info("Error details:", exc_info=1)
+        logger.info("Data details: %r", data)
         return False
     finally:
         if close_file:
             try:
                 data_csv.close()
             except Exception as e:
-                logger.warning("%s attempting to close monitoring CSV %s: %s",
+                logger.warning("%s attempting to close monitoring CSV %r: %s",
                                type(e).__name__, out_file, e)
-                logger.info("Details:", exc_info=1)
+                logger.info("Error details:", exc_info=1)

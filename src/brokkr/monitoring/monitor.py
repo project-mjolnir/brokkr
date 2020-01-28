@@ -30,7 +30,7 @@ def get_status_data(status_data_items=None):
             status_data.update(output_data)
         else:
             status_data[item_name] = output_data
-    logger.debug("Status data: %s", status_data)
+    logger.debug("Status data: %r", status_data)
     return status_data
 
 
@@ -39,7 +39,7 @@ def write_status_data(status_data,
     output_path = Path(output_path)
     if not output_path.suffix:
         output_path = brokkr.output.determine_output_filename(output_path)
-    logger.debug("Writing monitoring output to file: %s",
+    logger.debug("Writing monitoring output to file: %r",
                  output_path.as_posix())
     brokkr.output.write_line_csv(status_data, output_path)
     return status_data
