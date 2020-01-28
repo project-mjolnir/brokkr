@@ -41,6 +41,7 @@ CONFIG_PRESETS = {
 
 
 # Python 3.7: Replace with a dataclass
+@brokkr.utils.misc.auto_repr
 class ConfigLevel:
     def __init__(
             self,
@@ -55,6 +56,7 @@ class ConfigLevel:
         self.override = override
 
 
+@brokkr.utils.misc.auto_repr
 class ConfigHandler:
     def _setup_config_levels(self, config_levels):
         output_config_levels = {}
