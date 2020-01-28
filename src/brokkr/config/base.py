@@ -4,6 +4,7 @@ Baseline hiearchical configuration setup functions for Brokkr.
 
 # Standard library imports
 import abc
+import argparse
 import copy
 import json
 import os
@@ -13,7 +14,6 @@ from pathlib import Path
 import toml
 
 # Local imports
-import brokkr.utils.cli
 import brokkr.utils.misc
 
 
@@ -26,6 +26,7 @@ DEFAULT_CONFIG_PATH = Path().home() / ".config" / "brokkr"
 VERSION_KEY = "config_version"
 EMPTY_CONFIG = ("config_is_empty", True)
 JSON_SEPERATORS = (",", ":")
+CONFIG_VERSION = 1
 
 
 def convert_paths(config_data, path_variables):
@@ -190,9 +191,9 @@ class EnvVarsConfigSource(MappingConfigSource):
             handler=None,
             mapping=None,
             ):
-        self._mapping = (mapping if mapping is not None
-                         else self.handler.environment_variables)
-        super().__init__(name=name, handler=handler)
+        mapping = (mapping if mapping is not None
+                   else handler.environment_variables)
+        super().__init__(name=name, handler=handler, mapping=mapping)
 
     def read_config(self):
         config_data = super().read_config(os.environ)
@@ -206,12 +207,17 @@ class CLIArgsConfigSource(MappingConfigSource):
             handler=None,
             mapping=None,
             ):
-        self._mapping = (mapping if mapping is not None
-                         else self.handler.cli_arguments)
-        super().__init__(name=name, handler=handler)
+        mapping = (mapping if mapping is not None
+                   else handler.cli_arguments)
+        super().__init__(name=name, handler=handler, mapping=mapping)
 
     def read_config(self):
-        cli_args = brokkr.utils.cli.generate_argparser_main().parse_args()
+        arg_parser = argparse.ArgumentParser(
+            argument_default=argparse.SUPPRESS)
+        for arg_name in self._mapping.keys():
+            arg_parser.add_argument(f"--{arg_name.replace('_', '-')}")
+
+        cli_args, __ = arg_parser.parse_known_args()
         config_data = super().read_config(vars(cli_args))
         return config_data
 
@@ -234,7 +240,7 @@ class ConfigHandler:
             defaults=None,
             config_levels=("defaults", "local"),
             default_config_path=DEFAULT_CONFIG_PATH,
-            config_version=None,
+            config_version=CONFIG_VERSION,
             path_variables=None,
             environment_variables=None,
             cli_arguments=None,
@@ -245,8 +251,10 @@ class ConfigHandler:
         self.config_version = config_version
         self.path_variables = (
             path_variables if path_variables is not None else [])
-        self.environment_variables = environment_variables
-        self.cli_arguments = cli_arguments
+        self.environment_variables = (
+            environment_variables if environment_variables is not None else [])
+        self.cli_arguments = (
+            cli_arguments if cli_arguments is not None else [])
 
         # Set up preset config levels
         self.config_levels = {}

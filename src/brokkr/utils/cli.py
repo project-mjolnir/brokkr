@@ -6,6 +6,13 @@ Main-level command handling routine for running brokkr on the command line.
 # Standard library imports
 import argparse
 
+# Local imports
+import brokkr.config.base
+import brokkr.config.handlers
+
+
+ARGS_TODELETE = {"version", "subcommand_name"}
+
 
 def generate_argparser_main():
     parser_main = argparse.ArgumentParser(
@@ -72,7 +79,7 @@ def generate_argparser_main():
         "--skip-package-install", action="store_true",
         help="Don't attempt to install distro package, just service unit")
     parser_install_autossh.add_argument(
-        "--platform", choices=("linux", ),
+        "--platform", choices={"linux", },
         help="Manually override automatic platform detection")
     script_parsers.append(parser_install_autossh)
 
@@ -96,7 +103,7 @@ def generate_argparser_main():
         "install-service", help="Install Brokkr as a systemd service (Linux)",
         argument_default=argparse.SUPPRESS)
     parser_install_service.add_argument(
-        "--platform", choices=("linux", ),
+        "--platform", choices={"linux", },
         help="Manually override automatic platform detection")
     script_parsers.append(parser_install_service)
 
@@ -109,12 +116,12 @@ def generate_argparser_main():
     parser_configure_reset = subparsers.add_parser(
         "configure-reset", help="Reset brokkr-managed configuration files")
     parser_configure_reset.add_argument(
-        "--reset-names", nargs="?", default="all",
-        choices=("all", "main", "log", "unit"),
+        "--reset-names", nargs="+", default="all",
+        choices={"all", *brokkr.config.handlers.CONFIG_HANDLERS.keys()},
         help="Which config names to reset; by default, resets all of them")
     parser_configure_reset.add_argument(
-        "--reset-levels", nargs="?", default="all",
-        choices=("all", "remote", "local"),
+        "--reset-levels", nargs="+", default="all",
+        choices={"all", *brokkr.config.base.CONFIG_LEVEL_PRESETS.keys()},
         help="Which config levels to reset; by default, resets all of them")
     script_parsers.append(parser_configure_reset)
 
@@ -162,7 +169,7 @@ def parse_args(sys_argv=None):
         subcommand = "version"
 
     # Delete unneeded individual args
-    for arg_todelete in ["version", "subcommand_name"]:
+    for arg_todelete in ARGS_TODELETE:
         try:
             delattr(parsed_args, arg_todelete)
         except Exception:  # Ignore any problem deleting the arg

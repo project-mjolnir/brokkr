@@ -14,10 +14,9 @@ import serviceinstaller
 
 # Local imports
 import brokkr.config.autossh
-import brokkr.config.log
-import brokkr.config.main
+import brokkr.config.base
+import brokkr.config.handlers
 import brokkr.config.service
-import brokkr.config.unit
 import brokkr.utils.misc
 from brokkr.utils.misc import basic_logging
 
@@ -122,15 +121,13 @@ def install_service(platform=None):
 
 @basic_logging
 def install_config():
-    logging.debug("Installing unit config...")
-    brokkr.config.unit.CONFIG_HANDLER.read_configs()
-    logging.debug("Installing log config...")
-    brokkr.config.log.CONFIG_HANDLER.read_configs()
-    logging.debug("Installing main config...")
-    brokkr.config.main.CONFIG_HANDLER.read_configs()
+    config_handlers = brokkr.config.handlers.CONFIG_HANDLERS
+    for config_name, handler in config_handlers.items():
+        logging.debug("Installing %s config...", config_name)
+        handler.read_configs()
     logging.info(
         "Config files installed to %r",
-        brokkr.config.main.CONFIG_HANDLER.default_config_path.as_posix())
+        brokkr.config.base.DEFAULT_CONFIG_PATH.as_posix())
 
 
 @basic_logging
