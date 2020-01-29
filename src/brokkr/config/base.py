@@ -49,11 +49,10 @@ class ConfigSource(abc.ABC):
     def __init__(
             self,
             name,
-            handler=None,
+            handler,
             ):
         self.name = name
-        self.handler = (handler if handler is not None
-                        else ConfigHandler("dummy", config_levels=[]))
+        self.handler = handler
 
     def write_config(self, config_data=None):
         raise NotImplementedError("Cannot write this config level type")
@@ -72,7 +71,7 @@ class ConfigSource(abc.ABC):
 
 
 class DefaultsConfigSource(ConfigSource):
-    def __init__(self, name, handler=None):
+    def __init__(self, name, handler):
         super().__init__(name=name, handler=handler)
 
     def read_config(self):
@@ -89,7 +88,7 @@ class FileConfigSource(ConfigSource):
     def __init__(
             self,
             name,
-            handler=None,
+            handler,
             extension=EXTENSION_TOML,
             path=None,
             create=True,
@@ -158,7 +157,7 @@ class MappingConfigSource(ConfigSource):
     def __init__(
             self,
             name,
-            handler=None,
+            handler,
             mapping=None,
             ):
         if mapping is None:
@@ -188,7 +187,7 @@ class EnvVarsConfigSource(MappingConfigSource):
     def __init__(
             self,
             name,
-            handler=None,
+            handler,
             mapping=None,
             ):
         mapping = (mapping if mapping is not None
@@ -204,7 +203,7 @@ class CLIArgsConfigSource(MappingConfigSource):
     def __init__(
             self,
             name,
-            handler=None,
+            handler,
             mapping=None,
             ):
         mapping = (mapping if mapping is not None
