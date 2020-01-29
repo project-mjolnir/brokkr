@@ -23,6 +23,7 @@ SERIAL_PARAMS_SUNSAVERMPPT15L = {
     "parity": "N",
     "baudrate": 9600,
     "strict": False,
+    "timeout": 2,
     }
 
 REGISTER_VARIABLES = (
@@ -94,6 +95,78 @@ CONVERSION_FUNCTIONS = {
 logger = logging.getLogger(__name__)
 
 
+def get_serial_port(port=None, pids=None):
+    # Automatically detect serial port to use
+    port_list = serial.tools.list_ports.comports()
+    # Ignore built-in ARM serial port
+    port_list = [port_object for port_object in port_list
+                 if not port_object.device.startswith("/dev/ttyAMA")]
+    if not port_list:
+        logger.error(
+            "Error reading Sunsaver data: No serial devices found.")
+        return None
+    # Match device by PID or port if provided
+    if port or pids:
+        for port_object in port_list:
+            logger.debug("Checking serial device %s against port %r, pid %r",
+                         port_object, port, pids)
+            logger.debug("Device details: %r", port_object.__dict__)
+            try:
+                if (port_object.device == port
+                        or (pids and port_object.pid in pids)):
+                    logger.debug("Matched serial device %s with pid %r",
+                                 port_object, port_object.pid)
+                    break
+            except Exception as e:  # Ignore any problems reading a device
+                logger.debug("%s checking serial device %s: %s",
+                             type(e).__name__, port_object, e)
+                logger.debug("Error details:", exc_info=1)
+                logger.debug("Device details: %r", port_object.__dict__)
+    # If we can't identify a device by pid, just try the first port
+    else:
+        port_object = port_list[0]
+        logger.debug("Can't match device by PID or port; falling back to %s",
+                     port_object)
+        logger.debug("Device details: %r", port_object.__dict__)
+
+    return port_object
+
+
+def reset_usb_port(port_object):
+    reset_success = False
+    try:
+        import fcntl
+        USBDEVFS_RESET = 21780
+        usb_num_parts = {}
+        for usb_num_part in ["busnum", "devnum"]:
+            with open(Path(port_object.usb_device_path) / usb_num_part,
+                      "r", encoding="utf-8") as num_file:
+                num_raw = num_file.readline()
+            usb_num_parts[usb_num_part] = num_raw.strip().zfill(3)
+        usb_device_path = "/dev/bus/usb/{busnum}/{devnum}".format(
+            **usb_num_parts)
+        logger.debug("Resetting USB device at %r", usb_device_path)
+        with open(usb_device_path, "w", os.O_WRONLY) as device_file:
+            fcntl.ioctl(device_file, USBDEVFS_RESET, 0)
+    # Ignore error loading fcntl if on Windows as it isn't present
+    except ModuleNotFoundError:
+        logger.debug("Ignored error loading fcntl, likely not present")
+    # Catch and log other exceptions trying to reset serial port
+    except Exception as e:
+        logger.warning("%s resetting charge controller device %s: %s",
+                       type(e).__name__, port_object, e)
+        logger.info("Error details:", exc_info=1)
+        logger.info("Device details: %r", port_object.__dict__)
+    else:
+        # If successful, wait to allow the reset to take effect
+        logger.debug("Reset successful; sleeping for 5 s...")
+        for __ in range(5):
+            time.sleep(1)
+        reset_success = True
+
+    return reset_success
+
+
 def read_raw_sunsaver_data(
         start_offset=CONFIG["monitor"]["sunsaver"]["start_offset"],
         port=CONFIG["monitor"]["sunsaver"]["port"],
@@ -128,38 +201,9 @@ def read_raw_sunsaver_data(
         no data could be read and an exception was logged.
 
     """
-    # Automatically detect serial port to use
-    port_list = serial.tools.list_ports.comports()
-    # Ignore built-in ARM serial port
-    port_list = [port_object for port_object in port_list
-                 if not port_object.device.startswith("/dev/ttyAMA")]
-    if not port_list:
-        logger.error(
-            "Error reading Sunsaver data: No serial devices found.")
+    port_object = get_serial_port(port=port, pids=pids)
+    if not port_object:
         return None
-    # Match device by PID or port if provided
-    if port or pids:
-        for port_object in port_list:
-            logger.debug("Checking serial device %s against port %r, pid %r",
-                         port_object, port, pids)
-            logger.debug("Device details: %r", port_object.__dict__)
-            try:
-                if (port_object.device == port
-                        or (pids and port_object.pid in pids)):
-                    logger.debug("Matched serial device %s with pid %r",
-                                 port_object, port_object.pid)
-                    break
-            except Exception as e:  # Ignore any problems reading a device
-                logger.debug("%s checking serial device %s: %s",
-                             type(e).__name__, port_object, e)
-                logger.debug("Error details:", exc_info=1)
-                logger.debug("Device details: %r", port_object.__dict__)
-    # If we can't identify a device by pid, just try the first port
-    else:
-        port_object = port_list[0]
-        logger.debug("Can't match device by PID or port; falling back to %s",
-                     port_object)
-        logger.debug("Device details: %r", port_object.__dict__)
 
     # Read charge controller data over serial Modbus
     serial_params = {**SERIAL_PARAMS_SUNSAVERMPPT15L, **serial_params}
@@ -176,35 +220,10 @@ def read_raw_sunsaver_data(
             logger.warning("%s connecting to charge controller device %s; "
                            "attempting USB reset...",
                            type(e).__name__, port_object)
-            try:
-                import fcntl
-                USBDEVFS_RESET = 21780
-                usb_num_parts = {}
-                for usb_num_part in ["busnum", "devnum"]:
-                    with open(Path(port_object.usb_device_path) / usb_num_part,
-                              "r", encoding="utf-8") as num_file:
-                        num_raw = num_file.readline()
-                    usb_num_parts[usb_num_part] = num_raw.strip().zfill(3)
-                usb_device_path = "/dev/bus/usb/{busnum}/{devnum}".format(
-                    **usb_num_parts)
-                logger.debug("Resetting USB device at %r", usb_device_path)
-                with open(usb_device_path, "w", os.O_WRONLY) as device_file:
-                    fcntl.ioctl(device_file, USBDEVFS_RESET, 0)
-            # Ignore error loading fcntl if on Windows as it isn't present
-            except ModuleNotFoundError:
-                logger.debug("Ignored error loading fcntl, likely not present")
-            # Catch and log other exceptions trying to reset serial port
-            except Exception:
-                logger.warning("%s resetting charge controller device %s: %s",
-                               type(e).__name__, port_object, e)
-                logger.info("Error details:", exc_info=1)
-                logger.info("Device details: %r", port_object.__dict__)
-            else:
-                # If successful, wait to allow the reset to take effect
-                logger.debug("Reset successful; sleeping for 5 s...")
-                for __ in range(5):
-                    time.sleep(1)
 
+            reset_success = reset_usb_port(port_object)
+            if not reset_success:
+                raise
             connect_successful = mppt_client.connect()
             logger.warning("Successfully reset charge controller device %s; "
                            "original error %s: %s",
