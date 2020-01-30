@@ -15,6 +15,7 @@ import toml
 
 # Local imports
 import brokkr.utils.misc
+import brokkr.config.constants
 
 
 # General static constants
@@ -22,7 +23,8 @@ EXTENSION_TOML = "toml"
 EXTENSION_JSON = "json"
 SUPPORTED_EXTENSIONS = [EXTENSION_TOML, EXTENSION_JSON]
 
-DEFAULT_CONFIG_PATH = Path().home() / ".config" / "brokkr"
+DEFAULT_CONFIG_PATH = (Path().home() / ".config" /
+                       brokkr.config.constants.PACKAGE_NAME)
 VERSION_KEY = "config_version"
 EMPTY_CONFIG = ("config_is_empty", True)
 JSON_SEPERATORS = (",", ":")
@@ -91,21 +93,30 @@ class FileConfigSource(ConfigSource):
             handler,
             extension=EXTENSION_TOML,
             path=None,
-            create=True,
+            preset=False,
+            append_level=True,
             ):
         if extension not in SUPPORTED_EXTENSIONS:
             raise ValueError("Extension must be one of "
                              f"{SUPPORTED_EXTENSIONS}, not {extension}")
 
         self._extension = extension
-        self._create = create
+        self._preset = preset
         super().__init__(name=name, handler=handler)
 
         # Setup full config path given defaults
-        self._path = (Path(path) if path is not None
-                      else self.handler.default_config_path)
+        if path is not None:
+            self._path = Path(path)
+        elif self._preset:
+            self._path = self.handler.preset_config_path
+        else:
+            self._path = self.handler.default_config_path
+
+        # Set path filename
         if not self._path.suffix == self._extension:
-            config_name = "_".join((self.handler.name, self.name))
+            config_name = self.handler.name
+            if append_level:
+                config_name = "_".join([config_name, self.name])
             config_name += ("." + self._extension)
             self._path = self._path / config_name
 
@@ -138,7 +149,7 @@ class FileConfigSource(ConfigSource):
                     config_data = json.load(config_file)
         # Generate or ignore config_name file if it does not yet exist
         except FileNotFoundError:
-            if self._create:
+            if not self._preset:
                 config_data = self.write_config()
             else:
                 config_data = {}
@@ -212,7 +223,8 @@ class CLIArgsConfigSource(MappingConfigSource):
 
     def read_config(self):
         arg_parser = argparse.ArgumentParser(
-            argument_default=argparse.SUPPRESS)
+            argument_default=argparse.SUPPRESS, usage=argparse.SUPPRESS,
+            add_help=False)
         for arg_name in self._mapping.keys():
             arg_parser.add_argument(f"--{arg_name.replace('_', '-')}")
 
@@ -223,9 +235,16 @@ class CLIArgsConfigSource(MappingConfigSource):
 
 CONFIG_LEVEL_PRESETS = {
     "defaults": {"source": DefaultsConfigSource},
+    "system": {"source": FileConfigSource,
+               "args": {"preset": True, "append_level": False}},
+    "common": {"source": FileConfigSource,
+               "args": {"preset": True}},
+    brokkr.config.constants.PACKAGE_NAME: {
+        "source": FileConfigSource, "args": {"preset": True}},
     "remote": {"source": FileConfigSource,
                "args": {"extension": EXTENSION_JSON}},
-    "local": {"source": FileConfigSource},
+    "local": {"source": FileConfigSource,
+              "args": {"append_level": False}},
     "env_vars": {"source": EnvVarsConfigSource},
     "cli_args": {"source": CLIArgsConfigSource},
     }
@@ -239,6 +258,7 @@ class ConfigHandler:
             defaults=None,
             config_levels=("defaults", "local"),
             default_config_path=DEFAULT_CONFIG_PATH,
+            preset_config_path=None,
             config_version=CONFIG_VERSION,
             path_variables=None,
             environment_variables=None,
@@ -246,7 +266,12 @@ class ConfigHandler:
             ):
         self.name = name
         self.defaults = defaults if defaults is not None else {}
-        self.default_config_path = Path(default_config_path)
+        self.default_config_path = (Path(default_config_path)
+                                    if default_config_path is not None
+                                    else None)
+        self.preset_config_path = (Path(preset_config_path)
+                                   if preset_config_path is not None
+                                   else None)
         self.config_version = config_version
         self.path_variables = (
             path_variables if path_variables is not None else [])

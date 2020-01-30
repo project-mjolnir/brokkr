@@ -13,23 +13,23 @@ PROJECT_NAME = "brokkr"
 
 with open(Path(__file__).resolve().parent / "README.md",
           "r", encoding="utf-8") as readme_file:
-    long_description = readme_file.read()
+    LONG_DESCRIPTION = readme_file.read()
 
-version = {}
+VERSION = {}
 with open(Path(__file__).resolve().parent
           / "src" / PROJECT_NAME / "_version.py",
           "r", encoding="utf-8") as version_file:
-    exec(version_file.read(), version)
+    exec(version_file.read(), VERSION)
 
 
 setuptools.setup(
     name=PROJECT_NAME,
-    version=version["__version__"],
+    version=VERSION["__version__"],
     author="C.A.M. Gerlach and the HAMMA group",
     author_email="CAM.Gerlach@Gerlach.CAM",
     description=("A package for data logging and management "
                  "of HAMMA lightning sensors."),
-    long_description=long_description,
+    long_description=LONG_DESCRIPTION,
     long_description_content_type="text/markdown",
     keywords="iot lightning sensor remote control research m2m raspberry pi",
     url="https://github.com/hamma-dev/brokkr",

@@ -11,7 +11,8 @@ import struct
 import subprocess
 
 # Local imports
-from brokkr.config.main import CONFIG
+from brokkr.config.dynamic import DYNAMIC_CONFIG
+from brokkr.config.static import CONFIG
 
 
 HS_PACKET_SIZE = 60
@@ -42,7 +43,7 @@ logger = logging.getLogger(__name__)
 
 
 def ping(host=CONFIG["general"]["ip_sensor"],
-         timeout=CONFIG["monitor"]["sensor"]["ping_timeout_s"]):
+         timeout=DYNAMIC_CONFIG["monitor"]["ping_timeout_s"]):
     # Set the correct option for the number of packets based on platform.
     if platform.system().lower() == "windows":
         count_param = "-n"
@@ -54,16 +55,16 @@ def ping(host=CONFIG["general"]["ip_sensor"],
     logger.debug("Running ping command %s ...", " ".join(command))
     if logger.getEffectiveLevel() <= logging.DEBUG:
         extra_args = {
-                      "stdout": subprocess.PIPE,
-                      "stderr": subprocess.PIPE,
-                      "encoding": "utf-8",
-                      "errors": "surrogateescape",
-                      }
+            "stdout": subprocess.PIPE,
+            "stderr": subprocess.PIPE,
+            "encoding": "utf-8",
+            "errors": "surrogateescape",
+            }
     else:
         extra_args = {
-                      "stdout": subprocess.DEVNULL,
-                      "stderr": subprocess.DEVNULL,
-                      }
+            "stdout": subprocess.DEVNULL,
+            "stderr": subprocess.DEVNULL,
+            }
 
     try:
         ping_output = subprocess.run(command, timeout=timeout + 1,
@@ -84,9 +85,9 @@ def ping(host=CONFIG["general"]["ip_sensor"],
 
 
 def read_hs_packet(
-        timeout=CONFIG["monitor"]["sensor"]["hs_timeout_s"],
+        timeout=DYNAMIC_CONFIG["monitor"]["hs_timeout_s"],
         host_address="",
-        port=CONFIG["monitor"]["sensor"]["hs_port"],
+        port=CONFIG["monitor"]["hs_port"],
         packet_size=HS_PACKET_SIZE,
         buffer_size=HS_BUFFER_SIZE,
         ):
@@ -127,11 +128,13 @@ def read_hs_packet(
 
 def decode_hs_packet(
         packet,
-        na_marker=CONFIG["monitor"]["na_marker"],
+        na_marker=CONFIG["general"]["na_marker"],
         struct_str=HS_STRUCT,
         hs_variables=HS_VARIABLES,
-        conversion_functions=HS_CONVERSION_FUNCTIONS,
+        conversion_functions=None,
         ):
+    if conversion_functions is None:
+        conversion_functions = HS_CONVERSION_FUNCTIONS
     hs_dict = {}
     error_count = 0
     try:
@@ -172,7 +175,7 @@ def decode_hs_packet(
     return hs_dict
 
 
-def get_hs_data(na_marker=CONFIG["monitor"]["na_marker"], **kwargs):
+def get_hs_data(na_marker=CONFIG["general"]["na_marker"], **kwargs):
     packet = read_hs_packet(**kwargs)
     hs_data = decode_hs_packet(packet, na_marker=na_marker)
     return hs_data

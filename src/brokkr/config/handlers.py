@@ -3,24 +3,44 @@
 Config handler setup for Brokkr's main managed configs.
 """
 
-# Standard library imports
-from pathlib import Path
-
 # Local imports
 import brokkr.config.base
+import brokkr.config.constants
+from brokkr.config.system import SYSTEM_CONFIG
+import brokkr.config.systemhandler
 
 
 UNIT_NAME = "unit"
 DEFAULT_CONFIG_UNIT = {
     "number": 0,
     "network_interface": "wlan0",
-    "description": "",
+    "site_description": "",
     }
-CONFIG_LEVELS_UNIT = ["defaults", "local"]
+CONFIG_LEVELS_UNIT = ["defaults", "system", "local"]
 CONFIG_HANDLER_UNIT = brokkr.config.base.ConfigHandler(
     UNIT_NAME,
     defaults=DEFAULT_CONFIG_UNIT,
     config_levels=CONFIG_LEVELS_UNIT,
+    preset_config_path=SYSTEM_CONFIG["system_path"],
+    )
+
+
+METADATA_NAME = "metadata"
+EMPTY_VARS_METADATA = [
+    "name_full", "author", "description", "homepage", "repo", "version"]
+EMPTY_VARS_METADATA_DICT = {key: "" for key in EMPTY_VARS_METADATA}
+DEFAULT_CONFIG_METADATA = {
+    "name": "mjolnir",
+    **EMPTY_VARS_METADATA_DICT,
+    "brokkr_version_min": "0.3.0",
+    "sindri_version_min": "0.3.0",
+    }
+CONFIG_LEVELS_METADATA = ["defaults", "system", "local"]
+CONFIG_HANDLER_METADATA = brokkr.config.base.ConfigHandler(
+    METADATA_NAME,
+    defaults=DEFAULT_CONFIG_METADATA,
+    config_levels=CONFIG_LEVELS_METADATA,
+    preset_config_path=SYSTEM_CONFIG["system_path"],
     )
 
 
@@ -33,33 +53,36 @@ DEFAULT_CONFIG_LOG = {
     "disable_existing_loggers": False,
     "formatters": {
         "detailed": {
-            "format": LOG_FORMAT_DETAILED,
             "datefmt": "%Y-%m-%d %H:%M:%S",
+            "format": LOG_FORMAT_DETAILED,
             "style": "{",
             },
         },
     "handlers": {
         "file": {
-            "class": "logging.handlers.RotatingFileHandler",
-            "level": DEFAULT_LOG_LEVEL,
-            "formatter": "detailed",
-            "filename": (Path("~") / "brokkr.log").as_posix(),
-            "maxBytes": int(1e7),
             "backupCount": 10,
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": (
+                brokkr.config.constants.OUTPUT_PATH_DEFAULT
+                / (brokkr.config.constants.PACKAGE_NAME + ".log")).as_posix(),
+            "formatter": "detailed",
+            "level": DEFAULT_LOG_LEVEL,
+            "maxBytes": int(1e7),
             },
         "console": {
             "class": "logging.StreamHandler",
-            "level": DEFAULT_LOG_LEVEL,
             "formatter": "detailed",
+            "level": DEFAULT_LOG_LEVEL,
             "stream": "ext://sys.stdout",
             },
         },
     "root": {
-        "level": DEFAULT_LOG_LEVEL,
         "handlers": ["file", "console"],
+        "level": DEFAULT_LOG_LEVEL,
         },
     }
-CONFIG_LEVELS_LOG = ["defaults", "local"]
+CONFIG_LEVELS_LOG = ["defaults", "common",
+                     brokkr.config.constants.PACKAGE_NAME, "local"]
 PATH_VARIABLES_LOG = (("handlers", "file", "filename"), )
 CONFIG_HANDLER_LOG = brokkr.config.base.ConfigHandler(
     LOG_NAME,
@@ -67,50 +90,64 @@ CONFIG_HANDLER_LOG = brokkr.config.base.ConfigHandler(
     config_levels=CONFIG_LEVELS_LOG,
     config_version=None,
     path_variables=PATH_VARIABLES_LOG,
+    preset_config_path=SYSTEM_CONFIG["system_path"],
     )
 
 
-MAIN_NAME = "main"
-OUTPUT_PATH = Path("~") / "data"
-DEFAULT_CONFIG_MAIN = {
+STATIC_NAME = "static"
+DEFAULT_CONFIG_STATIC = {
     "general": {
-        "ip_sensor": "10.10.10.1",
-        "name_prefix": "hamma",
-        "output_path": OUTPUT_PATH.as_posix(),
+        "ip_sensor": "",
+        "na_marker": "NA",
         },
     "monitor": {
-        "interval_log_s": 60,
-        "interval_sleep_s": 1,
-        "na_marker": "NA",
-        "output_path": (OUTPUT_PATH / "monitoring").as_posix(),
-        "sensor": {
-            "hs_port": 8084,
-            "hs_timeout_s": 2,
-            "ping_timeout_s": 1,
-            },
-        "sunsaver": {
-            "pid_list": [24597, ],
-            "port": "",
-            "start_offset": 0x0008,
-            "unit": 0x01,
-            },
+        "hs_port": 8084,
+        "output_path": (brokkr.config.constants.OUTPUT_PATH_DEFAULT
+                        / "monitoring").as_posix(),
+        "sunsaver_pid_list": [],
+        "sleep_interval_s": 0.5,
+        "sunsaver_port": "",
+        "sunsaver_start_offset": 0,
+        "sunsaver_unit": 1,
         },
     }
-CONFIG_LEVELS_MAIN = ["defaults", "remote", "local"]
-PATH_VARIABLES_MAIN = (
-    ("general", "output_path"),
-    ("monitor", "output_path"),
+PATH_VARIABLES_STATIC = [("monitor", "output_path")]
+CONFIG_LEVELS_STATIC = ["defaults", "common",
+                        brokkr.config.constants.PACKAGE_NAME, "local"]
+CONFIG_HANDLER_STATIC = brokkr.config.base.ConfigHandler(
+    STATIC_NAME,
+    defaults=DEFAULT_CONFIG_STATIC,
+    config_levels=CONFIG_LEVELS_STATIC,
+    path_variables=DEFAULT_CONFIG_STATIC,
+    preset_config_path=SYSTEM_CONFIG["system_path"],
     )
-CONFIG_HANDLER_MAIN = brokkr.config.base.ConfigHandler(
-    MAIN_NAME,
-    defaults=DEFAULT_CONFIG_MAIN,
-    config_levels=CONFIG_LEVELS_MAIN,
-    path_variables=PATH_VARIABLES_MAIN,
+
+
+DYNAMIC_NAME = "dynamic"
+DEFAULT_CONFIG_DYNAMIC = {
+    "monitor": {
+        "monitor_interval_s": 60,
+        "hs_timeout_s": 2,
+        "ping_timeout_s": 1,
+        },
+    }
+CONFIG_LEVELS_DYNAMIC = ["defaults", "common",
+                         brokkr.config.constants.PACKAGE_NAME,
+                         "remote", "local"]
+CONFIG_HANDLER_DYNAMIC = brokkr.config.base.ConfigHandler(
+    DYNAMIC_NAME,
+    defaults=DEFAULT_CONFIG_DYNAMIC,
+    config_levels=CONFIG_LEVELS_DYNAMIC,
+    preset_config_path=SYSTEM_CONFIG["system_path"],
     )
 
 
 CONFIG_HANDLERS = {
+    brokkr.config.systemhandler.SYSTEM_NAME: (
+        brokkr.config.systemhandler.CONFIG_HANDLER_SYSTEM),
     UNIT_NAME: CONFIG_HANDLER_UNIT,
+    METADATA_NAME: CONFIG_HANDLER_METADATA,
     LOG_NAME: CONFIG_HANDLER_LOG,
-    MAIN_NAME: CONFIG_HANDLER_MAIN,
+    STATIC_NAME: CONFIG_HANDLER_STATIC,
+    DYNAMIC_NAME: CONFIG_HANDLER_DYNAMIC,
     }

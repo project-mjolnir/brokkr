@@ -4,12 +4,13 @@ High-level functions to monitor and record sensor and sunsaver status data.
 
 # Standard library imports
 import logging
-import os
 from pathlib import Path
 import threading
 
 # Local imports
-from brokkr.config.main import CONFIG
+from brokkr.config.dynamic import DYNAMIC_CONFIG
+import brokkr.config.monitoring
+from brokkr.config.static import CONFIG
 import brokkr.output
 import brokkr.utils.misc
 
@@ -19,8 +20,6 @@ logger = logging.getLogger(__name__)
 
 def get_status_data(status_data_items=None):
     if status_data_items is None:
-        # Only import if needed to avoid dependency on pyserial and pymodbus
-        import brokkr.config.monitoring
         status_data_items = brokkr.config.monitoring.STATUS_DATA_ITEMS
 
     status_data = {}
@@ -47,16 +46,12 @@ def write_status_data(status_data,
 
 def start_monitoring(
         output_path=CONFIG["monitor"]["output_path"],
-        monitor_interval_s=CONFIG["monitor"]["interval_log_s"],
-        sleep_interval=CONFIG["monitor"]["interval_sleep_s"],
+        monitor_interval_s=DYNAMIC_CONFIG["monitor"]["monitor_interval_s"],
+        sleep_interval=CONFIG["monitor"]["sleep_interval_s"],
         exit_event=None,
         ):
     if exit_event is None:
         exit_event = threading.Event()
-
-    if output_path is not None and not Path(output_path).suffix:
-        logger.info("Ensuring monitoring directory at: %s", output_path)
-        os.makedirs(output_path, exist_ok=True)
 
     while not exit_event.is_set():
         try:

@@ -13,8 +13,10 @@ import pymodbus.client.sync
 import serial.tools.list_ports
 
 # Local imports
-from brokkr.config.main import CONFIG
+from brokkr.config.static import CONFIG
 
+
+USBDEVFS_RESET = 21780
 
 SERIAL_PARAMS_SUNSAVERMPPT15L = {
     "method": "rtu",
@@ -136,7 +138,6 @@ def reset_usb_port(port_object):
     reset_success = False
     try:
         import fcntl
-        USBDEVFS_RESET = 21780
         usb_num_parts = {}
         for usb_num_part in ["busnum", "devnum"]:
             with open(Path(port_object.usb_device_path) / usb_num_part,
@@ -168,10 +169,10 @@ def reset_usb_port(port_object):
 
 
 def read_raw_sunsaver_data(
-        start_offset=CONFIG["monitor"]["sunsaver"]["start_offset"],
-        port=CONFIG["monitor"]["sunsaver"]["port"],
-        pids=CONFIG["monitor"]["sunsaver"]["pid_list"],
-        unit=CONFIG["monitor"]["sunsaver"]["unit"],
+        start_offset=CONFIG["monitor"]["sunsaver_start_offset"],
+        port=CONFIG["monitor"]["sunsaver_port"],
+        pids=CONFIG["monitor"]["sunsaver_pid_list"],
+        unit=CONFIG["monitor"]["sunsaver_unit"],
         **serial_params,
         ):
     """
@@ -269,10 +270,12 @@ def read_raw_sunsaver_data(
 
 def decode_sunsaver_data(
         register_data,
-        na_marker=CONFIG["monitor"]["na_marker"],
+        na_marker=CONFIG["general"]["na_marker"],
         register_variables=REGISTER_VARIABLES,
-        conversion_functions=CONVERSION_FUNCTIONS,
+        conversion_functions=None,
         ):
+    if conversion_functions is None:
+        conversion_functions = CONVERSION_FUNCTIONS
     # Handle both register object and a simple list of register values
     try:
         register_data.registers[0]
@@ -340,7 +343,7 @@ def decode_sunsaver_data(
     return sunsaver_data
 
 
-def get_sunsaver_data(na_marker=CONFIG["monitor"]["na_marker"], **kwargs):
+def get_sunsaver_data(na_marker=CONFIG["general"]["na_marker"], **kwargs):
     register_data = read_raw_sunsaver_data(**kwargs)
     sunsaver_data = decode_sunsaver_data(register_data, na_marker=na_marker)
     return sunsaver_data

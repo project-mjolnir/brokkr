@@ -5,12 +5,16 @@ Configuration to run Brokkr as a service for supported platforms (Linux).
 # Standard library imports
 import sys
 
+# Local imports
+import brokkr.config.constants
 
-BROKKR_SERVICE_FILENAME = "brokkr.service"
 
-BROKKR_SERVICE_DEFAULTS = {
+SERVICE_FILENAME = brokkr.config.constants.PACKAGE_NAME + ".service"
+
+SERVICE_DEFAULTS = {
     "Unit": {
-        "Description": "Brokkr Remote Client Service",
+        "Description": (brokkr.config.constants.PACKAGE_NAME.title() +
+                        " Remote Client Service"),
         "Wants": (
             "network-online.target systemd-time-wait-sync.service "
             "systemd-timesyncd.service sshd.service "
@@ -32,5 +36,5 @@ BROKKR_SERVICE_DEFAULTS = {
         },
     }
 
-BROKKR_SERVICES_ENABLE = ("systemd-timesyncd.service", )
-BROKKR_SERVICES_DISABLE = ("chronyd.service", "ntpd.service")
+SERVICES_ENABLE = ("systemd-timesyncd.service", )
+SERVICES_DISABLE = ("chronyd.service", "ntpd.service")

@@ -8,10 +8,15 @@ import argparse
 
 # Local imports
 import brokkr.config.base
+import brokkr.config.constants
 import brokkr.config.handlers
 
 
-ARGS_TODELETE = {"version", "subcommand_name"}
+VERSION_PARAM = "version"
+SUBCOMMAND_PARAM = "subcommand_name"
+SYSTEM_PATH_PARAM = "system_path"
+
+ARGS_TODELETE = {VERSION_PARAM, SUBCOMMAND_PARAM, SYSTEM_PATH_PARAM}
 
 
 def generate_argparser_main():
@@ -19,15 +24,17 @@ def generate_argparser_main():
         description="Client to monitor and manage remote IoT sensors.",
         argument_default=argparse.SUPPRESS)
     parser_main.add_argument(
-        "--version", action="store_true",
+        "--version", action="store_true", dest=VERSION_PARAM,
         help="If passed, will print the version and exit")
     subparsers = parser_main.add_subparsers(
-        title="Subcommands", help="Brokkr subcommand to execute",
-        metavar="Subcommand", dest="subcommand_name")
+        title="Subcommands", help="Subcommand to execute",
+        metavar="Subcommand", dest=SUBCOMMAND_PARAM)
+    system_path_parsers = []
+    script_parsers = []
 
     # Parser for the version subcommand
     subparsers.add_parser(
-        "version", help="Print Brokkr's version, and then exit")
+        VERSION_PARAM, help="Print Brokkr's version, and then exit")
 
     # Parser for the help subcommand
     subparsers.add_parser(
@@ -43,6 +50,7 @@ def generate_argparser_main():
     parser_start.add_argument(
         "--log-level-console", type=str,
         help="Level of messages to log to the console")
+    system_path_parsers.append(parser_start)
 
     # Parser for the monitor subcommand
     parser_monitor = subparsers.add_parser(
@@ -60,12 +68,11 @@ def generate_argparser_main():
         "-v", "--verbose", action="count", default=0,
         help=("Verbosity level; only errors by default, -v for basic info, "
               "-vv for detailed info and -vvv for debug info"))
-
-    script_parsers = []
+    system_path_parsers.append(parser_monitor)
 
     # Parser for the install-all subcommand
     parser_install_all = subparsers.add_parser(
-        "install-all", help="Install all elements needed to run Brokkr")
+        "install-all", help="Install all elements needed to run the package")
     parser_install_all.add_argument(
         "--no-install-services", action="store_true",
         help="If passed, will not install the Brokkr and AutoSSH services")
@@ -135,11 +142,24 @@ def generate_argparser_main():
         "network_interface",
         help="The network interface for uplink on particular Brokkr client")
     parser_configure_unit.add_argument(
-        "--description", default="",
-        help="An optional description of this particular Brokkr client")
+        "--site-description", default="",
+        help="An optional description of this particular Brokkr site")
     script_parsers.append(parser_configure_unit)
 
-    # Add verbose parameter to all script-like subcommands
+    # Parser for the configure-system subcommand
+    parser_configure_system = subparsers.add_parser(
+        "configure-system", help="Set up sensor system configuration")
+    parser_configure_system.add_argument(
+        "system_config_path",
+        help="The path to the sensor system config directory")
+    script_parsers.append(parser_configure_system)
+
+    # Add common parameters to subcommand groups
+    for system_path_parser in system_path_parsers:
+        system_path_parser.add_argument(
+            "--system-path", dest=SYSTEM_PATH_PARAM,
+            help=("Sets the directory to use to load system config data. "
+                  "Override the settings in the config file and the env var."))
     for script_parser in script_parsers:
         script_parser.add_argument(
             "-v", "--verbose", action="store_true",
@@ -156,17 +176,17 @@ def parse_args(sys_argv=None):
         parsed_args = parser_main.parse_args(sys_argv)
 
     # Get, format and remove subcommand
-    subcommand = getattr(parsed_args, "subcommand_name", None)
+    subcommand = getattr(parsed_args, SUBCOMMAND_PARAM, None)
     subcommand = (subcommand.replace("-", "_")
                   if subcommand is not None else "")
     try:
-        delattr(parsed_args, "subcommand_name")
+        delattr(parsed_args, SUBCOMMAND_PARAM)
     except Exception:  # Ignore any problem deleting the arg
         pass
 
     # Override subcomamnd with version if passed
-    if getattr(parsed_args, "version", None):
-        subcommand = "version"
+    if getattr(parsed_args, VERSION_PARAM, None):
+        subcommand = VERSION_PARAM
 
     # Delete unneeded individual args
     for arg_todelete in ARGS_TODELETE:
@@ -179,9 +199,10 @@ def parse_args(sys_argv=None):
 
 
 def dispatch_command(subcommand, parsed_args):
-    if subcommand == "version":
+    if subcommand == VERSION_PARAM:
         import brokkr
-        print("Brokkr version " + str(brokkr.__version__))
+        print(f"{brokkr.config.constants.PACKAGE_NAME.title()} version "
+              f"{str(brokkr.__version__)}")
     elif subcommand == "help":
         generate_argparser_main().print_help()
     elif subcommand == "start":

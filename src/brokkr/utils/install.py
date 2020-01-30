@@ -111,10 +111,10 @@ def install_autossh(skip_package_install=False, platform=None):
 @basic_logging
 def install_service(platform=None):
     serviceinstaller.install_service(
-        brokkr.config.service.BROKKR_SERVICE_DEFAULTS,
-        service_filename=brokkr.config.service.BROKKR_SERVICE_FILENAME,
-        services_enable=brokkr.config.service.BROKKR_SERVICES_ENABLE,
-        services_disable=brokkr.config.service.BROKKR_SERVICES_DISABLE,
+        brokkr.config.service.SERVICE_DEFAULTS,
+        service_filename=brokkr.config.service.SERVICE_FILENAME,
+        services_enable=brokkr.config.service.SERVICES_ENABLE,
+        services_disable=brokkr.config.service.SERVICES_DISABLE,
         platform=platform,
     )
 

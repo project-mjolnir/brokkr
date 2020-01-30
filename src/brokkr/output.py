@@ -7,11 +7,12 @@ import csv
 import datetime
 import io
 import logging
+import os
 from pathlib import Path
 
 # Local imports
-from brokkr.config.main import CONFIG
-from brokkr.config.unit import UNIT_CONFIG
+from brokkr.config.bootstrap import UNIT_CONFIG, METADATA_CONFIG
+from brokkr.config.static import CONFIG
 
 
 CSV_PARAMS = {
@@ -28,7 +29,7 @@ logger = logging.getLogger(__name__)
 
 def determine_output_filename(
         output_path=CONFIG["monitor"]["output_path"],
-        prefix=CONFIG["general"]["name_prefix"],
+        prefix=METADATA_CONFIG["name"],
         unit_number=UNIT_CONFIG["number"],
         ):
     output_path = (Path(output_path)
@@ -40,14 +41,18 @@ def determine_output_filename(
 
 
 def write_line_csv(data, out_file, **csv_params):
+    csv_params = {**CSV_PARAMS, **csv_params}
     try:
         if isinstance(out_file, io.IOBase):
             close_file = False
             data_csv = out_file
         else:
             close_file = True
+            out_file = Path(out_file)
+            logger.debug(
+                "Ensuring output directory at %r", out_file.parent.as_posix())
+            os.makedirs(out_file.parent, exist_ok=True)
             data_csv = open(out_file, mode="a", encoding="utf-8", newline="")
-        csv_params = {**CSV_PARAMS, **csv_params}
         csv_writer = csv.DictWriter(
             data_csv, fieldnames=data.keys(), **csv_params)
         if not data_csv.tell():
