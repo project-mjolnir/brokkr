@@ -5,7 +5,7 @@ Config handler setup for Brokkr's main managed configs.
 
 # Local imports
 import brokkr.config.base
-import brokkr.config.constants
+from brokkr.config.constants import PACKAGE_NAME, OUTPUT_PATH_DEFAULT
 from brokkr.config.system import SYSTEM_CONFIG
 import brokkr.config.systemhandler
 
@@ -62,9 +62,8 @@ DEFAULT_CONFIG_LOG = {
         "file": {
             "backupCount": 10,
             "class": "logging.handlers.RotatingFileHandler",
-            "filename": (
-                brokkr.config.constants.OUTPUT_PATH_DEFAULT
-                / (brokkr.config.constants.PACKAGE_NAME + ".log")).as_posix(),
+            "filename":
+                (OUTPUT_PATH_DEFAULT / (PACKAGE_NAME + ".log")).as_posix(),
             "formatter": "detailed",
             "level": DEFAULT_LOG_LEVEL,
             "maxBytes": int(1e7),
@@ -81,8 +80,7 @@ DEFAULT_CONFIG_LOG = {
         "level": DEFAULT_LOG_LEVEL,
         },
     }
-CONFIG_LEVELS_LOG = ["defaults", "common",
-                     brokkr.config.constants.PACKAGE_NAME, "local"]
+CONFIG_LEVELS_LOG = ["defaults", "common", PACKAGE_NAME, "local"]
 PATH_VARIABLES_LOG = (("handlers", "file", "filename"), )
 CONFIG_HANDLER_LOG = brokkr.config.base.ConfigHandler(
     LOG_NAME,
@@ -102,8 +100,7 @@ DEFAULT_CONFIG_STATIC = {
         },
     "monitor": {
         "hs_port": 8084,
-        "output_path": (brokkr.config.constants.OUTPUT_PATH_DEFAULT
-                        / "monitoring").as_posix(),
+        "output_path": (OUTPUT_PATH_DEFAULT / "monitoring").as_posix(),
         "sunsaver_pid_list": [],
         "sleep_interval_s": 0.5,
         "sunsaver_port": "",
@@ -112,8 +109,7 @@ DEFAULT_CONFIG_STATIC = {
         },
     }
 PATH_VARIABLES_STATIC = [("monitor", "output_path")]
-CONFIG_LEVELS_STATIC = ["defaults", "common",
-                        brokkr.config.constants.PACKAGE_NAME, "local"]
+CONFIG_LEVELS_STATIC = ["defaults", "common", PACKAGE_NAME, "local"]
 CONFIG_HANDLER_STATIC = brokkr.config.base.ConfigHandler(
     STATIC_NAME,
     defaults=DEFAULT_CONFIG_STATIC,
@@ -131,9 +127,7 @@ DEFAULT_CONFIG_DYNAMIC = {
         "ping_timeout_s": 1,
         },
     }
-CONFIG_LEVELS_DYNAMIC = ["defaults", "common",
-                         brokkr.config.constants.PACKAGE_NAME,
-                         "remote", "local"]
+CONFIG_LEVELS_DYNAMIC = ["defaults", "common", PACKAGE_NAME, "remote", "local"]
 CONFIG_HANDLER_DYNAMIC = brokkr.config.base.ConfigHandler(
     DYNAMIC_NAME,
     defaults=DEFAULT_CONFIG_DYNAMIC,

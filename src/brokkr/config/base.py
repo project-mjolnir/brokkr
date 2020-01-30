@@ -15,16 +15,16 @@ import toml
 
 # Local imports
 import brokkr.utils.misc
-import brokkr.config.constants
+from brokkr.config.constants import PACKAGE_NAME
 
 
 # General static constants
 EXTENSION_TOML = "toml"
 EXTENSION_JSON = "json"
 SUPPORTED_EXTENSIONS = [EXTENSION_TOML, EXTENSION_JSON]
+XDG_CONFIG_DIR = ".config"
 
-DEFAULT_CONFIG_PATH = (Path().home() / ".config" /
-                       brokkr.config.constants.PACKAGE_NAME)
+DEFAULT_CONFIG_PATH = (Path().home() / XDG_CONFIG_DIR / PACKAGE_NAME)
 VERSION_KEY = "config_version"
 EMPTY_CONFIG = ("config_is_empty", True)
 JSON_SEPERATORS = (",", ":")
@@ -239,8 +239,7 @@ CONFIG_LEVEL_PRESETS = {
                "args": {"preset": True, "append_level": False}},
     "common": {"source": FileConfigSource,
                "args": {"preset": True}},
-    brokkr.config.constants.PACKAGE_NAME: {
-        "source": FileConfigSource, "args": {"preset": True}},
+    PACKAGE_NAME: {"source": FileConfigSource, "args": {"preset": True}},
     "remote": {"source": FileConfigSource,
                "args": {"extension": EXTENSION_JSON}},
     "local": {"source": FileConfigSource,

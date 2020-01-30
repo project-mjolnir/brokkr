@@ -5,7 +5,7 @@ Bootstrap configuration handler for system path, loaded first.
 
 # Local imports
 import brokkr.config.base
-import brokkr.config.constants
+from brokkr.config.constants import PACKAGE_NAME
 
 
 SYSTEM_NAME = "system"
@@ -15,8 +15,8 @@ DEFAULT_CONFIG_SYSTEM = {
 CONFIG_LEVELS_SYSTEM = ["defaults", "local", "env_vars", "cli_args"]
 PATH_VARIABLES_SYSTEM = [("system_path",)]
 CLI_ARGUMENTS_SYSTEM = {"system_path": ("system_path",)}
-ENVIRONMENT_VARIABLES_SYSTEM = {brokkr.config.constants.PACKAGE_NAME.upper()
-                                + "_SYSTEM_PATH": ("system_path",)}
+ENVIRONMENT_VARIABLES_SYSTEM = {
+    (PACKAGE_NAME.upper() + "_SYSTEM_PATH"): ("system_path",)}
 CONFIG_HANDLER_SYSTEM = brokkr.config.base.ConfigHandler(
     SYSTEM_NAME,
     defaults=DEFAULT_CONFIG_SYSTEM,

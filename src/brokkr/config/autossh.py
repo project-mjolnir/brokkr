@@ -2,7 +2,7 @@
 Configuration to run Brokkr as a service for supported platforms (Linux).
 """
 
-import brokkr.config.constants
+from brokkr.config.constants import PACKAGE_NAME
 
 
 AUTOSSH_SERVICE_FILENAME = "autossh-brokkr.service"
@@ -12,7 +12,7 @@ AUTOSSH_SERVICE_DEFAULTS = {
         "Description": "AutoSSH Tunnel Service",
         "Wants": "network-online.target sshd.service",
         "After": "network-online.target multi-user.target sshd.service",
-        "Before": brokkr.config.constants.PACKAGE_NAME + ".service",
+        "Before": PACKAGE_NAME + ".service",
         },
     "Service": {
         "Type": "simple",

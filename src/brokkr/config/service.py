@@ -6,15 +6,14 @@ Configuration to run Brokkr as a service for supported platforms (Linux).
 import sys
 
 # Local imports
-import brokkr.config.constants
+from brokkr.config.constants import PACKAGE_NAME
 
 
-SERVICE_FILENAME = brokkr.config.constants.PACKAGE_NAME + ".service"
+SERVICE_FILENAME = PACKAGE_NAME + ".service"
 
 SERVICE_DEFAULTS = {
     "Unit": {
-        "Description": (brokkr.config.constants.PACKAGE_NAME.title() +
-                        " Remote Client Service"),
+        "Description": PACKAGE_NAME.title() + " Remote Client Service",
         "Wants": (
             "network-online.target systemd-time-wait-sync.service "
             "systemd-timesyncd.service sshd.service "

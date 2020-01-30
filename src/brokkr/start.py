@@ -14,7 +14,7 @@ import time
 
 # Local imports
 import brokkr
-import brokkr.config.constants
+from brokkr.config.constants import PACKAGE_NAME
 
 
 EXIT_EVENT = threading.Event()
@@ -26,7 +26,7 @@ CONFIG_REQUIRE = ["system", "unit"]
 def quit_handler(signo, _frame):
     logger = logging.getLogger(__name__)
     logger.warning("Interrupted by signal %s; terminating %s",
-                   brokkr.config.constants.PACKAGE_NAME.title(), signo)
+                   PACKAGE_NAME.title(), signo)
     logging.shutdown()
     EXIT_EVENT.set()
 
@@ -74,8 +74,7 @@ def setup_basic_log_config(verbose=False):
     # Initialize logging
     logging.basicConfig(**log_args)
     if verbose <= 2:
-        package_logger = logging.getLogger(
-            brokkr.config.constants.PACKAGE_NAME)
+        package_logger = logging.getLogger(PACKAGE_NAME)
         package_logger.setLevel(log_level)
     return log_level
 

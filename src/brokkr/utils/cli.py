@@ -8,7 +8,7 @@ import argparse
 
 # Local imports
 import brokkr.config.base
-import brokkr.config.constants
+from brokkr.config.constants import PACKAGE_NAME
 import brokkr.config.handlers
 
 
@@ -201,8 +201,7 @@ def parse_args(sys_argv=None):
 def dispatch_command(subcommand, parsed_args):
     if subcommand == VERSION_PARAM:
         import brokkr
-        print(f"{brokkr.config.constants.PACKAGE_NAME.title()} version "
-              f"{str(brokkr.__version__)}")
+        print(f"{PACKAGE_NAME.title()} version {str(brokkr.__version__)}")
     elif subcommand == "help":
         generate_argparser_main().print_help()
     elif subcommand == "start":
