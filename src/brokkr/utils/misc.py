@@ -80,13 +80,8 @@ def get_actual_username():
     return getpass.getuser()
 
 
-def auto_repr(exclude):
-    def auto_repr_inner(obj):
-        def wrapper(self):
-            argument_list = ", ".join([f"{key}={value!r}"
-                                       for key, value in self.__dict__.items()
-                                       if key not in exclude])
-            return f"{type(self).__name__}({argument_list})"
-        setattr(obj, "__repr__", wrapper)
-        return obj
-    return auto_repr_inner
+class AutoReprMixin:
+    def __repr__(self):
+        argument_list = ", ".join(
+            [f"{key}={value!r}" for key, value in self.__dict__.items()])
+        return f"{type(self).__name__}({argument_list})"

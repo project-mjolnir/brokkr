@@ -54,8 +54,7 @@ def convert_paths(config_data, path_variables):
     return config_data
 
 
-@brokkr.utils.misc.auto_repr(exclude=())
-class ConfigType:
+class ConfigType(brokkr.utils.misc.AutoReprMixin):
     def __init__(
             self,
             name,
@@ -77,8 +76,7 @@ class ConfigType:
         self.config_version = config_version
 
 
-@brokkr.utils.misc.auto_repr(exclude=())
-class ConfigLevel(metaclass=abc.ABCMeta):
+class ConfigLevel(brokkr.utils.misc.AutoReprMixin, metaclass=abc.ABCMeta):
     def __init__(
             self,
             name,
@@ -276,8 +274,7 @@ class CLIArgsConfigLevel(MappingConfigLevel):
         return config_data
 
 
-@brokkr.utils.misc.auto_repr(exclude=())
-class ConfigHandler:
+class ConfigHandler(brokkr.utils.misc.AutoReprMixin):
     def __init__(self, config_type=None, config_levels=None):
         self.config_type = (
             config_type if config_type is not None
