@@ -59,6 +59,7 @@ UDEV_RULES = """
 # Enable brokkr client to reset and power up/down USB devices
 SUBSYSTEM=="usb", MODE="0660", GROUP="dialout"
 SUBSYSTEM=="usb-serial", MODE="0660", GROUP="dialout"
+
 """
 
 

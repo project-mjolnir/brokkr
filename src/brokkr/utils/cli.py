@@ -29,6 +29,7 @@ def generate_argparser_main():
     subparsers = parser_main.add_subparsers(
         title="Subcommands", help="Subcommand to execute",
         metavar="Subcommand", dest=SUBCOMMAND_PARAM)
+
     system_path_parsers = []
     script_parsers = []
 
@@ -128,7 +129,7 @@ def generate_argparser_main():
         help="Which config names to reset; by default, resets all of them")
     parser_configure_reset.add_argument(
         "--reset-levels", nargs="+", default="all",
-        choices={"all", *brokkr.config.base.CONFIG_LEVEL_PRESETS.keys()},
+        choices={"all", *brokkr.config.handlers.CONFIG_LEVEL_NAMES},
         help="Which config levels to reset; by default, resets all of them")
     script_parsers.append(parser_configure_reset)
 

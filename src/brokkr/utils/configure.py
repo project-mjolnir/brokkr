@@ -25,7 +25,7 @@ def write_config_file(config_name, config_data,
     config_data_default = config_source.generate_config()
     config_source.write_config({**config_data_default, **config_data})
     logging.info("%s config file updated in %r", config_name.title(),
-                 config_source._path.as_posix())
+                 config_source.path.as_posix())
 
 
 @basic_logging
@@ -36,7 +36,7 @@ def configure_reset(reset_names=ALL_RESET, reset_levels=ALL_RESET):
         if reset_names == ALL_RESET or config_name in reset_names:
             for level_name, level_source in handler.config_levels.items():
                 if reset_levels == ALL_RESET or level_name in reset_levels:
-                    if not getattr(level_source, "_preset", True):
+                    if not getattr(level_source, "preset", True):
                         logging.debug("Resetting %s configuration for %s",
                                       level_name, config_name)
                         level_source.write_config()

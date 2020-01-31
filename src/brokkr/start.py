@@ -114,7 +114,7 @@ def warn_on_startup_issues():
     if not system_path:
         logger.warning(
             "No system path config found at %r, falling back to defaults",
-            CONFIG_HANDLER_SYSTEM.config_levels["local"]._path.as_posix())
+            CONFIG_HANDLER_SYSTEM.config_levels["local"].path.as_posix())
         issues_found = True
     if not Path(system_path).exists():
         logger.error(
@@ -122,7 +122,7 @@ def warn_on_startup_issues():
             SYSTEM_CONFIG["system_path"].as_posix())
         issues_found = True
     else:
-        if not CONFIG_HANDLER_METADATA.config_levels["system"]._path.exists():
+        if not CONFIG_HANDLER_METADATA.config_levels["system"].path.exists():
             logger.warning(
                 "No system config directory found at system path %r",
                 SYSTEM_CONFIG["system_path"].as_posix())
@@ -130,7 +130,7 @@ def warn_on_startup_issues():
     if UNIT_CONFIGS["local"].get("number", None) is None:
         logger.warning(
             "No local unit config found at %r, falling back to defaults",
-            CONFIG_HANDLER_UNIT.config_levels["local"]._path.as_posix())
+            CONFIG_HANDLER_UNIT.config_levels["local"].path.as_posix())
         issues_found = True
 
     return issues_found
