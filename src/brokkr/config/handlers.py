@@ -63,7 +63,8 @@ DEFAULT_CONFIG_LOG = {
             "backupCount": 10,
             "class": "logging.handlers.RotatingFileHandler",
             "filename":
-                (OUTPUT_PATH_DEFAULT / (PACKAGE_NAME + ".log")).as_posix(),
+                (OUTPUT_PATH_DEFAULT / "log" / (PACKAGE_NAME + ".log")
+                 ).as_posix(),
             "formatter": "detailed",
             "level": DEFAULT_LOG_LEVEL,
             "maxBytes": int(1e7),
@@ -81,7 +82,7 @@ DEFAULT_CONFIG_LOG = {
         },
     }
 CONFIG_LEVELS_LOG = ["defaults", "common", PACKAGE_NAME, "local"]
-PATH_VARIABLES_LOG = (("handlers", "file", "filename"), )
+PATH_VARIABLES_LOG = ()
 CONFIG_HANDLER_LOG = brokkr.config.base.ConfigHandler(
     LOG_NAME,
     defaults=DEFAULT_CONFIG_LOG,
@@ -97,12 +98,15 @@ DEFAULT_CONFIG_STATIC = {
     "general": {
         "ip_sensor": "",
         "na_marker": "NA",
+        "output_filename":
+            "{output_type}_{system_name}_{unit_number:0>2}_{utc_date!s}.csv"
         },
     "monitor": {
+        "filename_args": {"output_type": "telemetry"},
         "hs_port": 8084,
-        "output_path": (OUTPUT_PATH_DEFAULT / "monitoring").as_posix(),
-        "sunsaver_pid_list": [],
+        "output_path": (OUTPUT_PATH_DEFAULT / "telemetry").as_posix(),
         "sleep_interval_s": 0.5,
+        "sunsaver_pid_list": [],
         "sunsaver_port": "",
         "sunsaver_start_offset": 0,
         "sunsaver_unit": 1,
@@ -114,7 +118,7 @@ CONFIG_HANDLER_STATIC = brokkr.config.base.ConfigHandler(
     STATIC_NAME,
     defaults=DEFAULT_CONFIG_STATIC,
     config_levels=CONFIG_LEVELS_STATIC,
-    path_variables=DEFAULT_CONFIG_STATIC,
+    path_variables=PATH_VARIABLES_STATIC,
     preset_config_path=SYSTEM_CONFIG["system_path"],
     )
 

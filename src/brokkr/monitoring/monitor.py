@@ -37,8 +37,9 @@ def write_status_data(status_data,
                       output_path=CONFIG["monitor"]["output_path"]):
     output_path = Path(output_path)
     if not output_path.suffix:
-        output_path = brokkr.output.determine_output_filename(output_path)
-    logger.debug("Writing monitoring output to file: %r",
+        output_path = brokkr.output.determine_output_filename(
+            output_path=output_path, **CONFIG["monitor"]["filename_args"])
+    logger.debug("Writing telemetry to file: %r",
                  output_path.as_posix())
     brokkr.output.write_line_csv(status_data, output_path)
     return status_data

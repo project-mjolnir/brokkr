@@ -24,7 +24,7 @@ def write_config_file(config_name, config_data,
     config_source = config_handler.config_levels[config_level]
     config_data_default = config_source.generate_config()
     config_source.write_config({**config_data_default, **config_data})
-    logging.info("%s config file updated in %s", config_name.title(),
+    logging.info("%s config file updated in %r", config_name.title(),
                  config_source._path.as_posix())
 
 

@@ -28,15 +28,19 @@ logger = logging.getLogger(__name__)
 
 
 def determine_output_filename(
-        output_path=CONFIG["monitor"]["output_path"],
-        prefix=METADATA_CONFIG["name"],
-        unit_number=UNIT_CONFIG["number"],
+        output_path,
+        filename=CONFIG["general"]["output_filename"],
+        **filename_args,
         ):
-    output_path = (Path(output_path)
-                   / ("{prefix}{unit_number}_{date!s}.csv".format(
-                       prefix=prefix,
-                       unit_number=unit_number,
-                       date=datetime.datetime.utcnow().date())))
+    filename_args_default = {
+            "system_name": METADATA_CONFIG["name"],
+            "unit_number": UNIT_CONFIG["number"],
+            "utc_date": datetime.datetime.utcnow().date(),
+            }
+    all_filename_args = {**filename_args_default, **filename_args}
+    logger.debug("Args for output filename: %s", all_filename_args)
+    rendered_filename = filename.format(**all_filename_args)
+    output_path = (Path(output_path) / rendered_filename)
     return output_path
 
 
@@ -46,9 +50,11 @@ def write_line_csv(data, out_file, **csv_params):
         if isinstance(out_file, io.IOBase):
             close_file = False
             data_csv = out_file
+            out_file_path = out_file.name.replace(os.sep, "/")
         else:
             close_file = True
             out_file = Path(out_file)
+            out_file_path = out_file.as_posix()
             logger.debug(
                 "Ensuring output directory at %r", out_file.parent.as_posix())
             os.makedirs(out_file.parent, exist_ok=True)
@@ -58,11 +64,10 @@ def write_line_csv(data, out_file, **csv_params):
         if not data_csv.tell():
             csv_writer.writeheader()
         csv_writer.writerow(data)
-        logger.debug("Monitoring data successfully written to CSV at %r",
-                     out_file)
+        logger.debug("Data successfully written to CSV at %r", out_file_path)
         return True
     except Exception as e:
-        logger.error("%s writing monitoring data to local CSV at %r: %s",
+        logger.error("%s writing output data to local CSV at %r: %s",
                      type(e).__name__, out_file, e)
         logger.info("Error details:", exc_info=1)
         logger.info("Data details: %r", data)
@@ -72,6 +77,6 @@ def write_line_csv(data, out_file, **csv_params):
             try:
                 data_csv.close()
             except Exception as e:
-                logger.warning("%s attempting to close monitoring CSV %r: %s",
+                logger.warning("%s attempting to close output CSV %r: %s",
                                type(e).__name__, out_file, e)
                 logger.info("Error details:", exc_info=1)

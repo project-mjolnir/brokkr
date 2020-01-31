@@ -8,6 +8,7 @@ import copy
 import logging
 import logging.config
 import os
+from pathlib import Path
 import signal
 import threading
 import time
@@ -81,14 +82,19 @@ def setup_basic_log_config(verbose=False):
 
 def setup_full_log_config(log_level_file=None, log_level_console=None):
     # Load and set logging config
+    from brokkr.config.bootstrap import (
+        METADATA_CONFIG, UNIT_CONFIG, LOG_CONFIG)
     logging.Formatter.converter = time.gmtime
-    from brokkr.config.bootstrap import LOG_CONFIG
     log_config = copy.deepcopy(LOG_CONFIG)
     if any((log_level_file, log_level_console)):
         log_config = setup_log_levels(
             log_config, log_level_file, log_level_console)
     for log_handler in log_config["handlers"].values():
         if log_handler.get("filename", None):
+            log_handler["filename"] = Path(log_handler["filename"].format(
+                system_name=METADATA_CONFIG["name"],
+                unit_number=UNIT_CONFIG["number"],
+                )).expanduser()
             os.makedirs(log_handler["filename"].parent, exist_ok=True)
     logging.config.dictConfig(log_config)
     return log_config
@@ -96,25 +102,34 @@ def setup_full_log_config(log_level_file=None, log_level_console=None):
 
 def warn_on_startup_issues():
     from brokkr.config.systemhandler import CONFIG_HANDLER_SYSTEM
-    from brokkr.config.system import SYSTEM_CONFIGS, SYSTEM_CONFIG
-    from brokkr.config.handlers import CONFIG_HANDLER_UNIT
+    from brokkr.config.system import SYSTEM_CONFIG
+    from brokkr.config.handlers import (CONFIG_HANDLER_UNIT,
+                                        CONFIG_HANDLER_METADATA)
     from brokkr.config.bootstrap import UNIT_CONFIGS
     logger = logging.getLogger(__name__)
 
+    # Avoid users trying to start Brokkr without setting up the basic config
     issues_found = False
-    if SYSTEM_CONFIGS["local"].get("system_path", None) is None:
+    system_path = SYSTEM_CONFIG["system_path"]
+    if not system_path:
         logger.warning(
-            "No system path config found at %s, falling back to defaults",
+            "No system path config found at %r, falling back to defaults",
             CONFIG_HANDLER_SYSTEM.config_levels["local"]._path.as_posix())
         issues_found = True
-    if not SYSTEM_CONFIG["system_path"].exists():
-        logger.warning(
-            "No system config directory found at system path %s",
-            system_path=SYSTEM_CONFIG["system_path"].as_posix())
+    if not Path(system_path).exists():
+        logger.error(
+            "No system config directory found at system path %r",
+            SYSTEM_CONFIG["system_path"].as_posix())
         issues_found = True
+    else:
+        if not CONFIG_HANDLER_METADATA.config_levels["system"]._path.exists():
+            logger.warning(
+                "No system config directory found at system path %r",
+                SYSTEM_CONFIG["system_path"].as_posix())
+            issues_found = True
     if UNIT_CONFIGS["local"].get("number", None) is None:
         logger.warning(
-            "No local unit config found at %s, falling back to defaults",
+            "No local unit config found at %r, falling back to defaults",
             CONFIG_HANDLER_UNIT.config_levels["local"]._path.as_posix())
         issues_found = True
 
@@ -144,7 +159,12 @@ def start_monitoring(verbose=None, **monitor_args):
 
 
 def start_brokkr(log_level_file=None, log_level_console=None, **monitor_args):
-    # Avoid users trying to start Brokkr without setting up the basic config
+    from brokkr.config.system import SYSTEM_CONFIGS, SYSTEM_CONFIG
+    from brokkr.config.bootstrap import (
+        LOG_CONFIGS,
+        UNIT_CONFIGS, UNIT_CONFIG,
+        METADATA_CONFIGS, METADATA_CONFIG,
+        )
 
     # Setup logging
     log_config = setup_full_log_config(
@@ -152,14 +172,21 @@ def start_brokkr(log_level_file=None, log_level_console=None, **monitor_args):
     logger = logging.getLogger(__name__)
 
     # Warn on some problem states
+    logger.info("Starting Brokkr version %s...", brokkr.__version__)
     warn_on_startup_issues()
 
-    # Print logging information
-    logger.info("Starting Brokkr version %s...", brokkr.__version__)
+    # Print config information
     if any((log_level_file, log_level_console)):
         logger.info("Using manual log levels: %s (file), %s (console)",
                     log_level_file, log_level_console)
-    logger.debug("Logging config: %s", log_config)
+    logger.debug("Logging config hierarchy: %r", LOG_CONFIGS)
+    logger.info("Logging config: %r", log_config)
+    logger.debug("System config hierarchy: %r", SYSTEM_CONFIGS)
+    logger.info("System config: %r", SYSTEM_CONFIG)
+    logger.debug("System metadata hierarchy: %r", METADATA_CONFIGS)
+    logger.info("System metadata: %r", METADATA_CONFIG)
+    logger.debug("Unit config hierarchy: %r", UNIT_CONFIGS)
+    logger.info("Unit config: %r", UNIT_CONFIG)
 
     # Start monitoring system
     start_monitoring(verbose=None, **monitor_args)
