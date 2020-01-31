@@ -63,7 +63,7 @@ SUBSYSTEM=="usb-serial", MODE="0660", GROUP="dialout"
 """
 
 
-def install_distro_package(package_name):
+def _install_distro_package(package_name):
     logging.debug("Installing %s...", package_name)
     for command in DISTRO_INSTALL_COMMANDS:
         logging.debug("Trying %s...", command("")[0])
@@ -78,7 +78,7 @@ def install_distro_package(package_name):
     return False
 
 
-def write_system_config_file(file_contents, filename, output_path):
+def _write_os_config_file(file_contents, filename, output_path):
     output_path = Path(output_path)
     os.makedirs(output_path, mode=0o755, exist_ok=True)
     with open(output_path / filename, "w",
@@ -94,8 +94,16 @@ def write_system_config_file(file_contents, filename, output_path):
 
 @basic_logging
 def install_autossh(skip_package_install=False, platform=None):
+    from brokkr.config.static import CONFIG
+    if not CONFIG["link"]["hostname"]:
+        raise RuntimeError(
+            "Cannot install autossh: Hostname not provided in config. "
+            "Run 'brokkr configure-system' to set the system config path, "
+            "and ensure a value is preset for at least the "
+            "'server_hostname' key in the static config's 'link' section.")
+
     if not skip_package_install:
-        install_succeeded = install_distro_package("autossh")
+        install_succeeded = _install_distro_package("autossh")
         if not install_succeeded:
             return install_succeeded
 
@@ -193,7 +201,7 @@ def install_udev(
     if not sys.platform.startswith("linux"):
         raise NotImplementedError("Udev rules are only implemented on Linux.")
 
-    write_system_config_file(udev_rules, udev_filename, udev_install_path)
+    _write_os_config_file(udev_rules, udev_filename, udev_install_path)
 
     # Reload udev to update configuration
     subprocess.run(["udevadm", "control", "--reload-rules"],

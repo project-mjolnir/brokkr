@@ -27,11 +27,17 @@ CSV_PARAMS = {
 logger = logging.getLogger(__name__)
 
 
-def determine_output_filename(
+def render_output_filename(
         output_path,
-        filename=CONFIG["general"]["output_filename"],
+        filename=CONFIG["general"]["output_filename_client"],
         **filename_args,
         ):
+    # Add master output path to output path if is relative
+    output_path = Path(output_path).expanduser()
+    if (not output_path.is_absolute()
+            and CONFIG["general"]["output_path_client"]):
+        output_path = CONFIG["general"]["output_path_client"] / output_path
+
     filename_args_default = {
             "system_name": METADATA_CONFIG["name"],
             "unit_number": UNIT_CONFIG["number"],
@@ -39,6 +45,7 @@ def determine_output_filename(
             }
     all_filename_args = {**filename_args_default, **filename_args}
     logger.debug("Args for output filename: %s", all_filename_args)
+
     rendered_filename = filename.format(**all_filename_args)
     output_path = (Path(output_path) / rendered_filename)
     return output_path

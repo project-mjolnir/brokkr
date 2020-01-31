@@ -9,11 +9,11 @@ import sys
 from brokkr.config.constants import PACKAGE_NAME
 
 
-SERVICE_FILENAME = PACKAGE_NAME + ".service"
+SERVICE_FILENAME = f"{PACKAGE_NAME}.service"
 
 SERVICE_DEFAULTS = {
     "Unit": {
-        "Description": PACKAGE_NAME.title() + " Remote Client Service",
+        "Description": f"{PACKAGE_NAME.title()} Remote Client Service",
         "Wants": (
             "network-online.target systemd-time-wait-sync.service "
             "systemd-timesyncd.service sshd.service "

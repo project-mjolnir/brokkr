@@ -34,10 +34,10 @@ def get_status_data(status_data_items=None):
 
 
 def write_status_data(status_data,
-                      output_path=CONFIG["monitor"]["output_path"]):
+                      output_path=CONFIG["monitor"]["output_path_client"]):
     output_path = Path(output_path)
     if not output_path.suffix:
-        output_path = brokkr.output.determine_output_filename(
+        output_path = brokkr.output.render_output_filename(
             output_path=output_path, **CONFIG["monitor"]["filename_args"])
     logger.debug("Writing telemetry to file: %r",
                  output_path.as_posix())
@@ -46,7 +46,7 @@ def write_status_data(status_data,
 
 
 def start_monitoring(
-        output_path=CONFIG["monitor"]["output_path"],
+        output_path=CONFIG["monitor"]["output_path_client"],
         monitor_interval_s=DYNAMIC_CONFIG["monitor"]["monitor_interval_s"],
         sleep_interval=CONFIG["monitor"]["sleep_interval_s"],
         exit_event=None,

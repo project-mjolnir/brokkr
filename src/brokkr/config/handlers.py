@@ -3,6 +3,9 @@
 Config handler setup for Brokkr's main managed configs.
 """
 
+# Standard library imports
+from pathlib import Path
+
 # Local imports
 import brokkr.config.base
 from brokkr.config.constants import PACKAGE_NAME, OUTPUT_PATH_DEFAULT
@@ -91,8 +94,9 @@ DEFAULT_CONFIG_LOG = {
             "backupCount": 10,
             "class": "logging.handlers.RotatingFileHandler",
             "filename":
-                (OUTPUT_PATH_DEFAULT / "log" / (PACKAGE_NAME + ".log")
-                 ).as_posix(),
+                (OUTPUT_PATH_DEFAULT / "log"
+                 / (PACKAGE_NAME + "_{system_name}_{unit_number:0>2}.log"))
+                .as_posix(),
             "formatter": "detailed",
             "level": DEFAULT_LOG_LEVEL,
             "maxBytes": int(1e7),
@@ -135,13 +139,21 @@ DEFAULT_CONFIG_STATIC = {
     "general": {
         "ip_sensor": "",
         "na_marker": "NA",
-        "output_filename":
-            "{output_type}_{system_name}_{unit_number:0>2}_{utc_date!s}.csv"
+        "output_path_client": OUTPUT_PATH_DEFAULT.as_posix(),
+        "output_filename_client":
+            "{output_type}_{system_name}_{unit_number:0>2}_{utc_date!s}.csv",
+        },
+    "link": {
+        "local_port": 22,
+        "server_hostname": "",
+        "server_port": 22,
+        "server_username": "",
+        "tunnel_port_offset": 10000,
         },
     "monitor": {
         "filename_args": {"output_type": "telemetry"},
         "hs_port": 8084,
-        "output_path": (OUTPUT_PATH_DEFAULT / "telemetry").as_posix(),
+        "output_path_client": Path("telemetry").as_posix(),
         "sleep_interval_s": 0.5,
         "sunsaver_pid_list": [],
         "sunsaver_port": "",
@@ -149,7 +161,8 @@ DEFAULT_CONFIG_STATIC = {
         "sunsaver_unit": 1,
         },
     }
-PATH_VARIABLES_STATIC = [("monitor", "output_path")]
+PATH_VARIABLES_STATIC = [
+    ("general", "output_path_client"), ("monitor", "output_path_client")]
 
 CONFIG_TYPE_STATIC = brokkr.config.base.ConfigType(
     STATIC_NAME,
@@ -198,7 +211,7 @@ CONFIG_LEVELS_DYNAMIC = [
 CONFIG_HANDLER_DYNAMIC = brokkr.config.base.ConfigHandler(
     config_type=CONFIG_TYPE_DYNAMIC,
     config_levels=CONFIG_LEVELS_DYNAMIC,
-)
+    )
 
 
 CONFIG_HANDLERS = {

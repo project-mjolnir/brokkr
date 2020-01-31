@@ -138,8 +138,8 @@ def warn_on_startup_issues():
 
 def start_monitoring(verbose=None, **monitor_args):
     # Drop output_path arg if true to use default path in function signature
-    if monitor_args.get("output_path", None) is True:
-        monitor_args.pop("output_path", None)
+    if monitor_args.get("output_path_client", None) is True:
+        monitor_args.pop("output_path_client", None)
 
     # Setup logging if not already configured
     if verbose is not None:
