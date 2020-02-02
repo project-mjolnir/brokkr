@@ -19,6 +19,31 @@ SYSTEM_PATH_PARAM = "system_path"
 ARGS_TODELETE = {VERSION_PARAM, SUBCOMMAND_PARAM, SYSTEM_PATH_PARAM}
 
 
+def generate_version_message():
+    import brokkr
+    client_version_message = (
+        f"{PACKAGE_NAME.title()} version {str(brokkr.__version__)}")
+    level_name = brokkr.config.handlers.LEVEL_NAME_SYSTEM
+    try:
+        from brokkr.config.bootstrap import METADATA_CONFIGS
+    except Exception:
+        system_version_message = "Error loading system metadata"
+    else:
+        if not METADATA_CONFIGS[level_name]:
+            system_version_message = "No system metadata found"
+        else:
+            if METADATA_CONFIGS[level_name].get("name_full", None):
+                system_name = METADATA_CONFIGS[level_name]["name_full"]
+            else:
+                system_name = METADATA_CONFIGS[level_name].get(
+                    "name", "System unknown")
+            system_version = METADATA_CONFIGS[level_name].get(
+                "version", "unknown")
+            system_version_message = f"{system_name} version {system_version}"
+    full_message = "\n".join([client_version_message, system_version_message])
+    return full_message
+
+
 def generate_argparser_main():
     parser_main = argparse.ArgumentParser(
         description="Client to monitor and manage remote IoT sensors.",
@@ -212,8 +237,7 @@ def parse_args(sys_argv=None):
 
 def dispatch_command(subcommand, parsed_args):
     if subcommand == VERSION_PARAM:
-        import brokkr
-        print(f"{PACKAGE_NAME.title()} version {str(brokkr.__version__)}")
+        print(generate_version_message())
     elif subcommand == "help":
         generate_argparser_main().print_help()
     elif subcommand == "start":
