@@ -215,16 +215,21 @@ CONFIG_HANDLER_DYNAMIC = brokkr.config.base.ConfigHandler(
 
 
 CONFIG_HANDLERS = {
-    brokkr.config.systemhandler.SYSTEM_NAME: (
-        brokkr.config.systemhandler.CONFIG_HANDLER_SYSTEM),
     UNIT_NAME: CONFIG_HANDLER_UNIT,
     METADATA_NAME: CONFIG_HANDLER_METADATA,
     LOG_NAME: CONFIG_HANDLER_LOG,
     STATIC_NAME: CONFIG_HANDLER_STATIC,
     DYNAMIC_NAME: CONFIG_HANDLER_DYNAMIC,
     }
-
-
 CONFIG_LEVEL_NAMES = {
     config_level.name for handler in CONFIG_HANDLERS.values()
+    for config_level in handler.config_levels.values()}
+
+ALL_CONFIG_HANDLERS = {
+    **{brokkr.config.systemhandler.SYSTEM_NAME:
+       brokkr.config.systemhandler.CONFIG_HANDLER_SYSTEM},
+    **CONFIG_HANDLERS,
+    }
+ALL_CONFIG_LEVEL_NAMES = {
+    config_level.name for handler in ALL_CONFIG_HANDLERS.values()
     for config_level in handler.config_levels.values()}

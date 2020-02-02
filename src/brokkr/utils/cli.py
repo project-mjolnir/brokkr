@@ -73,7 +73,8 @@ def generate_argparser_main():
 
     # Parser for the install-all subcommand
     parser_install_all = subparsers.add_parser(
-        "install-all", help="Install all elements needed to run the package")
+        "install-all", help="Install all elements needed to run the package",
+        argument_default=argparse.SUPPRESS)
     parser_install_all.add_argument(
         "--no-install-services", action="store_true",
         help="If passed, will not install the Brokkr and AutoSSH services")
@@ -93,17 +94,20 @@ def generate_argparser_main():
 
     # Parser for the install-config subcommand
     parser_install_config = subparsers.add_parser(
-        "install-config", help="Install Brokkr's config files for the system")
+        "install-config", help="Install Brokkr's config files for the system",
+        argument_default=argparse.SUPPRESS)
     script_parsers.append(parser_install_config)
 
     # Parser for the install-dialout subcommand
     parser_install_dialout = subparsers.add_parser(
-        "install-dialout", help="Enable serial port access for the user")
+        "install-dialout", help="Enable serial port access for the user",
+        argument_default=argparse.SUPPRESS)
     script_parsers.append(parser_install_dialout)
 
     # Parser for the install-firewall subcommand
     parser_install_firewall = subparsers.add_parser(
-        "install-firewall", help="Enable needed ports through the firewall")
+        "install-firewall", help="Enable needed ports through the firewall",
+        argument_default=argparse.SUPPRESS)
     script_parsers.append(parser_install_firewall)
 
     # Parser for the install-service subcommand
@@ -117,25 +121,31 @@ def generate_argparser_main():
 
     # Parser for the install-udev subcommand
     parser_install_udev = subparsers.add_parser(
-        "install-udev", help="Enable full access to USB ports via udev rules")
+        "install-udev", help="Enable full access to USB ports via udev rules",
+        argument_default=argparse.SUPPRESS)
     script_parsers.append(parser_install_udev)
 
     # Parser for the configure-reset subcommand
     parser_configure_reset = subparsers.add_parser(
-        "configure-reset", help="Reset brokkr-managed configuration files")
+        "configure-reset", help="Reset brokkr-managed configuration files",
+        argument_default=argparse.SUPPRESS)
     parser_configure_reset.add_argument(
-        "--reset-names", nargs="+", default="all",
-        choices={"all", *brokkr.config.handlers.CONFIG_HANDLERS.keys()},
+        "--reset-names", nargs="+",
+        choices={"all", *brokkr.config.handlers.ALL_CONFIG_HANDLERS.keys()},
         help="Which config names to reset; by default, resets all of them")
     parser_configure_reset.add_argument(
-        "--reset-levels", nargs="+", default="all",
-        choices={"all", *brokkr.config.handlers.CONFIG_LEVEL_NAMES},
+        "--reset-levels", nargs="+",
+        choices={"all", *brokkr.config.handlers.ALL_CONFIG_LEVEL_NAMES},
         help="Which config levels to reset; by default, resets all of them")
+    parser_configure_reset.add_argument(
+        "--include-system", action="store_true",
+        help="Don't attempt to install distro package, just service unit")
     script_parsers.append(parser_configure_reset)
 
     # Parser for the configure-unit subcommand
     parser_configure_unit = subparsers.add_parser(
-        "configure-unit", help="Set up per-unit configuration")
+        "configure-unit", help="Set up per-unit configuration",
+        argument_default=argparse.SUPPRESS)
     parser_configure_unit.add_argument(
         "number", type=int,
         help="The unit number of this particular Brokkr client")
@@ -149,7 +159,8 @@ def generate_argparser_main():
 
     # Parser for the configure-system subcommand
     parser_configure_system = subparsers.add_parser(
-        "configure-system", help="Set up sensor system configuration")
+        "configure-system", help="Set up sensor system configuration",
+        argument_default=argparse.SUPPRESS)
     parser_configure_system.add_argument(
         "system_config_path",
         help="The path to the sensor system config directory")
@@ -163,7 +174,7 @@ def generate_argparser_main():
                   "Override the settings in the config file and the env var."))
     for script_parser in script_parsers:
         script_parser.add_argument(
-            "-v", "--verbose", action="store_true",
+            "-v", "--verbose", action="store_true", default=None,
             help="If passed, will print details of the exact actions executed")
 
     return parser_main

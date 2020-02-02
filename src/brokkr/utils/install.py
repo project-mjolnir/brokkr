@@ -130,7 +130,7 @@ def install_service(platform=None):
 
 @basic_logging
 def install_config():
-    config_handlers = brokkr.config.handlers.CONFIG_HANDLERS
+    config_handlers = brokkr.config.handlers.ALL_CONFIG_HANDLERS
     for config_name, handler in config_handlers.items():
         logging.debug("Installing %s config...", config_name)
         handler.read_configs()

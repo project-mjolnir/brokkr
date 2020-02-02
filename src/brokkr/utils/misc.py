@@ -35,9 +35,9 @@ def start_time_offset(n_digits=3):
     return round((monotonic_ns() - START_TIME) / 1e9, n_digits)
 
 
-def setup_basic_logging(verbose=None):
+def setup_basic_logging(verbose=False):
     log_format = "{message}"
-    if verbose is None:
+    if verbose is False:
         logging_level = 99
     elif verbose:
         logging_level = "DEBUG"

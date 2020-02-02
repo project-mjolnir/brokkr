@@ -158,13 +158,6 @@ class FileConfigLevel(WritableConfigLevel):
             config_filename += ("." + self.extension)
             self.path = self.path / config_filename
 
-    def generate_config(self):
-        config_data = super().generate_config()
-        # Prevent JSON errors from serializing/deserializing empty dict
-        if not config_data and self.extension == EXTENSION_JSON:
-            config_data = {EMPTY_CONFIG[0]: EMPTY_CONFIG[1]}
-        return config_data
-
     def read_config(self, input_data=None):
         if input_data is None:
             try:
@@ -193,8 +186,16 @@ class FileConfigLevel(WritableConfigLevel):
         return config_data
 
     def write_config(self, config_data=None):
-        if config_data is None:
+        # Prevent JSON errors from serializing/deserializing empty dict
+        if not config_data and self.extension == EXTENSION_JSON:
+            config_data = {EMPTY_CONFIG[0]: EMPTY_CONFIG[1]}
+
+        # Merge config data with generated baseline
+        if not config_data:
             config_data = self.generate_config()
+        else:
+            config_data = {**self.generate_config(), **config_data}
+
         os.makedirs(self.path.parent, exist_ok=True)
         with open(self.path, mode="w",
                   encoding="utf-8", newline="\n") as config_file:
