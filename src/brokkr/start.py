@@ -14,7 +14,11 @@ import threading
 import time
 
 # Local imports
-from brokkr.config.constants import PACKAGE_NAME
+from brokkr.config.constants import (
+    PACKAGE_NAME,
+    OUTPUT_PATH_DEFAULT_EXPANDED,
+    OUTPUT_SUBPATH_TEST,
+    )
 import brokkr.utils.misc
 
 
@@ -59,7 +63,11 @@ def setup_log_levels(log_config, file_level=None, console_level=None):
     return log_config
 
 
-def setup_full_log_config(log_level_file=None, log_level_console=None):
+def setup_full_log_config(
+        log_level_file=None,
+        log_level_console=None,
+        test_mode=False,
+        ):
     # Load and set logging config
     from brokkr.config.bootstrap import (
         METADATA_CONFIG, UNIT_CONFIG, LOG_CONFIG)
@@ -74,6 +82,19 @@ def setup_full_log_config(log_level_file=None, log_level_console=None):
                 system_name=METADATA_CONFIG["name"],
                 unit_number=UNIT_CONFIG["number"],
                 )).expanduser()
+            if test_mode:
+                try:
+                    relative_filename = log_handler["filename"].relative_to(
+                        OUTPUT_PATH_DEFAULT_EXPANDED)
+                except ValueError:
+                    # If path is not relative to output dir
+                    log_handler["filename"] = (
+                        log_handler["filename"].parent / OUTPUT_SUBPATH_TEST
+                        / log_handler["filename"].name)
+                else:
+                    log_handler["filename"] = (
+                        OUTPUT_PATH_DEFAULT_EXPANDED / OUTPUT_SUBPATH_TEST
+                        / relative_filename)
             os.makedirs(log_handler["filename"].parent, exist_ok=True)
     logging.config.dictConfig(log_config)
     return log_config
@@ -176,7 +197,8 @@ def start_monitoring(verbose=None, quiet=None, **monitor_args):
         exit_event=EXIT_EVENT, **monitor_args)
 
 
-def start_brokkr(log_level_file=None, log_level_console=None, **monitor_args):
+def start_brokkr(log_level_file=None, log_level_console=None,
+                 test_mode=False, **monitor_args):
     from brokkr.config.system import SYSTEM_CONFIGS, SYSTEM_CONFIG
     from brokkr.config.bootstrap import (
         LOG_CONFIGS,
@@ -186,7 +208,10 @@ def start_brokkr(log_level_file=None, log_level_console=None, **monitor_args):
 
     # Setup logging
     log_config = setup_full_log_config(
-        log_level_file=log_level_file, log_level_console=log_level_console)
+        log_level_file=log_level_file,
+        log_level_console=log_level_console,
+        test_mode=test_mode,
+        )
     logger = logging.getLogger(__name__)
 
     # Print startup message and warn on some problem states
@@ -207,7 +232,7 @@ def start_brokkr(log_level_file=None, log_level_console=None, **monitor_args):
     logger.info("Unit config: %r", UNIT_CONFIG)
 
     # Start monitoring system
-    start_monitoring(verbose=None, **monitor_args)
+    start_monitoring(test_mode=test_mode, **monitor_args)
 
 
 if __name__ == "__main__":

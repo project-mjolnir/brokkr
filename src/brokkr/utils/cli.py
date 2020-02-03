@@ -46,6 +46,9 @@ def generate_argparser_main():
         "start", help="Start the monitoring, processing and control client",
         argument_default=argparse.SUPPRESS)
     parser_start.add_argument(
+        "--test-mode", action="store_true",
+        help="Run in test mode, outputting to a seperate test dir")
+    parser_start.add_argument(
         "--log-level-file", type=str,
         help="Level of messages to log to disk")
     parser_start.add_argument(
@@ -69,6 +72,7 @@ def generate_argparser_main():
         help="Pretty-print the status output, if printed")
     verbose_parsers.append(parser_monitor)
 
+    # Parser for the status subcommand
     parser_status = subparsers.add_parser(
         "status", help="Get and print the current monitoring data",
         argument_default=argparse.SUPPRESS)

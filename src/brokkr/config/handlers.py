@@ -8,6 +8,8 @@ import brokkr.config.base
 from brokkr.config.constants import (
     PACKAGE_NAME,
     OUTPUT_PATH_DEFAULT,
+    OUTPUT_SUBPATH_LOG,
+    OUTPUT_SUBPATH_MONITOR,
     SYSTEM_SUBPATH_CONFIG,
     )
 from brokkr.config.system import SYSTEM_CONFIG
@@ -96,7 +98,7 @@ DEFAULT_CONFIG_LOG = {
             "backupCount": 10,
             "class": "logging.handlers.RotatingFileHandler",
             "filename":
-                (OUTPUT_PATH_DEFAULT / "log"
+                (OUTPUT_PATH_DEFAULT / OUTPUT_SUBPATH_LOG
                  / (PACKAGE_NAME + "_{system_name}_{unit_number:0>2}.log"))
                 .as_posix(),
             "formatter": "detailed",
@@ -157,7 +159,7 @@ DEFAULT_CONFIG_STATIC = {
     "monitor": {
         "filename_args": {"output_type": "telemetry"},
         "hs_port": 8084,
-        "output_path_client": "telemetry",
+        "output_path_client": OUTPUT_SUBPATH_MONITOR.as_posix(),
         "sleep_interval_s": 0.5,
         "sunsaver_pid_list": [],
         "sunsaver_port": "",
