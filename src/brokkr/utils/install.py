@@ -54,7 +54,7 @@ FIREWALL_COMMANDS_WINDOWS = {
 
 # Udev constants
 UDEV_INSTALL_PATH = Path("etc", "udev", "rules.d")
-UDEV_FILENAME = "10-brokkr-usb.rules"
+UDEV_FILENAME = "98-brokkr-usb.rules"
 UDEV_RULES = """
 # Enable brokkr client to reset and power up/down USB devices
 SUBSYSTEM=="usb", MODE="0660", GROUP="dialout"
