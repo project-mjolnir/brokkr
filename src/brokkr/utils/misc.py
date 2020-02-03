@@ -11,6 +11,11 @@ import os
 import time
 import sys
 
+# Local imports
+from brokkr.config.constants import PACKAGE_NAME
+
+
+# --- Time functions --- #
 
 def time_ns():
     # Fallback to non-ns time functions on Python <=3.6
@@ -35,27 +40,65 @@ def start_time_offset(n_digits=3):
     return round((monotonic_ns() - START_TIME) / 1e9, n_digits)
 
 
-def setup_basic_logging(verbose=False):
-    log_format = "{message}"
-    if verbose is False:
-        logging_level = 99
-    elif verbose:
-        logging_level = "DEBUG"
-        log_format = "{levelname}: ({name}) {message}"
+# --- Logging functions --- #
+
+MAX_VERBOSE = 3
+MIN_VERBOSE = -3
+LOG_LEVEL = {
+    -3: 99,
+    -2: logging.CRITICAL,
+    -1: logging.ERROR,
+    0: logging.WARNING,
+    1: logging.INFO,
+    2: logging.DEBUG,
+    3: logging.DEBUG,
+    }
+SUBHANDLERS_LEVEL = 3
+
+
+def determine_log_level(verbose=0):
+    verbose = round(verbose)
+    if verbose > MAX_VERBOSE:
+        return LOG_LEVEL[MAX_VERBOSE]
+    if verbose < MIN_VERBOSE:
+        return LOG_LEVEL[MIN_VERBOSE]
+    return LOG_LEVEL[verbose]
+
+
+def setup_basic_logging(verbose=0, quiet=0, script_mode=False):
+    # Setup logging config
+    log_args = {"stream": sys.stdout, "style": "{"}
+
+    verbose = 0 if verbose is None else verbose
+    quiet = 0 if quiet is None else quiet
+    verbose_net = verbose - quiet
+
+    log_level = determine_log_level(verbose_net)
+    if script_mode and log_level >= logging.INFO:
+        log_args["format"] = "{message}"
     else:
-        logging_level = "INFO"
-    logging.basicConfig(stream=sys.stdout, level=logging_level,
-                        format=log_format, style="{")
+        log_args["format"] = "{levelname} | {name} | {message}"
+    if script_mode or verbose >= SUBHANDLERS_LEVEL:
+        log_args["level"] = log_level
+
+    # Initialize logging
+    logging.basicConfig(**log_args)
+    logger = logging.getLogger(PACKAGE_NAME)
+    if not script_mode and verbose_net < SUBHANDLERS_LEVEL:
+        logger.setLevel(log_level)
+    return logger
 
 
 def basic_logging(func):
     @functools.wraps(func)
-    def _basic_logging(*args, verbose=None, **kwargs):
-        setup_basic_logging(verbose=verbose)
+    def _basic_logging(*args, verbose=0, quiet=0, **kwargs):
+        setup_basic_logging(verbose=verbose, quiet=quiet, script_mode=True)
         value = func(*args, **kwargs)
         return value
     return _basic_logging
 
+
+# --- General utility functions --- #
 
 def update_dict_recursive(base, update):
     for update_key, update_value in update.items():
@@ -79,6 +122,8 @@ def get_actual_username():
         pass
     return getpass.getuser()
 
+
+# --- Common utility mixins and decorators --- #
 
 class AutoReprMixin:
     def __repr__(self):

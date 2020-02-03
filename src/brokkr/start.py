@@ -14,7 +14,6 @@ import threading
 import time
 
 # Local imports
-import brokkr
 from brokkr.config.constants import PACKAGE_NAME
 
 
@@ -57,27 +56,6 @@ def setup_log_levels(log_config, file_level=None, console_level=None):
                      for level_name in levels_tocheck))
     log_config["root"]["level"] = level_min
     return log_config
-
-
-def setup_basic_log_config(verbose=False):
-    # Setup logging config
-    log_args = {"format": "{levelname} | {name} | {message}",
-                "style": "{"}
-    if verbose and verbose == 1:
-        log_level = logging.INFO
-    elif verbose and verbose >= 2:
-        log_level = logging.DEBUG
-        if verbose >= 3:
-            log_args["level"] = logging.DEBUG
-    else:
-        log_level = logging.WARNING
-
-    # Initialize logging
-    logging.basicConfig(**log_args)
-    if verbose <= 2:
-        package_logger = logging.getLogger(PACKAGE_NAME)
-        package_logger.setLevel(log_level)
-    return log_level
 
 
 def setup_full_log_config(log_level_file=None, log_level_console=None):
@@ -136,14 +114,42 @@ def warn_on_startup_issues():
     return issues_found
 
 
-def start_monitoring(verbose=None, **monitor_args):
+def generate_version_message():
+    import brokkr
+    client_version_message = (
+        f"{PACKAGE_NAME.title()} version {str(brokkr.__version__)}")
+    level_name = brokkr.config.handlers.LEVEL_NAME_SYSTEM
+    try:
+        from brokkr.config.bootstrap import METADATA_CONFIGS
+    except Exception:
+        system_version_message = "Error loading system metadata"
+    else:
+        if not METADATA_CONFIGS[level_name]:
+            system_version_message = "No system metadata found"
+        else:
+            if METADATA_CONFIGS[level_name].get("name_full", None):
+                system_name = METADATA_CONFIGS[level_name]["name_full"]
+            else:
+                system_name = METADATA_CONFIGS[level_name].get(
+                    "name", "System unknown")
+            system_version = METADATA_CONFIGS[level_name].get(
+                "version", "unknown")
+            system_version_message = f"{system_name} version {system_version}"
+    full_message = ", ".join([client_version_message, system_version_message])
+    return full_message
+
+
+def start_monitoring(verbose=None, quiet=None, **monitor_args):
+    import brokkr.utils.misc
+
     # Drop output_path arg if true to use default path in function signature
     if monitor_args.get("output_path_client", None) is True:
         monitor_args.pop("output_path_client", None)
 
     # Setup logging if not already configured
-    if verbose is not None:
-        setup_basic_log_config(verbose)
+    if verbose is not None or quiet is not None:
+        brokkr.utils.misc.setup_basic_logging(
+            verbose=verbose, quiet=quiet, script_mode=False)
     logger = logging.getLogger(__name__)
 
     # Print logging information
@@ -171,8 +177,8 @@ def start_brokkr(log_level_file=None, log_level_console=None, **monitor_args):
         log_level_file=log_level_file, log_level_console=log_level_console)
     logger = logging.getLogger(__name__)
 
-    # Warn on some problem states
-    logger.info("Starting Brokkr version %s...", brokkr.__version__)
+    # Print startup message and warn on some problem states
+    logger.info("Starting %s...", generate_version_message())
     warn_on_startup_issues()
 
     # Print config information

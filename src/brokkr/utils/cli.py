@@ -6,11 +6,6 @@ Main-level command handling routine for running brokkr on the command line.
 # Standard library imports
 import argparse
 
-# Local imports
-import brokkr.config.base
-from brokkr.config.constants import PACKAGE_NAME
-import brokkr.config.handlers
-
 
 VERSION_PARAM = "version"
 SUBCOMMAND_PARAM = "subcommand_name"
@@ -19,44 +14,24 @@ SYSTEM_PATH_PARAM = "system_path"
 ARGS_TODELETE = {VERSION_PARAM, SUBCOMMAND_PARAM, SYSTEM_PATH_PARAM}
 
 
-def generate_version_message():
-    import brokkr
-    client_version_message = (
-        f"{PACKAGE_NAME.title()} version {str(brokkr.__version__)}")
-    level_name = brokkr.config.handlers.LEVEL_NAME_SYSTEM
-    try:
-        from brokkr.config.bootstrap import METADATA_CONFIGS
-    except Exception:
-        system_version_message = "Error loading system metadata"
-    else:
-        if not METADATA_CONFIGS[level_name]:
-            system_version_message = "No system metadata found"
-        else:
-            if METADATA_CONFIGS[level_name].get("name_full", None):
-                system_name = METADATA_CONFIGS[level_name]["name_full"]
-            else:
-                system_name = METADATA_CONFIGS[level_name].get(
-                    "name", "System unknown")
-            system_version = METADATA_CONFIGS[level_name].get(
-                "version", "unknown")
-            system_version_message = f"{system_name} version {system_version}"
-    full_message = "\n".join([client_version_message, system_version_message])
-    return full_message
-
-
 def generate_argparser_main():
+    import brokkr.config.handlers
+
     parser_main = argparse.ArgumentParser(
         description="Client to monitor and manage remote IoT sensors.",
         argument_default=argparse.SUPPRESS)
     parser_main.add_argument(
         "--version", action="store_true", dest=VERSION_PARAM,
         help="If passed, will print the version and exit")
+    parser_main.add_argument(
+        "--system-path", dest=SYSTEM_PATH_PARAM,
+        help=("Sets the directory to use to load system config data. "
+              "Overrides the settings in the config file and the env var."))
     subparsers = parser_main.add_subparsers(
         title="Subcommands", help="Subcommand to execute",
         metavar="Subcommand", dest=SUBCOMMAND_PARAM)
 
-    system_path_parsers = []
-    script_parsers = []
+    verbose_parsers = []
 
     # Parser for the version subcommand
     subparsers.add_parser(
@@ -76,7 +51,6 @@ def generate_argparser_main():
     parser_start.add_argument(
         "--log-level-console", type=str,
         help="Level of messages to log to the console")
-    system_path_parsers.append(parser_start)
 
     # Parser for the monitor subcommand
     parser_monitor = subparsers.add_parser(
@@ -90,11 +64,7 @@ def generate_argparser_main():
     parser_monitor.add_argument(
         "--monitor-interval-s", type=int,
         help="Interval between status checks, in s")
-    parser_monitor.add_argument(
-        "-v", "--verbose", action="count", default=0,
-        help=("Verbosity level; only errors by default, -v for basic info, "
-              "-vv for detailed info and -vvv for debug info"))
-    system_path_parsers.append(parser_monitor)
+    verbose_parsers.append(parser_monitor)
 
     # Parser for the install-all subcommand
     parser_install_all = subparsers.add_parser(
@@ -103,7 +73,7 @@ def generate_argparser_main():
     parser_install_all.add_argument(
         "--no-install-services", action="store_true",
         help="If passed, will not install the Brokkr and AutoSSH services")
-    script_parsers.append(parser_install_all)
+    verbose_parsers.append(parser_install_all)
 
     # Parser for the install-autossh subcommand
     parser_install_autossh = subparsers.add_parser(
@@ -115,25 +85,25 @@ def generate_argparser_main():
     parser_install_autossh.add_argument(
         "--platform", choices={"linux", },
         help="Manually override automatic platform detection")
-    script_parsers.append(parser_install_autossh)
+    verbose_parsers.append(parser_install_autossh)
 
     # Parser for the install-config subcommand
     parser_install_config = subparsers.add_parser(
         "install-config", help="Install Brokkr's config files for the system",
         argument_default=argparse.SUPPRESS)
-    script_parsers.append(parser_install_config)
+    verbose_parsers.append(parser_install_config)
 
     # Parser for the install-dialout subcommand
     parser_install_dialout = subparsers.add_parser(
         "install-dialout", help="Enable serial port access for the user",
         argument_default=argparse.SUPPRESS)
-    script_parsers.append(parser_install_dialout)
+    verbose_parsers.append(parser_install_dialout)
 
     # Parser for the install-firewall subcommand
     parser_install_firewall = subparsers.add_parser(
         "install-firewall", help="Enable needed ports through the firewall",
         argument_default=argparse.SUPPRESS)
-    script_parsers.append(parser_install_firewall)
+    verbose_parsers.append(parser_install_firewall)
 
     # Parser for the install-service subcommand
     parser_install_service = subparsers.add_parser(
@@ -142,13 +112,13 @@ def generate_argparser_main():
     parser_install_service.add_argument(
         "--platform", choices={"linux", },
         help="Manually override automatic platform detection")
-    script_parsers.append(parser_install_service)
+    verbose_parsers.append(parser_install_service)
 
     # Parser for the install-udev subcommand
     parser_install_udev = subparsers.add_parser(
         "install-udev", help="Enable full access to USB ports via udev rules",
         argument_default=argparse.SUPPRESS)
-    script_parsers.append(parser_install_udev)
+    verbose_parsers.append(parser_install_udev)
 
     # Parser for the configure-reset subcommand
     parser_configure_reset = subparsers.add_parser(
@@ -165,7 +135,7 @@ def generate_argparser_main():
     parser_configure_reset.add_argument(
         "--include-system", action="store_true",
         help="Don't attempt to install distro package, just service unit")
-    script_parsers.append(parser_configure_reset)
+    verbose_parsers.append(parser_configure_reset)
 
     # Parser for the configure-unit subcommand
     parser_configure_unit = subparsers.add_parser(
@@ -180,7 +150,7 @@ def generate_argparser_main():
     parser_configure_unit.add_argument(
         "--site-description", default="",
         help="An optional description of this particular Brokkr site")
-    script_parsers.append(parser_configure_unit)
+    verbose_parsers.append(parser_configure_unit)
 
     # Parser for the configure-system subcommand
     parser_configure_system = subparsers.add_parser(
@@ -189,18 +159,16 @@ def generate_argparser_main():
     parser_configure_system.add_argument(
         "system_config_path",
         help="The path to the sensor system config directory")
-    script_parsers.append(parser_configure_system)
+    verbose_parsers.append(parser_configure_system)
 
     # Add common parameters to subcommand groups
-    for system_path_parser in system_path_parsers:
-        system_path_parser.add_argument(
-            "--system-path", dest=SYSTEM_PATH_PARAM,
-            help=("Sets the directory to use to load system config data. "
-                  "Override the settings in the config file and the env var."))
-    for script_parser in script_parsers:
-        script_parser.add_argument(
-            "-v", "--verbose", action="store_true", default=None,
-            help="If passed, will print details of the exact actions executed")
+    for verbose_parser in verbose_parsers:
+        verbose_parser.add_argument(
+            "-v", "--verbose", action="count", default=0,
+            help=("Verbosity level; pass -v, -vv or -vvv for more verbosity"))
+        verbose_parser.add_argument(
+            "-q", "--quiet", action="count", default=0,
+            help=("Quietness level; pass -q, -qq or -qqq for more silence"))
 
     return parser_main
 
@@ -237,7 +205,8 @@ def parse_args(sys_argv=None):
 
 def dispatch_command(subcommand, parsed_args):
     if subcommand == VERSION_PARAM:
-        print(generate_version_message())
+        import brokkr.start
+        print(brokkr.start.generate_version_message())
     elif subcommand == "help":
         generate_argparser_main().print_help()
     elif subcommand == "start":
