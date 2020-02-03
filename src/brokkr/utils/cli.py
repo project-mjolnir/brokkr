@@ -64,7 +64,18 @@ def generate_argparser_main():
     parser_monitor.add_argument(
         "--monitor-interval-s", type=int,
         help="Interval between status checks, in s")
+    parser_monitor.add_argument(
+        "--pretty", action="store_true",
+        help="Pretty-print the status output, if printed")
     verbose_parsers.append(parser_monitor)
+
+    parser_status = subparsers.add_parser(
+        "status", help="Get and print the current monitoring data",
+        argument_default=argparse.SUPPRESS)
+    parser_status.add_argument(
+        "--raw", action="store_false", default=True, dest="pretty",
+        help="Don't pretty-print the status output, use repr instead")
+    verbose_parsers.append(parser_status)
 
     # Parser for the install-all subcommand
     parser_install_all = subparsers.add_parser(
@@ -215,6 +226,9 @@ def dispatch_command(subcommand, parsed_args):
     elif subcommand == "monitor":
         import brokkr.start
         brokkr.start.start_monitoring(**parsed_args)
+    elif subcommand == "status":
+        import brokkr.start
+        brokkr.start.print_status(**parsed_args)
     elif subcommand.startswith("install_"):
         import brokkr.utils.install
         getattr(brokkr.utils.install, subcommand)(**parsed_args)

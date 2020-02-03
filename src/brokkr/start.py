@@ -15,6 +15,7 @@ import time
 
 # Local imports
 from brokkr.config.constants import PACKAGE_NAME
+import brokkr.utils.misc
 
 
 EXIT_EVENT = threading.Event()
@@ -137,6 +138,17 @@ def generate_version_message():
             system_version_message = f"{system_name} version {system_version}"
     full_message = ", ".join([client_version_message, system_version_message])
     return full_message
+
+
+@brokkr.utils.misc.basic_logging
+def print_status(pretty=True):
+    import brokkr.monitoring.monitor
+    logger = logging.getLogger(__name__)
+    logger.debug("Getting oneshot status data...")
+    if pretty:
+        print(brokkr.monitoring.monitor.format_status_data())
+    else:
+        print(brokkr.monitoring.monitor.get_status_data())
 
 
 def start_monitoring(verbose=None, quiet=None, **monitor_args):

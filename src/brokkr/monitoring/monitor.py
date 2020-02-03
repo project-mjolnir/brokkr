@@ -33,6 +33,16 @@ def get_status_data(status_data_items=None):
     return status_data
 
 
+def format_status_data(status_data=None):
+    status_data = get_status_data() if status_data is None else status_data
+    status_data_list = [
+        "{key}: {value!s}".format(
+            key=key.replace("_", " ").title(), value=value)
+        for key, value in status_data.items()]
+    status_data_pretty = "\n".join(status_data_list)
+    return status_data_pretty
+
+
 def write_status_data(status_data,
                       output_path=CONFIG["monitor"]["output_path_client"]):
     output_path = Path(output_path)
@@ -49,6 +59,7 @@ def start_monitoring(
         output_path=CONFIG["monitor"]["output_path_client"],
         monitor_interval_s=DYNAMIC_CONFIG["monitor"]["monitor_interval_s"],
         sleep_interval=CONFIG["monitor"]["sleep_interval_s"],
+        pretty=False,
         exit_event=None,
         ):
     if exit_event is None:
@@ -60,7 +71,10 @@ def start_monitoring(
             if output_path is not None:
                 write_status_data(status_data, output_path=output_path)
             elif logger.getEffectiveLevel() > logging.DEBUG:
-                print("Status data: {}".format(status_data))
+                if pretty:
+                    print(format_status_data(status_data))
+                else:
+                    print(f"Status data: {status_data}")
         except Exception as e:  # Keep recording data if an error occurs
             logger.critical("%s caught at main level: %s",
                             type(e).__name__, e)
