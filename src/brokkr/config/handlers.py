@@ -16,8 +16,7 @@ from brokkr.config.constants import (
     LEVEL_NAME_REMOTE,
     LEVEL_NAME_SYSTEM,
     LEVEL_NAME_SYSTEM_CLIENT,
-    OUTPUT_PATH_BASE,
-    OUTPUT_SUBPATH_DEFAULT,
+    OUTPUT_PATH_DEFAULT,
     OUTPUT_SUBPATH_LOG,
     OUTPUT_SUBPATH_MONITOR,
     PACKAGE_NAME,
@@ -33,8 +32,7 @@ MODE_OVERLAY = MODE_CONFIG[MODE_CONFIG["mode"]]
 
 
 DEFAULT_CONFIG_BOOTSTRAP = {
-    "output_path_client":
-        (OUTPUT_PATH_BASE / OUTPUT_SUBPATH_DEFAULT).as_posix(),
+    "output_path_client": OUTPUT_PATH_DEFAULT.as_posix(),
     "system_prefix": "mjolnir",
     }
 PATH_VARIABLES_BOOTSTRAP = [("output_path_client", )]

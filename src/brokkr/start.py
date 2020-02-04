@@ -4,18 +4,15 @@ Startup code for running the Brokkr client mainloop as an application.
 """
 
 # Standard library imports
-import copy
 import logging
 import logging.config
-import os
 from pathlib import Path
 import signal
 import threading
-import time
 
 # Local imports
 from brokkr.config.constants import PACKAGE_NAME, LEVEL_NAME_SYSTEM
-import brokkr.utils.misc
+import brokkr.logger
 
 
 EXIT_EVENT = threading.Event()
@@ -38,66 +35,6 @@ def set_quit_signal_handler(signal_handler, signals=SIGNALS_SET):
             signal.signal(getattr(signal, signal_type), signal_handler)
         except AttributeError:  # Windows doesn't have SIGHUP
             continue
-
-
-def setup_log_levels(log_config, file_level=None, console_level=None):
-    file_level = (file_level.upper()
-                  if isinstance(file_level, str) else file_level)
-    console_level = (console_level.upper()
-                     if isinstance(console_level, str) else console_level)
-    for handler, level in (("file", file_level), ("console", console_level)):
-        if level:
-            log_config["handlers"][handler]["level"] = level
-            if handler not in log_config["root"]["handlers"]:
-                log_config["root"]["handlers"].append(handler)
-    levels_tocheck = (level for level in (
-        file_level, console_level, log_config["root"]["level"]
-        ) if (level == 0 or level))
-    level_min = min((int(getattr(logging, str(level_name), level_name))
-                     for level_name in levels_tocheck))
-    log_config["root"]["level"] = level_min
-    return log_config
-
-
-def setup_log_handler_paths(log_config):
-    from brokkr.config.bootstrap import BOOTSTRAP_CONFIG
-    from brokkr.config.metadata import METADATA_CONFIG
-    from brokkr.config.unit import UNIT_CONFIG
-
-    for log_handler in log_config["handlers"].values():
-        if log_handler.get("filename", None):
-            log_filename = Path(log_handler["filename"].format(
-                system_name=METADATA_CONFIG["name"],
-                system_prefix=BOOTSTRAP_CONFIG["system_prefix"],
-                unit_number=UNIT_CONFIG["number"],
-                )).expanduser()
-            if (not log_filename.is_absolute()
-                    and BOOTSTRAP_CONFIG["output_path_client"]):
-                log_filename = (
-                    BOOTSTRAP_CONFIG["output_path_client"] / log_filename)
-            os.makedirs(log_filename.parent, exist_ok=True)
-            log_handler["filename"] = log_filename
-
-    return log_config
-
-
-def setup_full_log_config(
-        log_level_file=None,
-        log_level_console=None,
-        ):
-    # Load and set logging config
-    from brokkr.config.log import LOG_CONFIG
-    logging.Formatter.converter = time.gmtime
-    log_config = copy.deepcopy(LOG_CONFIG)
-
-    log_config = setup_log_handler_paths(log_config)
-
-    if any((log_level_file, log_level_console)):
-        log_config = setup_log_levels(
-            log_config, log_level_file, log_level_console)
-
-    logging.config.dictConfig(log_config)
-    return log_config
 
 
 def warn_on_startup_issues():
@@ -160,7 +97,7 @@ def generate_version_message():
     return full_message
 
 
-@brokkr.utils.misc.basic_logging
+@brokkr.logger.basic_logging
 def print_status(pretty=True):
     import brokkr.monitoring.monitor
     logger = logging.getLogger(__name__)
@@ -180,7 +117,7 @@ def start_monitoring(verbose=None, quiet=None, **monitor_args):
 
     # Setup logging if not already configured
     if verbose is not None or quiet is not None:
-        brokkr.utils.misc.setup_basic_logging(
+        brokkr.logger.setup_basic_logging(
             verbose=verbose, quiet=quiet, script_mode=False)
     logger = logging.getLogger(__name__)
 
@@ -199,14 +136,19 @@ def start_monitoring(verbose=None, quiet=None, **monitor_args):
 def start_brokkr(log_level_file=None, log_level_console=None, **monitor_args):
     from brokkr.config.bootstrap import BOOTSTRAP_CONFIGS, BOOTSTRAP_CONFIG
     from brokkr.config.metadata import METADATA_CONFIGS, METADATA_CONFIG
-    from brokkr.config.log import LOG_CONFIGS
+    from brokkr.config.log import LOG_CONFIGS, LOG_CONFIG
     from brokkr.config.system import SYSTEM_CONFIGS, SYSTEM_CONFIG
     from brokkr.config.unit import UNIT_CONFIGS, UNIT_CONFIG
 
     # Setup logging
-    log_config = setup_full_log_config(
+    log_config = brokkr.logger.setup_full_log_config(
+        LOG_CONFIG,
         log_level_file=log_level_file,
         log_level_console=log_level_console,
+        output_path=BOOTSTRAP_CONFIG["output_path_client"],
+        system_name=METADATA_CONFIG["name"],
+        system_prefix=BOOTSTRAP_CONFIG["system_prefix"],
+        unit_number=UNIT_CONFIG["number"],
         )
     logger = logging.getLogger(__name__)
 

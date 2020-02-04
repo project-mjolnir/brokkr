@@ -4,15 +4,9 @@ General utility functions for Brokkr.
 
 # Standard library imports
 import collections.abc
-import functools
 import getpass
-import logging
 import os
 import time
-import sys
-
-# Local imports
-from brokkr.config.constants import PACKAGE_NAME
 
 
 # --- Time functions --- #
@@ -38,64 +32,6 @@ START_TIME = monotonic_ns()
 
 def start_time_offset(n_digits=3):
     return round((monotonic_ns() - START_TIME) / 1e9, n_digits)
-
-
-# --- Logging functions --- #
-
-MAX_VERBOSE = 3
-MIN_VERBOSE = -3
-LOG_LEVEL = {
-    -3: 99,
-    -2: logging.CRITICAL,
-    -1: logging.ERROR,
-    0: logging.WARNING,
-    1: logging.INFO,
-    2: logging.DEBUG,
-    3: logging.DEBUG,
-    }
-SUBHANDLERS_LEVEL = 3
-
-
-def determine_log_level(verbose=0):
-    verbose = round(verbose)
-    if verbose > MAX_VERBOSE:
-        return LOG_LEVEL[MAX_VERBOSE]
-    if verbose < MIN_VERBOSE:
-        return LOG_LEVEL[MIN_VERBOSE]
-    return LOG_LEVEL[verbose]
-
-
-def setup_basic_logging(verbose=0, quiet=0, script_mode=False):
-    # Setup logging config
-    log_args = {"stream": sys.stdout, "style": "{"}
-
-    verbose = 0 if verbose is None else verbose
-    quiet = 0 if quiet is None else quiet
-    verbose_net = verbose - quiet
-
-    log_level = determine_log_level(verbose_net)
-    if script_mode and log_level >= logging.INFO:
-        log_args["format"] = "{message}"
-    else:
-        log_args["format"] = "{levelname} | {name} | {message}"
-    if script_mode or verbose >= SUBHANDLERS_LEVEL:
-        log_args["level"] = log_level
-
-    # Initialize logging
-    logging.basicConfig(**log_args)
-    logger = logging.getLogger(PACKAGE_NAME)
-    if not script_mode and verbose_net < SUBHANDLERS_LEVEL:
-        logger.setLevel(log_level)
-    return logger
-
-
-def basic_logging(func):
-    @functools.wraps(func)
-    def _basic_logging(*args, verbose=0, quiet=0, **kwargs):
-        setup_basic_logging(verbose=verbose, quiet=quiet, script_mode=True)
-        value = func(*args, **kwargs)
-        return value
-    return _basic_logging
 
 
 # --- General utility functions --- #

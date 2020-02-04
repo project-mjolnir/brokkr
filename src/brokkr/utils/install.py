@@ -17,8 +17,8 @@ import brokkr.config.autossh
 import brokkr.config.base
 import brokkr.config.handlers
 import brokkr.config.service
+import brokkr.logger
 import brokkr.utils.misc
-from brokkr.utils.misc import basic_logging
 
 
 # General constants
@@ -92,7 +92,7 @@ def _write_os_config_file(file_contents, filename, output_path):
     return output_path
 
 
-@basic_logging
+@brokkr.logger.basic_logging
 def install_autossh(skip_package_install=False, platform=None):
     from brokkr.config.static import CONFIG
     if not CONFIG["link"]["hostname"]:
@@ -117,7 +117,7 @@ def install_autossh(skip_package_install=False, platform=None):
     return True
 
 
-@basic_logging
+@brokkr.logger.basic_logging
 def install_service(platform=None):
     serviceinstaller.install_service(
         brokkr.config.service.SERVICE_DEFAULTS,
@@ -128,7 +128,7 @@ def install_service(platform=None):
     )
 
 
-@basic_logging
+@brokkr.logger.basic_logging
 def install_config():
     config_handlers = brokkr.config.handlers.ALL_CONFIG_HANDLERS
     for config_name, handler in config_handlers.items():
@@ -139,7 +139,7 @@ def install_config():
         brokkr.config.base.DEFAULT_CONFIG_PATH.as_posix())
 
 
-@basic_logging
+@brokkr.logger.basic_logging
 def install_dialout():
     logging.debug("Enabling serial port access for user %s...",
                   brokkr.utils.misc.get_actual_username())
@@ -150,7 +150,7 @@ def install_dialout():
                  brokkr.utils.misc.get_actual_username())
 
 
-@basic_logging
+@brokkr.logger.basic_logging
 def install_firewall(ports_to_open=PORTS_TO_OPEN):
     logging.debug("Opening firewall ports: %r", ports_to_open)
 
@@ -190,7 +190,7 @@ def install_firewall(ports_to_open=PORTS_TO_OPEN):
     logging.info("Attempted to open firewall ports: %r", ports_to_open)
 
 
-@basic_logging
+@brokkr.logger.basic_logging
 def install_udev(
         udev_rules=UDEV_RULES,
         udev_filename=UDEV_FILENAME,
@@ -209,7 +209,7 @@ def install_udev(
     subprocess.run(["udevadm", "trigger"], timeout=5, check=True)
 
 
-@basic_logging
+@brokkr.logger.basic_logging
 def install_all(no_install_services=False):
     logging.debug("Installing all Brokkr external componenets...")
 
