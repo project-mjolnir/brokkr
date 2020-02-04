@@ -8,7 +8,6 @@ from pathlib import Path
 import threading
 
 # Local imports
-from brokkr.config.constants import OUTPUT_SUBPATH_TEST
 from brokkr.config.dynamic import DYNAMIC_CONFIG
 import brokkr.config.monitoring
 from brokkr.config.static import CONFIG
@@ -61,13 +60,10 @@ def start_monitoring(
         monitor_interval_s=DYNAMIC_CONFIG["monitor"]["monitor_interval_s"],
         sleep_interval=CONFIG["monitor"]["sleep_interval_s"],
         pretty=False,
-        test_mode=False,
         exit_event=None,
         ):
     if exit_event is None:
         exit_event = threading.Event()
-    if test_mode:
-        output_path = OUTPUT_SUBPATH_TEST / output_path
 
     while not exit_event.is_set():
         try:

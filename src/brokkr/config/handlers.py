@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Config handler setup for Brokkr's main managed configs.
 """
@@ -6,32 +5,42 @@ Config handler setup for Brokkr's main managed configs.
 # Local imports
 import brokkr.config.base
 from brokkr.config.constants import (
-    PACKAGE_NAME,
-    OUTPUT_PATH_DEFAULT,
+    CONFIG_NAME_BOOTSTRAP,
+    CONFIG_NAME_DYNAMIC,
+    CONFIG_NAME_LOG,
+    CONFIG_NAME_METADATA,
+    CONFIG_NAME_MODE,
+    CONFIG_NAME_STATIC,
+    CONFIG_NAME_SYSTEM,
+    CONFIG_NAME_UNIT,
+    LEVEL_NAME_REMOTE,
+    LEVEL_NAME_SYSTEM,
+    LEVEL_NAME_SYSTEM_CLIENT,
+    OUTPUT_PATH_BASE,
+    OUTPUT_SUBPATH_DEFAULT,
     OUTPUT_SUBPATH_LOG,
     OUTPUT_SUBPATH_MONITOR,
+    PACKAGE_NAME,
     SYSTEM_SUBPATH_CONFIG,
     )
+from brokkr.config.mode import MODE_CONFIG
 from brokkr.config.system import SYSTEM_CONFIG
 import brokkr.config.systemhandler
 
 
-LEVEL_NAME_SYSTEM = "system"
-LEVEL_NAME_SYSTEM_CLIENT = "client"
-LEVEL_NAME_REMOTE = "remote"
-
 SYSTEM_CONFIG_PATH = SYSTEM_CONFIG["system_path"] / SYSTEM_SUBPATH_CONFIG
+MODE_OVERLAY = MODE_CONFIG[MODE_CONFIG["mode"]]
 
 
-BOOTSTRAP_NAME = "bootstrap"
 DEFAULT_CONFIG_BOOTSTRAP = {
-    "output_path_client": OUTPUT_PATH_DEFAULT.as_posix(),
+    "output_path_client":
+        (OUTPUT_PATH_BASE / OUTPUT_SUBPATH_DEFAULT).as_posix(),
     "system_prefix": "mjolnir",
     }
 PATH_VARIABLES_BOOTSTRAP = [("output_path_client", )]
 
 CONFIG_TYPE_BOOTSTRAP = brokkr.config.base.ConfigType(
-    BOOTSTRAP_NAME,
+    CONFIG_NAME_BOOTSTRAP,
     defaults=DEFAULT_CONFIG_BOOTSTRAP,
     preset_config_path=SYSTEM_CONFIG_PATH,
     path_variables=PATH_VARIABLES_BOOTSTRAP,
@@ -49,10 +58,10 @@ CONFIG_LEVELS_BOOTSTRAP = [
 CONFIG_HANDLER_BOOTSTRAP = brokkr.config.base.ConfigHandler(
     config_type=CONFIG_TYPE_BOOTSTRAP,
     config_levels=CONFIG_LEVELS_BOOTSTRAP,
+    overlay=MODE_OVERLAY.get(CONFIG_NAME_BOOTSTRAP, None),
     )
 
 
-UNIT_NAME = "unit"
 DEFAULT_CONFIG_UNIT = {
     "number": 0,
     "network_interface": "wlan0",
@@ -60,7 +69,7 @@ DEFAULT_CONFIG_UNIT = {
     }
 
 CONFIG_TYPE_UNIT = brokkr.config.base.ConfigType(
-    UNIT_NAME,
+    CONFIG_NAME_UNIT,
     defaults=DEFAULT_CONFIG_UNIT,
     preset_config_path=SYSTEM_CONFIG_PATH,
     )
@@ -74,10 +83,10 @@ CONFIG_LEVELS_UNIT = [
 CONFIG_HANDLER_UNIT = brokkr.config.base.ConfigHandler(
     config_type=CONFIG_TYPE_UNIT,
     config_levels=CONFIG_LEVELS_UNIT,
+    overlay=MODE_OVERLAY.get(CONFIG_NAME_UNIT, None),
     )
 
 
-METADATA_NAME = "metadata"
 EMPTY_VARS_METADATA = [
     "name_full", "author", "description", "homepage", "repo", "version"]
 EMPTY_VARS_METADATA_DICT = {key: "" for key in EMPTY_VARS_METADATA}
@@ -90,7 +99,7 @@ DEFAULT_CONFIG_METADATA = {
     }
 
 CONFIG_TYPE_METADATA = brokkr.config.base.ConfigType(
-    METADATA_NAME,
+    CONFIG_NAME_METADATA,
     defaults=DEFAULT_CONFIG_METADATA,
     preset_config_path=SYSTEM_CONFIG["system_path"],
     )
@@ -104,10 +113,10 @@ CONFIG_LEVELS_METADATA = [
 CONFIG_HANDLER_METADATA = brokkr.config.base.ConfigHandler(
     config_type=CONFIG_TYPE_METADATA,
     config_levels=CONFIG_LEVELS_METADATA,
+    overlay=MODE_OVERLAY.get(CONFIG_NAME_METADATA, None),
     )
 
 
-LOG_NAME = "log"
 LOG_FORMAT_DETAILED = ("{asctime}.{msecs:0>3.0f} | {levelname} | {name} | "
                        "{message} (T+{relativeCreated:.0f} ms)")
 DEFAULT_LOG_LEVEL = "INFO"
@@ -148,7 +157,7 @@ DEFAULT_CONFIG_LOG = {
     }
 
 CONFIG_TYPE_LOG = brokkr.config.base.ConfigType(
-    LOG_NAME,
+    CONFIG_NAME_LOG,
     defaults=DEFAULT_CONFIG_LOG,
     config_version=None,
     preset_config_path=SYSTEM_CONFIG_PATH,
@@ -166,10 +175,10 @@ CONFIG_LEVELS_LOG = [
 CONFIG_HANDLER_LOG = brokkr.config.base.ConfigHandler(
     config_type=CONFIG_TYPE_LOG,
     config_levels=CONFIG_LEVELS_LOG,
+    overlay=MODE_OVERLAY.get(CONFIG_NAME_LOG, None),
     )
 
 
-STATIC_NAME = "static"
 DEFAULT_CONFIG_STATIC = {
     "general": {
         "ip_sensor": "",
@@ -198,7 +207,7 @@ DEFAULT_CONFIG_STATIC = {
 PATH_VARIABLES_STATIC = [("monitor", "output_path_client")]
 
 CONFIG_TYPE_STATIC = brokkr.config.base.ConfigType(
-    STATIC_NAME,
+    CONFIG_NAME_STATIC,
     defaults=DEFAULT_CONFIG_STATIC,
     path_variables=PATH_VARIABLES_STATIC,
     preset_config_path=SYSTEM_CONFIG_PATH,
@@ -216,10 +225,10 @@ CONFIG_LEVELS_STATIC = [
 CONFIG_HANDLER_STATIC = brokkr.config.base.ConfigHandler(
     config_type=CONFIG_TYPE_STATIC,
     config_levels=CONFIG_LEVELS_STATIC,
+    overlay=MODE_OVERLAY.get(CONFIG_NAME_STATIC, None),
     )
 
 
-DYNAMIC_NAME = "dynamic"
 DEFAULT_CONFIG_DYNAMIC = {
     "monitor": {
         "monitor_interval_s": 60,
@@ -229,7 +238,7 @@ DEFAULT_CONFIG_DYNAMIC = {
     }
 
 CONFIG_TYPE_DYNAMIC = brokkr.config.base.ConfigType(
-    DYNAMIC_NAME,
+    CONFIG_NAME_DYNAMIC,
     defaults=DEFAULT_CONFIG_DYNAMIC,
     preset_config_path=SYSTEM_CONFIG_PATH,
     )
@@ -248,24 +257,27 @@ CONFIG_LEVELS_DYNAMIC = [
 CONFIG_HANDLER_DYNAMIC = brokkr.config.base.ConfigHandler(
     config_type=CONFIG_TYPE_DYNAMIC,
     config_levels=CONFIG_LEVELS_DYNAMIC,
+    overlay=MODE_OVERLAY.get(CONFIG_NAME_DYNAMIC, None),
     )
 
 
 CONFIG_HANDLERS = {
-    METADATA_NAME: CONFIG_HANDLER_METADATA,
-    BOOTSTRAP_NAME: CONFIG_HANDLER_BOOTSTRAP,
-    UNIT_NAME: CONFIG_HANDLER_UNIT,
-    LOG_NAME: CONFIG_HANDLER_LOG,
-    STATIC_NAME: CONFIG_HANDLER_STATIC,
-    DYNAMIC_NAME: CONFIG_HANDLER_DYNAMIC,
+    CONFIG_NAME_METADATA: CONFIG_HANDLER_METADATA,
+    CONFIG_NAME_BOOTSTRAP: CONFIG_HANDLER_BOOTSTRAP,
+    CONFIG_NAME_UNIT: CONFIG_HANDLER_UNIT,
+    CONFIG_NAME_LOG: CONFIG_HANDLER_LOG,
+    CONFIG_NAME_STATIC: CONFIG_HANDLER_STATIC,
+    CONFIG_NAME_DYNAMIC: CONFIG_HANDLER_DYNAMIC,
     }
 CONFIG_LEVEL_NAMES = {
     config_level.name for handler in CONFIG_HANDLERS.values()
     for config_level in handler.config_levels.values()}
 
 ALL_CONFIG_HANDLERS = {
-    **{brokkr.config.systemhandler.SYSTEM_NAME:
+    **{CONFIG_NAME_SYSTEM:
        brokkr.config.systemhandler.CONFIG_HANDLER_SYSTEM},
+    **{CONFIG_NAME_MODE:
+       brokkr.config.modehandler.CONFIG_HANDLER_MODE},
     **CONFIG_HANDLERS,
     }
 ALL_CONFIG_LEVEL_NAMES = {

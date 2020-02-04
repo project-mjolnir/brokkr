@@ -10,12 +10,15 @@ import argparse
 VERSION_PARAM = "version"
 SUBCOMMAND_PARAM = "subcommand_name"
 SYSTEM_PATH_PARAM = "system_path"
+MODE_PARAM = "mode"
 
-ARGS_TODELETE = {VERSION_PARAM, SUBCOMMAND_PARAM, SYSTEM_PATH_PARAM}
+ARGS_TODELETE = {
+    VERSION_PARAM, SUBCOMMAND_PARAM, SYSTEM_PATH_PARAM, MODE_PARAM}
 
 
 def generate_argparser_main():
     import brokkr.config.handlers
+    from brokkr.config.mode import MODE_CONFIG
 
     parser_main = argparse.ArgumentParser(
         description="Client to monitor and manage remote IoT sensors.",
@@ -27,6 +30,11 @@ def generate_argparser_main():
         "--system-path", dest=SYSTEM_PATH_PARAM,
         help=("Sets the directory to use to load system config data. "
               "Overrides the settings in the config file and the env var."))
+    parser_main.add_argument(
+        "--mode", dest=MODE_PARAM,
+        choices={mode for mode in MODE_CONFIG
+                 if mode not in {"mode", "config_verison"}},
+        help=("Sets the mode config preset to use"))
     subparsers = parser_main.add_subparsers(
         title="Subcommands", help="Subcommand to execute",
         metavar="Subcommand", dest=SUBCOMMAND_PARAM)
@@ -45,9 +53,6 @@ def generate_argparser_main():
     parser_start = subparsers.add_parser(
         "start", help="Start the monitoring, processing and control client",
         argument_default=argparse.SUPPRESS)
-    parser_start.add_argument(
-        "--test-mode", action="store_true",
-        help="Run in test mode, outputting to a seperate test dir")
     parser_start.add_argument(
         "--log-level-file", type=str,
         help="Level of messages to log to disk")

@@ -25,7 +25,7 @@ LEVEL_NAME_DEFAULTS = "defaults"
 LEVEL_NAME_FILE = "local"
 LEVEL_NAME_ENV_VARS = "env_vars"
 LEVEL_NAME_CLI_ARGS = "cli_args"
-
+LEVEL_NAME_OVERLAY = "overlay"
 
 EXTENSION_TOML = "toml"
 EXTENSION_JSON = "json"
@@ -276,7 +276,13 @@ class CLIArgsConfigLevel(MappingConfigLevel):
 
 
 class ConfigHandler(brokkr.utils.misc.AutoReprMixin):
-    def __init__(self, config_type=None, config_levels=None):
+    def __init__(
+            self,
+            config_type=None,
+            config_levels=None,
+            overlay=None,
+            ):
+        self.overlay = overlay
         self.config_type = (
             config_type if config_type is not None
             else ConfigType(DEFAULT_CONFIG_TYPE_NAME))
@@ -298,6 +304,8 @@ class ConfigHandler(brokkr.utils.misc.AutoReprMixin):
             config_names = self.config_levels.keys()
         configs = {config_name: self.config_levels[config_name].read_config()
                    for config_name in config_names}
+        if self.overlay is not None:
+            configs[LEVEL_NAME_OVERLAY] = copy.deepcopy(self.overlay)
         return configs
 
     def render_config(self, configs=None):
@@ -306,8 +314,8 @@ class ConfigHandler(brokkr.utils.misc.AutoReprMixin):
 
         # Recursively build final config dict from succession of loaded configs
         rendered_config = copy.deepcopy(
-            configs[list(self.config_levels.keys())[0]])
-        for config_name in list(self.config_levels.keys())[1:]:
+            configs[list(configs.keys())[0]])
+        for config_name in list(configs.keys())[1:]:
             if configs[config_name]:
                 rendered_config = brokkr.utils.misc.update_dict_recursive(
                     rendered_config, configs[config_name])

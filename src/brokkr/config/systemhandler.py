@@ -1,14 +1,12 @@
-# -*- coding: utf-8 -*-
 """
 The configuration handler for the system preset path, loaded first.
 """
 
 # Local imports
 import brokkr.config.base
-from brokkr.config.constants import PACKAGE_NAME
+from brokkr.config.constants import PACKAGE_NAME, CONFIG_NAME_SYSTEM
 
 
-SYSTEM_NAME = "system"
 DEFAULT_CONFIG_SYSTEM = {
     "system_path": "",
     }
@@ -18,7 +16,7 @@ ENVIRONMENT_VARIABLES_SYSTEM = {
 CLI_ARGUMENTS_SYSTEM = {"system_path": ("system_path",)}
 
 CONFIG_TYPE_SYSTEM = brokkr.config.base.ConfigType(
-    SYSTEM_NAME,
+    CONFIG_NAME_SYSTEM,
     defaults=DEFAULT_CONFIG_SYSTEM,
     path_variables=PATH_VARIABLES_SYSTEM,
     )

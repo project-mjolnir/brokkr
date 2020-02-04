@@ -14,10 +14,7 @@ import threading
 import time
 
 # Local imports
-from brokkr.config.constants import (
-    PACKAGE_NAME,
-    OUTPUT_SUBPATH_TEST,
-    )
+from brokkr.config.constants import PACKAGE_NAME, LEVEL_NAME_SYSTEM
 import brokkr.utils.misc
 
 
@@ -62,10 +59,11 @@ def setup_log_levels(log_config, file_level=None, console_level=None):
     return log_config
 
 
-def setup_log_handler_paths(log_config, test_mode=False):
+def setup_log_handler_paths(log_config):
     from brokkr.config.bootstrap import BOOTSTRAP_CONFIG
     from brokkr.config.metadata import METADATA_CONFIG
     from brokkr.config.unit import UNIT_CONFIG
+
     for log_handler in log_config["handlers"].values():
         if log_handler.get("filename", None):
             log_filename = Path(log_handler["filename"].format(
@@ -77,24 +75,6 @@ def setup_log_handler_paths(log_config, test_mode=False):
                     and BOOTSTRAP_CONFIG["output_path_client"]):
                 log_filename = (
                     BOOTSTRAP_CONFIG["output_path_client"] / log_filename)
-
-            if test_mode:
-                try:
-                    relative_filename = log_filename.relative_to(
-                        BOOTSTRAP_CONFIG["output_path_client"])
-                except ValueError:
-                    # If path is not relative to output dir
-                    log_filename = (
-                        log_filename.parent
-                        / OUTPUT_SUBPATH_TEST
-                        / log_filename.name
-                        )
-                else:
-                    log_filename = (
-                        BOOTSTRAP_CONFIG["output_path_client"]
-                        / OUTPUT_SUBPATH_TEST
-                        / relative_filename
-                        )
             os.makedirs(log_filename.parent, exist_ok=True)
             log_handler["filename"] = log_filename
 
@@ -104,14 +84,13 @@ def setup_log_handler_paths(log_config, test_mode=False):
 def setup_full_log_config(
         log_level_file=None,
         log_level_console=None,
-        test_mode=False,
         ):
     # Load and set logging config
     from brokkr.config.log import LOG_CONFIG
     logging.Formatter.converter = time.gmtime
     log_config = copy.deepcopy(LOG_CONFIG)
 
-    log_config = setup_log_handler_paths(log_config, test_mode=test_mode)
+    log_config = setup_log_handler_paths(log_config)
 
     if any((log_level_file, log_level_console)):
         log_config = setup_log_levels(
@@ -161,21 +140,20 @@ def generate_version_message():
     import brokkr
     client_version_message = (
         f"{PACKAGE_NAME.title()} version {str(brokkr.__version__)}")
-    level_name = brokkr.config.handlers.LEVEL_NAME_SYSTEM
     try:
         from brokkr.config.metadata import METADATA_CONFIGS
     except Exception:
         system_version_message = "Error loading system metadata"
     else:
-        if not METADATA_CONFIGS[level_name]:
+        if not METADATA_CONFIGS[LEVEL_NAME_SYSTEM]:
             system_version_message = "No system metadata found"
         else:
-            if METADATA_CONFIGS[level_name].get("name_full", None):
-                system_name = METADATA_CONFIGS[level_name]["name_full"]
+            if METADATA_CONFIGS[LEVEL_NAME_SYSTEM].get("name_full", None):
+                system_name = METADATA_CONFIGS[LEVEL_NAME_SYSTEM]["name_full"]
             else:
-                system_name = METADATA_CONFIGS[level_name].get(
+                system_name = METADATA_CONFIGS[LEVEL_NAME_SYSTEM].get(
                     "name", "System unknown")
-            system_version = METADATA_CONFIGS[level_name].get(
+            system_version = METADATA_CONFIGS[LEVEL_NAME_SYSTEM].get(
                 "version", "unknown")
             system_version_message = f"{system_name} version {system_version}"
     full_message = ", ".join([client_version_message, system_version_message])
@@ -218,8 +196,7 @@ def start_monitoring(verbose=None, quiet=None, **monitor_args):
         exit_event=EXIT_EVENT, **monitor_args)
 
 
-def start_brokkr(log_level_file=None, log_level_console=None,
-                 test_mode=False, **monitor_args):
+def start_brokkr(log_level_file=None, log_level_console=None, **monitor_args):
     from brokkr.config.bootstrap import BOOTSTRAP_CONFIGS, BOOTSTRAP_CONFIG
     from brokkr.config.metadata import METADATA_CONFIGS, METADATA_CONFIG
     from brokkr.config.log import LOG_CONFIGS
@@ -230,7 +207,6 @@ def start_brokkr(log_level_file=None, log_level_console=None,
     log_config = setup_full_log_config(
         log_level_file=log_level_file,
         log_level_console=log_level_console,
-        test_mode=test_mode,
         )
     logger = logging.getLogger(__name__)
 
@@ -253,7 +229,7 @@ def start_brokkr(log_level_file=None, log_level_console=None,
         logger.debug("%s config hierarchy: %s", config_name, config_data[1])
 
     # Start monitoring system
-    start_monitoring(test_mode=test_mode, **monitor_args)
+    start_monitoring(**monitor_args)
 
 
 if __name__ == "__main__":

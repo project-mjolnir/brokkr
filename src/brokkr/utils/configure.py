@@ -7,8 +7,11 @@ import logging
 from pathlib import Path
 
 # Local imports
+from brokkr.config.constants import (
+    CONFIG_NAME_SYSTEM,
+    CONFIG_NAME_UNIT,
+    )
 import brokkr.config.handlers
-import brokkr.config.systemhandler
 from brokkr.utils.misc import basic_logging
 
 
@@ -34,7 +37,7 @@ def configure_reset(reset_names=ALL_RESET, reset_levels=ALL_RESET,
     if include_system is None:
         include_system = (
             reset_names != ALL_RESET
-            and brokkr.config.systemhandler.SYSTEM_NAME in reset_names)
+            and CONFIG_NAME_SYSTEM in reset_names)
     if include_system:
         config_handlers = brokkr.config.handlers.ALL_CONFIG_HANDLERS
     else:
@@ -65,7 +68,7 @@ def configure_unit(number, network_interface, site_description=""):
         "site_description": site_description,
         }
     _write_config_file_wrapper(
-        brokkr.config.handlers.UNIT_NAME, unit_config_data)
+        CONFIG_NAME_UNIT, unit_config_data)
     return unit_config_data
 
 
@@ -75,5 +78,5 @@ def configure_system(system_config_path):
         "system_path": Path(system_config_path).as_posix(),
         }
     _write_config_file_wrapper(
-        brokkr.config.systemhandler.SYSTEM_NAME, system_config_data)
+        CONFIG_NAME_SYSTEM, system_config_data)
     return system_config_data
