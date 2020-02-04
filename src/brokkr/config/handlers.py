@@ -23,6 +23,35 @@ LEVEL_NAME_REMOTE = "remote"
 SYSTEM_CONFIG_PATH = SYSTEM_CONFIG["system_path"] / SYSTEM_SUBPATH_CONFIG
 
 
+BOOTSTRAP_NAME = "bootstrap"
+DEFAULT_CONFIG_BOOTSTRAP = {
+    "output_path_client": OUTPUT_PATH_DEFAULT.as_posix(),
+    "system_prefix": "mjolnir",
+    }
+PATH_VARIABLES_BOOTSTRAP = [("output_path_client", )]
+
+CONFIG_TYPE_BOOTSTRAP = brokkr.config.base.ConfigType(
+    BOOTSTRAP_NAME,
+    defaults=DEFAULT_CONFIG_BOOTSTRAP,
+    preset_config_path=SYSTEM_CONFIG_PATH,
+    path_variables=PATH_VARIABLES_BOOTSTRAP,
+    )
+CONFIG_LEVELS_BOOTSTRAP = [
+    brokkr.config.base.FileConfigLevel(
+        name=LEVEL_NAME_SYSTEM, config_type=CONFIG_TYPE_BOOTSTRAP,
+        preset=True, append_level=False),
+    brokkr.config.base.FileConfigLevel(
+        name=LEVEL_NAME_SYSTEM_CLIENT, config_type=CONFIG_TYPE_BOOTSTRAP,
+        preset=True),
+    brokkr.config.base.FileConfigLevel(
+        config_type=CONFIG_TYPE_BOOTSTRAP, append_level=False),
+    ]
+CONFIG_HANDLER_BOOTSTRAP = brokkr.config.base.ConfigHandler(
+    config_type=CONFIG_TYPE_BOOTSTRAP,
+    config_levels=CONFIG_LEVELS_BOOTSTRAP,
+    )
+
+
 UNIT_NAME = "unit"
 DEFAULT_CONFIG_UNIT = {
     "number": 0,
@@ -98,7 +127,7 @@ DEFAULT_CONFIG_LOG = {
             "backupCount": 10,
             "class": "logging.handlers.RotatingFileHandler",
             "filename":
-                (OUTPUT_PATH_DEFAULT / OUTPUT_SUBPATH_LOG
+                (OUTPUT_SUBPATH_LOG
                  / (PACKAGE_NAME + "_{system_name}_{unit_number:0>2}.log"))
                 .as_posix(),
             "formatter": "detailed",
@@ -145,7 +174,6 @@ DEFAULT_CONFIG_STATIC = {
     "general": {
         "ip_sensor": "",
         "na_marker": "NA",
-        "output_path_client": OUTPUT_PATH_DEFAULT.as_posix(),
         "output_filename_client":
             "{output_type}_{system_name}_{unit_number:0>2}_{utc_date!s}.csv",
         },
@@ -167,8 +195,7 @@ DEFAULT_CONFIG_STATIC = {
         "sunsaver_unit": 1,
         },
     }
-PATH_VARIABLES_STATIC = [
-    ("general", "output_path_client"), ("monitor", "output_path_client")]
+PATH_VARIABLES_STATIC = [("monitor", "output_path_client")]
 
 CONFIG_TYPE_STATIC = brokkr.config.base.ConfigType(
     STATIC_NAME,
@@ -225,8 +252,9 @@ CONFIG_HANDLER_DYNAMIC = brokkr.config.base.ConfigHandler(
 
 
 CONFIG_HANDLERS = {
-    UNIT_NAME: CONFIG_HANDLER_UNIT,
     METADATA_NAME: CONFIG_HANDLER_METADATA,
+    BOOTSTRAP_NAME: CONFIG_HANDLER_BOOTSTRAP,
+    UNIT_NAME: CONFIG_HANDLER_UNIT,
     LOG_NAME: CONFIG_HANDLER_LOG,
     STATIC_NAME: CONFIG_HANDLER_STATIC,
     DYNAMIC_NAME: CONFIG_HANDLER_DYNAMIC,

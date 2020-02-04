@@ -2,7 +2,7 @@
 Configuration to run Brokkr as a service for supported platforms (Linux).
 """
 
-from brokkr.config.bootstrap import UNIT_CONFIG
+from brokkr.config.unit import UNIT_CONFIG
 from brokkr.config.constants import PACKAGE_NAME
 from brokkr.config.static import CONFIG
 

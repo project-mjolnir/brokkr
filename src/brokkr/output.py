@@ -11,8 +11,10 @@ import os
 from pathlib import Path
 
 # Local imports
-from brokkr.config.bootstrap import UNIT_CONFIG, METADATA_CONFIG
+from brokkr.config.bootstrap import BOOTSTRAP_CONFIG
+from brokkr.config.metadata import METADATA_CONFIG
 from brokkr.config.static import CONFIG
+from brokkr.config.unit import UNIT_CONFIG
 
 
 CSV_PARAMS = {
@@ -35,14 +37,15 @@ def render_output_filename(
     # Add master output path to output path if is relative
     output_path = Path(output_path).expanduser()
     if (not output_path.is_absolute()
-            and CONFIG["general"]["output_path_client"]):
-        output_path = CONFIG["general"]["output_path_client"] / output_path
+            and BOOTSTRAP_CONFIG["output_path_client"]):
+        output_path = BOOTSTRAP_CONFIG["output_path_client"] / output_path
 
     filename_args_default = {
-            "system_name": METADATA_CONFIG["name"],
-            "unit_number": UNIT_CONFIG["number"],
-            "utc_date": datetime.datetime.utcnow().date(),
-            }
+        "system_name": METADATA_CONFIG["name"],
+        "system_prefix": BOOTSTRAP_CONFIG["system_prefix"],
+        "unit_number": UNIT_CONFIG["number"],
+        "utc_date": datetime.datetime.utcnow().date(),
+        }
     all_filename_args = {**filename_args_default, **filename_args}
     logger.debug("Args for output filename: %s", all_filename_args)
 

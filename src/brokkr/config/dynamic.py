@@ -1,5 +1,5 @@
 """
-Dynamic configuration for Brokkr; loaded after logging starts.
+Dynamic configuration for Brokkr; loaded after primary initialization.
 """
 
 # Standard library imports

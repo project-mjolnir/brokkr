@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Bootstrap configuration handler for system path, loaded first.
+The configuration handler for the system preset path, loaded first.
 """
 
 # Local imports

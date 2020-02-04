@@ -16,7 +16,6 @@ import time
 # Local imports
 from brokkr.config.constants import (
     PACKAGE_NAME,
-    OUTPUT_PATH_DEFAULT_EXPANDED,
     OUTPUT_SUBPATH_TEST,
     )
 import brokkr.utils.misc
@@ -63,39 +62,61 @@ def setup_log_levels(log_config, file_level=None, console_level=None):
     return log_config
 
 
+def setup_log_handler_paths(log_config, test_mode=False):
+    from brokkr.config.bootstrap import BOOTSTRAP_CONFIG
+    from brokkr.config.metadata import METADATA_CONFIG
+    from brokkr.config.unit import UNIT_CONFIG
+    for log_handler in log_config["handlers"].values():
+        if log_handler.get("filename", None):
+            log_filename = Path(log_handler["filename"].format(
+                system_name=METADATA_CONFIG["name"],
+                system_prefix=BOOTSTRAP_CONFIG["system_prefix"],
+                unit_number=UNIT_CONFIG["number"],
+                )).expanduser()
+            if (not log_filename.is_absolute()
+                    and BOOTSTRAP_CONFIG["output_path_client"]):
+                log_filename = (
+                    BOOTSTRAP_CONFIG["output_path_client"] / log_filename)
+
+            if test_mode:
+                try:
+                    relative_filename = log_filename.relative_to(
+                        BOOTSTRAP_CONFIG["output_path_client"])
+                except ValueError:
+                    # If path is not relative to output dir
+                    log_filename = (
+                        log_filename.parent
+                        / OUTPUT_SUBPATH_TEST
+                        / log_filename.name
+                        )
+                else:
+                    log_filename = (
+                        BOOTSTRAP_CONFIG["output_path_client"]
+                        / OUTPUT_SUBPATH_TEST
+                        / relative_filename
+                        )
+            os.makedirs(log_filename.parent, exist_ok=True)
+            log_handler["filename"] = log_filename
+
+    return log_config
+
+
 def setup_full_log_config(
         log_level_file=None,
         log_level_console=None,
         test_mode=False,
         ):
     # Load and set logging config
-    from brokkr.config.bootstrap import (
-        METADATA_CONFIG, UNIT_CONFIG, LOG_CONFIG)
+    from brokkr.config.log import LOG_CONFIG
     logging.Formatter.converter = time.gmtime
     log_config = copy.deepcopy(LOG_CONFIG)
+
+    log_config = setup_log_handler_paths(log_config, test_mode=test_mode)
+
     if any((log_level_file, log_level_console)):
         log_config = setup_log_levels(
             log_config, log_level_file, log_level_console)
-    for log_handler in log_config["handlers"].values():
-        if log_handler.get("filename", None):
-            log_handler["filename"] = Path(log_handler["filename"].format(
-                system_name=METADATA_CONFIG["name"],
-                unit_number=UNIT_CONFIG["number"],
-                )).expanduser()
-            if test_mode:
-                try:
-                    relative_filename = log_handler["filename"].relative_to(
-                        OUTPUT_PATH_DEFAULT_EXPANDED)
-                except ValueError:
-                    # If path is not relative to output dir
-                    log_handler["filename"] = (
-                        log_handler["filename"].parent / OUTPUT_SUBPATH_TEST
-                        / log_handler["filename"].name)
-                else:
-                    log_handler["filename"] = (
-                        OUTPUT_PATH_DEFAULT_EXPANDED / OUTPUT_SUBPATH_TEST
-                        / relative_filename)
-            os.makedirs(log_handler["filename"].parent, exist_ok=True)
+
     logging.config.dictConfig(log_config)
     return log_config
 
@@ -105,7 +126,7 @@ def warn_on_startup_issues():
     from brokkr.config.system import SYSTEM_CONFIG
     from brokkr.config.handlers import (CONFIG_HANDLER_UNIT,
                                         CONFIG_HANDLER_METADATA)
-    from brokkr.config.bootstrap import UNIT_CONFIGS
+    from brokkr.config.unit import UNIT_CONFIGS
     logger = logging.getLogger(__name__)
 
     # Avoid users trying to start Brokkr without setting up the basic config
@@ -142,7 +163,7 @@ def generate_version_message():
         f"{PACKAGE_NAME.title()} version {str(brokkr.__version__)}")
     level_name = brokkr.config.handlers.LEVEL_NAME_SYSTEM
     try:
-        from brokkr.config.bootstrap import METADATA_CONFIGS
+        from brokkr.config.metadata import METADATA_CONFIGS
     except Exception:
         system_version_message = "Error loading system metadata"
     else:
@@ -199,12 +220,11 @@ def start_monitoring(verbose=None, quiet=None, **monitor_args):
 
 def start_brokkr(log_level_file=None, log_level_console=None,
                  test_mode=False, **monitor_args):
+    from brokkr.config.bootstrap import BOOTSTRAP_CONFIGS, BOOTSTRAP_CONFIG
+    from brokkr.config.metadata import METADATA_CONFIGS, METADATA_CONFIG
+    from brokkr.config.log import LOG_CONFIGS
     from brokkr.config.system import SYSTEM_CONFIGS, SYSTEM_CONFIG
-    from brokkr.config.bootstrap import (
-        LOG_CONFIGS,
-        UNIT_CONFIGS, UNIT_CONFIG,
-        METADATA_CONFIGS, METADATA_CONFIG,
-        )
+    from brokkr.config.unit import UNIT_CONFIGS, UNIT_CONFIG
 
     # Setup logging
     log_config = setup_full_log_config(
@@ -222,14 +242,15 @@ def start_brokkr(log_level_file=None, log_level_console=None,
     if any((log_level_file, log_level_console)):
         logger.info("Using manual log levels: %s (file), %s (console)",
                     log_level_file, log_level_console)
-    logger.debug("Logging config hierarchy: %r", LOG_CONFIGS)
-    logger.info("Logging config: %r", log_config)
-    logger.debug("System config hierarchy: %r", SYSTEM_CONFIGS)
-    logger.info("System config: %r", SYSTEM_CONFIG)
-    logger.debug("System metadata hierarchy: %r", METADATA_CONFIGS)
-    logger.info("System metadata: %r", METADATA_CONFIG)
-    logger.debug("Unit config hierarchy: %r", UNIT_CONFIGS)
-    logger.info("Unit config: %r", UNIT_CONFIG)
+    for config_name, config_data in {
+            "System path": (SYSTEM_CONFIG, SYSTEM_CONFIGS),
+            "Metadata": (METADATA_CONFIG, METADATA_CONFIGS),
+            "Bootstrap": (BOOTSTRAP_CONFIG, BOOTSTRAP_CONFIGS),
+            "Unit": (UNIT_CONFIG, UNIT_CONFIGS),
+            "Log": (log_config, LOG_CONFIGS),
+            }.items():
+        logger.info("%s config: %s", config_name, config_data[0])
+        logger.debug("%s config hierarchy: %s", config_name, config_data[1])
 
     # Start monitoring system
     start_monitoring(test_mode=test_mode, **monitor_args)
