@@ -15,6 +15,7 @@ import serviceinstaller
 # Local imports
 import brokkr.config.autossh
 import brokkr.config.base
+from brokkr.config.constants import CONFIG_PATH_MAIN
 import brokkr.config.handlers
 import brokkr.config.service
 import brokkr.logger
@@ -136,7 +137,7 @@ def install_config():
         handler.read_configs()
     logging.info(
         "Config files installed to %r",
-        brokkr.config.base.DEFAULT_CONFIG_PATH.as_posix())
+        CONFIG_PATH_MAIN.as_posix())
 
 
 @brokkr.logger.basic_logging

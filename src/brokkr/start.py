@@ -59,7 +59,8 @@ def warn_on_startup_issues():
             SYSTEM_CONFIG["system_path"].as_posix())
         issues_found = True
     else:
-        if not CONFIG_HANDLER_METADATA.config_levels["system"].path.exists():
+        if not (CONFIG_HANDLER_METADATA.config_levels[LEVEL_NAME_SYSTEM]
+                .path.exists()):
             logger.warning(
                 "No system config directory found at system path %r",
                 SYSTEM_CONFIG["system_path"].as_posix())

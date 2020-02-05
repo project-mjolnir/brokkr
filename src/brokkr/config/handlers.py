@@ -13,6 +13,9 @@ from brokkr.config.constants import (
     CONFIG_NAME_STATIC,
     CONFIG_NAME_SYSTEM,
     CONFIG_NAME_UNIT,
+    CONFIG_PATH_MAIN,
+    CONFIG_VERSION,
+    LEVEL_NAME_LOCAL,
     LEVEL_NAME_REMOTE,
     LEVEL_NAME_SYSTEM,
     LEVEL_NAME_SYSTEM_CLIENT,
@@ -27,36 +30,33 @@ from brokkr.config.system import SYSTEM_CONFIG
 import brokkr.config.systemhandler
 
 
-SYSTEM_CONFIG_PATH = SYSTEM_CONFIG["system_path"] / SYSTEM_SUBPATH_CONFIG
-MODE_OVERLAY = MODE_CONFIG[MODE_CONFIG["mode"]]
+CONFIG_PATH_SYSTEM = SYSTEM_CONFIG["system_path"] / SYSTEM_SUBPATH_CONFIG
+MODE_OVERLAYS = MODE_CONFIG[MODE_CONFIG["mode"]]
+
+
+CONFIG_HANDLER_FACTORY = brokkr.config.base.ConfigHandlerFactory(
+    level_presets=brokkr.config.base.CONFIG_LEVEL_PRESETS,
+    overlays=MODE_OVERLAYS,
+    main_config_path=CONFIG_PATH_MAIN,
+    preset_config_path=CONFIG_PATH_SYSTEM,
+    config_version=CONFIG_VERSION,
+    )
 
 
 DEFAULT_CONFIG_BOOTSTRAP = {
     "output_path_client": OUTPUT_PATH_DEFAULT.as_posix(),
     "system_prefix": "mjolnir",
     }
-PATH_VARIABLES_BOOTSTRAP = [("output_path_client", )]
 
-CONFIG_TYPE_BOOTSTRAP = brokkr.config.base.ConfigType(
-    CONFIG_NAME_BOOTSTRAP,
+CONFIG_HANDLER_BOOTSTRAP = CONFIG_HANDLER_FACTORY.create_config_handler(
+    name=CONFIG_NAME_BOOTSTRAP,
+    config_levels=[
+        LEVEL_NAME_SYSTEM,
+        LEVEL_NAME_SYSTEM_CLIENT,
+        LEVEL_NAME_LOCAL,
+        ],
     defaults=DEFAULT_CONFIG_BOOTSTRAP,
-    preset_config_path=SYSTEM_CONFIG_PATH,
-    path_variables=PATH_VARIABLES_BOOTSTRAP,
-    )
-CONFIG_LEVELS_BOOTSTRAP = [
-    brokkr.config.base.FileConfigLevel(
-        name=LEVEL_NAME_SYSTEM, config_type=CONFIG_TYPE_BOOTSTRAP,
-        preset=True, append_level=False),
-    brokkr.config.base.FileConfigLevel(
-        name=LEVEL_NAME_SYSTEM_CLIENT, config_type=CONFIG_TYPE_BOOTSTRAP,
-        preset=True),
-    brokkr.config.base.FileConfigLevel(
-        config_type=CONFIG_TYPE_BOOTSTRAP, append_level=False),
-    ]
-CONFIG_HANDLER_BOOTSTRAP = brokkr.config.base.ConfigHandler(
-    config_type=CONFIG_TYPE_BOOTSTRAP,
-    config_levels=CONFIG_LEVELS_BOOTSTRAP,
-    overlay=MODE_OVERLAY.get(CONFIG_NAME_BOOTSTRAP, None),
+    path_variables=[("output_path_client", )],
     )
 
 
@@ -66,22 +66,13 @@ DEFAULT_CONFIG_UNIT = {
     "site_description": "",
     }
 
-CONFIG_TYPE_UNIT = brokkr.config.base.ConfigType(
-    CONFIG_NAME_UNIT,
+CONFIG_HANDLER_UNIT = CONFIG_HANDLER_FACTORY.create_config_handler(
+    name=CONFIG_NAME_UNIT,
+    config_levels=[
+        LEVEL_NAME_SYSTEM,
+        LEVEL_NAME_LOCAL,
+        ],
     defaults=DEFAULT_CONFIG_UNIT,
-    preset_config_path=SYSTEM_CONFIG_PATH,
-    )
-CONFIG_LEVELS_UNIT = [
-    brokkr.config.base.FileConfigLevel(
-        name=LEVEL_NAME_SYSTEM, config_type=CONFIG_TYPE_UNIT,
-        preset=True, append_level=False),
-    brokkr.config.base.FileConfigLevel(
-        config_type=CONFIG_TYPE_UNIT, append_level=False),
-    ]
-CONFIG_HANDLER_UNIT = brokkr.config.base.ConfigHandler(
-    config_type=CONFIG_TYPE_UNIT,
-    config_levels=CONFIG_LEVELS_UNIT,
-    overlay=MODE_OVERLAY.get(CONFIG_NAME_UNIT, None),
     )
 
 
@@ -96,22 +87,14 @@ DEFAULT_CONFIG_METADATA = {
     "sindri_version_min": "0.3.0",
     }
 
-CONFIG_TYPE_METADATA = brokkr.config.base.ConfigType(
-    CONFIG_NAME_METADATA,
+CONFIG_HANDLER_METADATA = CONFIG_HANDLER_FACTORY.create_config_handler(
+    name=CONFIG_NAME_METADATA,
+    config_levels=[
+        LEVEL_NAME_SYSTEM,
+        LEVEL_NAME_LOCAL,
+        ],
     defaults=DEFAULT_CONFIG_METADATA,
     preset_config_path=SYSTEM_CONFIG["system_path"],
-    )
-CONFIG_LEVELS_METADATA = [
-    brokkr.config.base.FileConfigLevel(
-        name=LEVEL_NAME_SYSTEM, config_type=CONFIG_TYPE_METADATA,
-        preset=True, append_level=False),
-    brokkr.config.base.FileConfigLevel(
-        config_type=CONFIG_TYPE_METADATA, append_level=False),
-    ]
-CONFIG_HANDLER_METADATA = brokkr.config.base.ConfigHandler(
-    config_type=CONFIG_TYPE_METADATA,
-    config_levels=CONFIG_LEVELS_METADATA,
-    overlay=MODE_OVERLAY.get(CONFIG_NAME_METADATA, None),
     )
 
 
@@ -154,26 +137,14 @@ DEFAULT_CONFIG_LOG = {
         },
     }
 
-CONFIG_TYPE_LOG = brokkr.config.base.ConfigType(
-    CONFIG_NAME_LOG,
+CONFIG_HANDLER_LOG = CONFIG_HANDLER_FACTORY.create_config_handler(
+    name=CONFIG_NAME_LOG,
+    config_levels=[
+        LEVEL_NAME_SYSTEM,
+        LEVEL_NAME_SYSTEM_CLIENT,
+        LEVEL_NAME_LOCAL,
+        ],
     defaults=DEFAULT_CONFIG_LOG,
-    config_version=None,
-    preset_config_path=SYSTEM_CONFIG_PATH,
-    )
-CONFIG_LEVELS_LOG = [
-    brokkr.config.base.FileConfigLevel(
-        name=LEVEL_NAME_SYSTEM, config_type=CONFIG_TYPE_LOG,
-        preset=True, append_level=False),
-    brokkr.config.base.FileConfigLevel(
-        name=LEVEL_NAME_SYSTEM_CLIENT, config_type=CONFIG_TYPE_LOG,
-        preset=True),
-    brokkr.config.base.FileConfigLevel(
-        config_type=CONFIG_TYPE_LOG, append_level=False),
-    ]
-CONFIG_HANDLER_LOG = brokkr.config.base.ConfigHandler(
-    config_type=CONFIG_TYPE_LOG,
-    config_levels=CONFIG_LEVELS_LOG,
-    overlay=MODE_OVERLAY.get(CONFIG_NAME_LOG, None),
     )
 
 
@@ -202,28 +173,16 @@ DEFAULT_CONFIG_STATIC = {
         "sunsaver_unit": 1,
         },
     }
-PATH_VARIABLES_STATIC = [("monitor", "output_path_client")]
 
-CONFIG_TYPE_STATIC = brokkr.config.base.ConfigType(
-    CONFIG_NAME_STATIC,
+CONFIG_HANDLER_STATIC = CONFIG_HANDLER_FACTORY.create_config_handler(
+    name=CONFIG_NAME_STATIC,
+    config_levels=[
+        LEVEL_NAME_SYSTEM,
+        LEVEL_NAME_SYSTEM_CLIENT,
+        LEVEL_NAME_LOCAL,
+        ],
     defaults=DEFAULT_CONFIG_STATIC,
-    path_variables=PATH_VARIABLES_STATIC,
-    preset_config_path=SYSTEM_CONFIG_PATH,
-    )
-CONFIG_LEVELS_STATIC = [
-    brokkr.config.base.FileConfigLevel(
-        name=LEVEL_NAME_SYSTEM, config_type=CONFIG_TYPE_STATIC,
-        preset=True, append_level=False),
-    brokkr.config.base.FileConfigLevel(
-        name=LEVEL_NAME_SYSTEM_CLIENT, config_type=CONFIG_TYPE_STATIC,
-        preset=True),
-    brokkr.config.base.FileConfigLevel(
-        config_type=CONFIG_TYPE_STATIC, append_level=False),
-    ]
-CONFIG_HANDLER_STATIC = brokkr.config.base.ConfigHandler(
-    config_type=CONFIG_TYPE_STATIC,
-    config_levels=CONFIG_LEVELS_STATIC,
-    overlay=MODE_OVERLAY.get(CONFIG_NAME_STATIC, None),
+    path_variables=[("monitor", "output_path_client")],
     )
 
 
@@ -235,27 +194,15 @@ DEFAULT_CONFIG_DYNAMIC = {
         },
     }
 
-CONFIG_TYPE_DYNAMIC = brokkr.config.base.ConfigType(
-    CONFIG_NAME_DYNAMIC,
+CONFIG_HANDLER_DYNAMIC = CONFIG_HANDLER_FACTORY.create_config_handler(
+    name=CONFIG_NAME_DYNAMIC,
+    config_levels=[
+        LEVEL_NAME_SYSTEM,
+        LEVEL_NAME_SYSTEM_CLIENT,
+        LEVEL_NAME_REMOTE,
+        LEVEL_NAME_LOCAL,
+        ],
     defaults=DEFAULT_CONFIG_DYNAMIC,
-    preset_config_path=SYSTEM_CONFIG_PATH,
-    )
-CONFIG_LEVELS_DYNAMIC = [
-    brokkr.config.base.FileConfigLevel(
-        name=LEVEL_NAME_SYSTEM, config_type=CONFIG_TYPE_DYNAMIC,
-        preset=True, append_level=False),
-    brokkr.config.base.FileConfigLevel(
-        name=LEVEL_NAME_SYSTEM_CLIENT, config_type=CONFIG_TYPE_DYNAMIC,
-        preset=True),
-    brokkr.config.base.FileConfigLevel(
-        name=LEVEL_NAME_REMOTE, config_type=CONFIG_TYPE_DYNAMIC,
-        extension=brokkr.config.base.EXTENSION_JSON),
-    brokkr.config.base.FileConfigLevel(config_type=CONFIG_TYPE_DYNAMIC),
-    ]
-CONFIG_HANDLER_DYNAMIC = brokkr.config.base.ConfigHandler(
-    config_type=CONFIG_TYPE_DYNAMIC,
-    config_levels=CONFIG_LEVELS_DYNAMIC,
-    overlay=MODE_OVERLAY.get(CONFIG_NAME_DYNAMIC, None),
     )
 
 

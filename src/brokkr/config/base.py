@@ -15,8 +15,13 @@ from pathlib import Path
 import toml
 
 # Local imports
+from brokkr.config.constants import (
+    LEVEL_NAME_LOCAL,
+    LEVEL_NAME_REMOTE,
+    LEVEL_NAME_SYSTEM,
+    LEVEL_NAME_SYSTEM_CLIENT,
+    )
 import brokkr.utils.misc
-from brokkr.config.constants import PACKAGE_NAME
 
 
 # General static constants
@@ -31,12 +36,13 @@ EXTENSION_TOML = "toml"
 EXTENSION_JSON = "json"
 SUPPORTED_EXTENSIONS = [EXTENSION_TOML, EXTENSION_JSON]
 
-XDG_CONFIG_PATH = Path("~/.config").expanduser()
-DEFAULT_CONFIG_PATH = XDG_CONFIG_PATH / PACKAGE_NAME
 VERSION_KEY = "config_version"
 EMPTY_CONFIG = ("config_is_empty", True)
 JSON_SEPERATORS = (",", ":")
-CONFIG_VERSION = 1
+CONFIG_VERSION_DEFAULT = 1
+
+LEVEL_CLASS = "level_class"
+LEVEL_ARGS = "level_args"
 
 
 def convert_paths(config_data, path_variables):
@@ -59,13 +65,15 @@ class ConfigType(brokkr.utils.misc.AutoReprMixin):
             self,
             name,
             defaults=None,
-            main_config_path=DEFAULT_CONFIG_PATH,
+            overlay=None,
+            main_config_path=None,
             preset_config_path=None,
             path_variables=None,
-            config_version=CONFIG_VERSION,
+            config_version=CONFIG_VERSION_DEFAULT,
             ):
         self.name = name
         self.defaults = defaults if defaults is not None else {}
+        self.overlay = overlay
         self.main_config_path = (
             Path(main_config_path) if main_config_path is not None else None)
         self.preset_config_path = (
@@ -131,7 +139,7 @@ class FileConfigLevel(WritableConfigLevel):
             extension=EXTENSION_TOML,
             preset=False,
             path=None,
-            append_level=True,
+            append_level=False,
             **kwargs,
             ):
         if extension not in SUPPORTED_EXTENSIONS:
@@ -275,14 +283,23 @@ class CLIArgsConfigLevel(MappingConfigLevel):
         return config_data
 
 
+CONFIG_LEVEL_PRESETS = {
+    LEVEL_NAME_SYSTEM: {LEVEL_ARGS: {
+        "preset": True}},
+    LEVEL_NAME_SYSTEM_CLIENT: {LEVEL_ARGS: {
+        "preset": True, "append_level": True}},
+    LEVEL_NAME_REMOTE: {LEVEL_ARGS: {
+        "extension": EXTENSION_JSON, "append_level": True}},
+    LEVEL_NAME_LOCAL: {},
+    }
+
+
 class ConfigHandler(brokkr.utils.misc.AutoReprMixin):
     def __init__(
             self,
             config_type=None,
             config_levels=None,
-            overlay=None,
             ):
-        self.overlay = overlay
         self.config_type = (
             config_type if config_type is not None
             else ConfigType(DEFAULT_CONFIG_TYPE_NAME))
@@ -304,8 +321,9 @@ class ConfigHandler(brokkr.utils.misc.AutoReprMixin):
             config_names = self.config_levels.keys()
         configs = {config_name: self.config_levels[config_name].read_config()
                    for config_name in config_names}
-        if self.overlay is not None:
-            configs[LEVEL_NAME_OVERLAY] = copy.deepcopy(self.overlay)
+        if self.config_type.overlay is not None:
+            configs[LEVEL_NAME_OVERLAY] = copy.deepcopy(
+                self.config_type.overlay)
         return configs
 
     def render_config(self, configs=None):
@@ -321,3 +339,45 @@ class ConfigHandler(brokkr.utils.misc.AutoReprMixin):
                     rendered_config, configs[config_name])
 
         return rendered_config
+
+
+class ConfigHandlerFactory(brokkr.utils.misc.AutoReprMixin):
+    def __init__(
+            self,
+            level_presets=None,
+            overlays=None,
+            **default_type_kwargs,
+            ):
+        self.level_presets = {} if level_presets is None else level_presets
+        self.overlays = overlays
+        self.default_type_kwargs = default_type_kwargs
+
+    def create_config_handler(self, name, config_levels, **type_kwargs):
+        type_kwargs = {
+            **self.default_type_kwargs,
+            **{"overlay":
+               None if self.overlays is None else self.overlays.get(name, {})},
+            **type_kwargs,
+            }
+        config_type = ConfigType(name=name, **type_kwargs)
+
+        rendered_config_levels = []
+        for config_level in config_levels:
+            if not isinstance(config_level, ConfigLevel):
+                try:
+                    level_preset = self.level_presets[config_level]
+                except (KeyError, TypeError):
+                    # If the level isn't in the preset dict or isn't a str
+                    level_preset = config_level
+                level_class = level_preset.get(LEVEL_CLASS, FileConfigLevel)
+                level_args = level_preset.get(LEVEL_ARGS, {})
+                # If the level was loaded from a preset, use the preset's name
+                if level_preset != config_level:
+                    level_args["name"] = level_args.get("name", config_level)
+                config_level = level_class(
+                    config_type=config_type, **level_args)
+            rendered_config_levels.append(config_level)
+
+        config_handler = ConfigHandler(config_type=config_type,
+                                       config_levels=rendered_config_levels)
+        return config_handler

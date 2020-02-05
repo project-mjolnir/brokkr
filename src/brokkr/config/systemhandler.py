@@ -4,31 +4,39 @@ The configuration handler for the system preset path, loaded first.
 
 # Local imports
 import brokkr.config.base
-from brokkr.config.constants import PACKAGE_NAME, CONFIG_NAME_SYSTEM
+from brokkr.config.constants import (
+    CONFIG_NAME_SYSTEM,
+    CONFIG_PATH_MAIN,
+    CONFIG_VERSION,
+    LEVEL_NAME_LOCAL,
+    PACKAGE_NAME,
+    )
+
+
+CONFIG_HANDLER_FACTORY = brokkr.config.base.ConfigHandlerFactory(
+    level_presets=brokkr.config.base.CONFIG_LEVEL_PRESETS,
+    main_config_path=CONFIG_PATH_MAIN,
+    config_version=CONFIG_VERSION,
+    )
 
 
 DEFAULT_CONFIG_SYSTEM = {
     "system_path": "",
     }
-PATH_VARIABLES_SYSTEM = [("system_path",)]
-ENVIRONMENT_VARIABLES_SYSTEM = {
+ENV_VARIABLES_SYSTEM = {
     (PACKAGE_NAME.upper() + "_SYSTEM_PATH"): ("system_path",)}
 CLI_ARGUMENTS_SYSTEM = {"system_path": ("system_path",)}
 
-CONFIG_TYPE_SYSTEM = brokkr.config.base.ConfigType(
-    CONFIG_NAME_SYSTEM,
+CONFIG_HANDLER_SYSTEM = CONFIG_HANDLER_FACTORY.create_config_handler(
+    name=CONFIG_NAME_SYSTEM,
+    config_levels=[
+        LEVEL_NAME_LOCAL,
+        {brokkr.config.base.LEVEL_CLASS: brokkr.config.base.EnvVarsConfigLevel,
+         brokkr.config.base.LEVEL_ARGS: {"mapping": ENV_VARIABLES_SYSTEM}},
+        {brokkr.config.base.LEVEL_CLASS: brokkr.config.base.CLIArgsConfigLevel,
+         brokkr.config.base.LEVEL_ARGS:
+             {"mapping": CLI_ARGUMENTS_SYSTEM}},
+        ],
     defaults=DEFAULT_CONFIG_SYSTEM,
-    path_variables=PATH_VARIABLES_SYSTEM,
+    path_variables=[("system_path", )],
     )
-CONFIG_LEVELS_SYSTEM = [
-    brokkr.config.base.FileConfigLevel(
-        config_type=CONFIG_TYPE_SYSTEM, append_level=False),
-    brokkr.config.base.EnvVarsConfigLevel(
-        config_type=CONFIG_TYPE_SYSTEM, mapping=ENVIRONMENT_VARIABLES_SYSTEM),
-    brokkr.config.base.CLIArgsConfigLevel(
-        config_type=CONFIG_TYPE_SYSTEM, mapping=CLI_ARGUMENTS_SYSTEM),
-    ]
-CONFIG_HANDLER_SYSTEM = brokkr.config.base.ConfigHandler(
-    config_type=CONFIG_TYPE_SYSTEM,
-    config_levels=CONFIG_LEVELS_SYSTEM,
-)

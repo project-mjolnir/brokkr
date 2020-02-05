@@ -39,3 +39,9 @@ CONFIG_NAME_DYNAMIC = "dynamic"
 LEVEL_NAME_SYSTEM = "system"
 LEVEL_NAME_SYSTEM_CLIENT = "client"
 LEVEL_NAME_REMOTE = "remote"
+LEVEL_NAME_LOCAL = "local"
+
+# Config variables
+CONFIG_PATH_XDG = Path("~/.config").expanduser()
+CONFIG_PATH_MAIN = CONFIG_PATH_XDG / PACKAGE_NAME
+CONFIG_VERSION = 1
