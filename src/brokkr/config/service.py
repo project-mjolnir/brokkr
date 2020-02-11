@@ -13,7 +13,7 @@ SERVICE_FILENAME = f"{PACKAGE_NAME}.service"
 
 SERVICE_DEFAULTS = {
     "Unit": {
-        "Description": f"{PACKAGE_NAME.title()} Remote Client Service",
+        "Description": f"Client to monitor, log and control IoT sensors",
         "Wants": (
             "network-online.target systemd-time-wait-sync.service "
             "systemd-timesyncd.service sshd.service "
