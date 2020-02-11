@@ -16,7 +16,7 @@ import brokkr.logger
 
 
 EXIT_EVENT = threading.Event()
-SIGNALS_SET = ("SIG" + signame for signame in ("TERM", "HUP", "INT", "BREAK"))
+SIGNALS_SET = ["SIG" + signame for signame in {"TERM", "HUP", "INT", "BREAK"}]
 
 CONFIG_REQUIRE = ["system", "unit"]
 
@@ -29,7 +29,7 @@ def quit_handler(signo, _frame):
     EXIT_EVENT.set()
 
 
-def set_quit_signal_handler(signal_handler, signals=SIGNALS_SET):
+def set_signal_handler(signal_handler, signals=SIGNALS_SET):
     for signal_type in signals:
         try:
             signal.signal(getattr(signal, signal_type), signal_handler)
@@ -128,7 +128,7 @@ def start_monitoring(verbose=None, quiet=None, **monitor_args):
 
     # Start the mainloop
     import brokkr.monitoring.monitor
-    set_quit_signal_handler(quit_handler)
+    set_signal_handler(quit_handler)
     logger.debug("Entering monitoring mainloop...")
     brokkr.monitoring.monitor.start_monitoring(
         exit_event=EXIT_EVENT, **monitor_args)
