@@ -43,7 +43,8 @@ DEFAULT_CONFIG_MODE = {
             },
         CONFIG_NAME_DYNAMIC: {
             "monitor": {
-                "monitor_interval_s": 5,
+                "hs_timeout_s": 1,
+                "monitor_interval_s": 1,
                 },
             },
         },
@@ -54,7 +55,7 @@ DEFAULT_CONFIG_MODE = {
             },
         CONFIG_NAME_DYNAMIC: {
             "monitor": {
-                "monitor_interval_s": 10,
+                "monitor_interval_s": 5,
                 },
             },
         },

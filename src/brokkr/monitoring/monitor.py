@@ -6,6 +6,7 @@ High-level functions to monitor and record sensor and sunsaver status data.
 import logging
 from pathlib import Path
 import threading
+import sys
 
 # Local imports
 from brokkr.config.dynamic import DYNAMIC_CONFIG
@@ -13,6 +14,10 @@ import brokkr.config.monitoring
 from brokkr.config.static import CONFIG
 import brokkr.output
 import brokkr.utils.misc
+
+
+CURSOR_UP_CHAR = '\x1b[1A'
+ERASE_LINE_CHAR = '\x1b[2K'
 
 
 logger = logging.getLogger(__name__)
@@ -33,13 +38,13 @@ def get_status_data(status_data_items=None):
     return status_data
 
 
-def format_status_data(status_data=None):
+def format_status_data(status_data=None, seperator="\n"):
     status_data = get_status_data() if status_data is None else status_data
     status_data_list = [
         "{key}: {value!s}".format(
             key=key.replace("_", " ").title(), value=value)
         for key, value in status_data.items()]
-    status_data_pretty = "\n".join(status_data_list)
+    status_data_pretty = seperator.join(status_data_list) + "\n"
     return status_data_pretty
 
 
@@ -49,8 +54,7 @@ def write_status_data(status_data,
     if not output_path.suffix:
         output_path = brokkr.output.render_output_filename(
             output_path=output_path, **CONFIG["monitor"]["filename_args"])
-    logger.debug("Writing telemetry to file: %r",
-                 output_path.as_posix())
+    logger.debug("Writing telemetry to file: %r", output_path.as_posix())
     brokkr.output.write_line_csv(status_data, output_path)
     return status_data
 
@@ -64,6 +68,7 @@ def start_monitoring(
         ):
     if exit_event is None:
         exit_event = threading.Event()
+    delete_previous = False
 
     while not exit_event.is_set():
         try:
@@ -72,7 +77,15 @@ def start_monitoring(
                 write_status_data(status_data, output_path=output_path)
             elif logger.getEffectiveLevel() > logging.DEBUG:
                 if pretty:
-                    print(format_status_data(status_data))
+                    output_str = format_status_data(status_data)
+                    if delete_previous:
+                        output_str = ((CURSOR_UP_CHAR + ERASE_LINE_CHAR)
+                                      * output_str.count("\n") + output_str)
+                    else:
+                        delete_previous = True
+                    sys.stdout.write(output_str)
+                    sys.stdout.flush()
+                    logging.disable(logging.NOTSET)
                 else:
                     print(f"Status data: {status_data}")
         except Exception as e:  # Keep recording data if an error occurs
@@ -89,4 +102,6 @@ def start_monitoring(
             exit_event.wait(min(
                 [sleep_interval,
                  (next_time - brokkr.utils.misc.monotonic_ns()) / 1e9]))
+        if pretty:
+            logging.disable()
     exit_event.clear()

@@ -100,9 +100,9 @@ def generate_version_message():
 
 @brokkr.logger.basic_logging
 def print_status(pretty=True):
-    import brokkr.monitoring.monitor
     logger = logging.getLogger(__name__)
     logger.debug("Getting oneshot status data...")
+    import brokkr.monitoring.monitor
     if pretty:
         print(brokkr.monitoring.monitor.format_status_data())
     else:
