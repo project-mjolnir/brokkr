@@ -24,9 +24,8 @@ LOG_LEVEL = {
     0: logging.WARNING,
     1: logging.INFO,
     2: logging.DEBUG,
-    3: logging.DEBUG,
+    3: 2,
     }
-SUBHANDLERS_LEVEL = 3
 
 LOG_FORMAT_BASIC = "{message}"
 LOG_FORMAT_FANCY = "{levelname} | {name} | {message}"
@@ -50,17 +49,17 @@ def setup_basic_logging(verbose=0, quiet=0, script_mode=False):
     verbose_net = verbose - quiet
 
     log_level = determine_log_level(verbose_net)
-    if script_mode and log_level >= logging.INFO:
+    if script_mode and log_level >= logging.DEBUG:
         log_args["format"] = LOG_FORMAT_BASIC
     else:
         log_args["format"] = LOG_FORMAT_FANCY
-    if script_mode or verbose >= SUBHANDLERS_LEVEL:
+    if script_mode or log_level < logging.DEBUG:
         log_args["level"] = log_level
 
     # Initialize logging
     logging.basicConfig(**log_args)
     logger = logging.getLogger(PACKAGE_NAME)
-    if not script_mode and verbose_net < SUBHANDLERS_LEVEL:
+    if not script_mode and log_level >= logging.DEBUG:
         logger.setLevel(log_level)
     return logger
 
