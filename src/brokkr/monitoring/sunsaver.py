@@ -10,6 +10,7 @@ import time
 
 # Third party imports
 import pymodbus.client.sync
+import pymodbus.pdu
 import serial.tools.list_ports
 
 # Local imports
@@ -238,6 +239,14 @@ def read_raw_sunsaver_data(
                     start_offset, len(REGISTER_VARIABLES), unit=unit)
                 if isinstance(register_data, BaseException):
                     raise register_data
+                # If register data is an exception, log it and return None
+                if isinstance(register_data, pymodbus.pdu.ExceptionResponse):
+                    logger.error("Error reading register data for %s",
+                                 port_object)
+                    logger.info("Error details: %s", register_data.__dict__)
+                    logger.info("Device details: %r", port_object.__dict__)
+                    logger.info("Client details: %r", mppt_client.__dict__)
+                    return None
             # Catch and log errors reading register data
             except Exception as e:
                 logger.error("%s reading register data for %s: %s",
@@ -248,7 +257,15 @@ def read_raw_sunsaver_data(
                 return None
             finally:
                 logger.debug("Closing MPPT client connection")
-                mppt_client.close()
+                try:
+                    mppt_client.close()
+                # Catch and log any errors closing the modbus connection
+                except Exception as e:
+                    logger.info("%s closing modbus device at %s: %s",
+                                type(e).__name__, port_object, e)
+                    logger.info("Error details:", exc_info=1)
+                    logger.info("Device details: %r", port_object.__dict__)
+                    logger.info("Client details: %r", mppt_client.__dict__)
         else:
             # Raise an error if connect not successful
             logger.error(
