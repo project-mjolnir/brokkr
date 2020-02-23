@@ -18,8 +18,7 @@ import brokkr.utils.misc
 CURSOR_UP_CHAR = '\x1b[1A'
 ERASE_LINE_CHAR = '\x1b[2K'
 
-
-logger = logging.getLogger(__name__)
+LOGGER = logging.getLogger(__name__)
 
 
 def get_status_data(status_data_items=None):
@@ -33,7 +32,7 @@ def get_status_data(status_data_items=None):
             status_data.update(output_data)
         else:
             status_data[item_name] = output_data
-    logger.debug("Status data: %r", status_data)
+    LOGGER.debug("Status data: %r", status_data)
     return status_data
 
 
@@ -53,7 +52,7 @@ def write_status_data(status_data,
     if not output_path.suffix:
         output_path = brokkr.output.render_output_filename(
             output_path=output_path, **CONFIG["monitor"]["filename_args"])
-    logger.debug("Writing telemetry to file: %r", output_path.as_posix())
+    LOGGER.debug("Writing telemetry to file: %r", output_path.as_posix())
     brokkr.output.write_line_csv(status_data, output_path)
     return status_data
 
@@ -67,7 +66,7 @@ def run_monitoring_pass(
         status_data = get_status_data()
         if output_path is not None:
             write_status_data(status_data, output_path=output_path)
-        elif logger.getEffectiveLevel() > logging.DEBUG:
+        elif LOGGER.getEffectiveLevel() > logging.DEBUG:
             if pretty:
                 output_str = format_status_data(status_data)
                 if delete_previous:
@@ -78,17 +77,17 @@ def run_monitoring_pass(
             else:
                 print(f"Status data: {status_data}")
     except Exception as e:  # Keep recording data if an error occurs
-        logger.critical("%s caught at main level: %s", type(e).__name__, e)
-        logger.info("Details:", exc_info=1)
+        LOGGER.critical("%s caught at main level: %s", type(e).__name__, e)
+        LOGGER.info("Details:", exc_info=1)
     logging.disable()
     return status_data
 
 
 def start_monitoring(monitor_interval_s=None, **monitoring_args):
-    logger.info("Starting monitoring system...")
+    LOGGER.info("Starting monitoring system...")
     if monitor_interval_s is None:
         monitor_interval_s = DYNAMIC_CONFIG["monitor"]["monitor_interval_s"]
-    logger.debug("Entering monitoring mainloop...")
+    LOGGER.debug("Entering monitoring mainloop...")
     run_monitoring_pass(**monitoring_args)
     brokkr.utils.misc.run_periodic(
         run_monitoring_pass, period_s=monitor_interval_s)(

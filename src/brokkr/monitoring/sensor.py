@@ -39,7 +39,7 @@ HS_CONVERSION_FUNCTIONS = {
     "T": lambda val: datetime.datetime.utcfromtimestamp(val / 1000),
     }
 
-logger = logging.getLogger(__name__)
+LOGGER = logging.getLogger(__name__)
 
 
 def ping(host=CONFIG["general"]["ip_sensor"], timeout=None):
@@ -54,8 +54,8 @@ def ping(host=CONFIG["general"]["ip_sensor"], timeout=None):
 
     # Build the command, e.g. ping -c 1 -w 1 10.10.10.1
     command = ["ping", count_param, "1", "-w", str(timeout), host]
-    logger.debug("Running ping command %s ...", " ".join(command))
-    if logger.getEffectiveLevel() <= logging.DEBUG:
+    LOGGER.debug("Running ping command %s ...", " ".join(command))
+    if LOGGER.getEffectiveLevel() <= logging.DEBUG:
         extra_args = {
             "stdout": subprocess.PIPE,
             "stderr": subprocess.PIPE,
@@ -72,17 +72,17 @@ def ping(host=CONFIG["general"]["ip_sensor"], timeout=None):
         ping_output = subprocess.run(command, timeout=timeout + 1,
                                      **extra_args)
     except subprocess.TimeoutExpired:
-        logger.warning("Timeout in %s s running ping command %s",
+        LOGGER.warning("Timeout in %s s running ping command %s",
                        timeout, " ".join(command))
-        logger.debug("Error details:", exc_info=1)
+        LOGGER.debug("Error details:", exc_info=1)
         return -1
     except Exception as e:
-        logger.error("%s running ping command %s: %s",
+        LOGGER.error("%s running ping command %s: %s",
                      type(e).__name__, " ".join(command), e)
-        logger.info("Error details:", exc_info=1)
+        LOGGER.info("Error details:", exc_info=1)
         return -9
 
-    logger.debug("Ping command output: %r", ping_output)
+    LOGGER.debug("Ping command output: %r", ping_output)
     return ping_output.returncode
 
 
@@ -96,37 +96,37 @@ def read_hs_packet(
     if timeout is None:
         timeout = DYNAMIC_CONFIG["monitor"]["hs_timeout_s"]
 
-    logger.debug("Reading H&S data...")
+    LOGGER.debug("Reading H&S data...")
     with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
         try:
             sock.settimeout(timeout)
             sock.bind((host_address, port))
-            logger.debug("Listening on socket %r", sock)
+            LOGGER.debug("Listening on socket %r", sock)
         except Exception as e:
-            logger.error("%s connecting to H&S port %r: %s",
+            LOGGER.error("%s connecting to H&S port %r: %s",
                          type(e).__name__, port, e)
-            logger.info("Error details:", exc_info=1)
-            logger.info("Socket details: %r", sock)
+            LOGGER.info("Error details:", exc_info=1)
+            LOGGER.info("Socket details: %r", sock)
             return None
         try:
             packet = sock.recv(buffer_size)
-            logger.debug("Data recieved: %r", packet)
+            LOGGER.debug("Data recieved: %r", packet)
         except socket.timeout:
-            logger.debug("Socket timed out in %s s while waiting for data",
+            LOGGER.debug("Socket timed out in %s s while waiting for data",
                          timeout)
-            logger.debug("Socket details: %r", sock)
+            LOGGER.debug("Socket details: %r", sock)
             return None
         except Exception as e:
-            logger.error("%s recieving H&S data on port %r: %s",
+            LOGGER.error("%s recieving H&S data on port %r: %s",
                          type(e).__name__, port, e)
-            logger.info("Error details:", exc_info=1)
-            logger.info("Socket details: %r", sock)
+            LOGGER.info("Error details:", exc_info=1)
+            LOGGER.info("Socket details: %r", sock)
             return None
     if packet:
         packet = packet[:packet_size]
-        logger.debug("Packet: %s", packet.hex())
+        LOGGER.debug("Packet: %s", packet.hex())
     else:
-        logger.warning("Null H&S data responce returned: %r", packet)
+        LOGGER.warning("Null H&S data responce returned: %r", packet)
         packet = None
     return packet
 
@@ -152,29 +152,29 @@ def decode_hs_packet(
             # Handle errors decoding specific values
             except Exception as e:
                 if error_count < 1:
-                    logger.warning(
+                    LOGGER.warning(
                         "%s decoding H&S data %r for variable %r to %s: %s",
                         type(e).__name__, val, var_name, var_type, e)
-                    logger.info("Error details:", exc_info=1)
+                    LOGGER.info("Error details:", exc_info=1)
                 else:
-                    logger.info(
+                    LOGGER.info(
                         "%s decoding H&S data %r for variable %r to %s: %s",
                         type(e).__name__, val, var_name, var_type, e)
-                    logger.debug("Error details:", exc_info=1)
+                    LOGGER.debug("Error details:", exc_info=1)
 
                 hs_dict[var_name] = na_marker
                 error_count += 1
     # Handle overall decoding errors
     except Exception as e:
         if packet is not None:
-            logger.error("%s decoding H&S data: %s", type(e).__name__, e)
-            logger.info("Error details:", exc_info=1)
-            logger.info("Packet data: %r", packet)
+            LOGGER.error("%s decoding H&S data: %s", type(e).__name__, e)
+            LOGGER.info("Error details:", exc_info=1)
+            LOGGER.info("Packet data: %r", packet)
         hs_dict = {var_name: na_marker
                    for var_name, var_type in hs_variables if var_type}
 
     if error_count > 1:
-        logger.warning("%s additioanl decode errors were suppressed.",
+        LOGGER.warning("%s additioanl decode errors were suppressed.",
                        error_count - 1)
 
     return hs_dict

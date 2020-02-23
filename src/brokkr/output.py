@@ -25,8 +25,7 @@ CSV_PARAMS = {
     "strict": False,
     }
 
-
-logger = logging.getLogger(__name__)
+LOGGER = logging.getLogger(__name__)
 
 
 def render_output_filename(
@@ -47,7 +46,7 @@ def render_output_filename(
         "utc_date": datetime.datetime.utcnow().date(),
         }
     all_filename_args = {**filename_args_default, **filename_args}
-    logger.debug("Args for output filename: %s", all_filename_args)
+    LOGGER.debug("Args for output filename: %s", all_filename_args)
 
     rendered_filename = filename.format(**all_filename_args)
     output_path = (Path(output_path) / rendered_filename)
@@ -65,7 +64,7 @@ def write_line_csv(data, out_file, **csv_params):
             close_file = True
             out_file = Path(out_file)
             out_file_path = out_file.as_posix()
-            logger.debug(
+            LOGGER.debug(
                 "Ensuring output directory at %r", out_file.parent.as_posix())
             os.makedirs(out_file.parent, exist_ok=True)
             data_csv = open(out_file, mode="a", encoding="utf-8", newline="")
@@ -74,19 +73,19 @@ def write_line_csv(data, out_file, **csv_params):
         if not data_csv.tell():
             csv_writer.writeheader()
         csv_writer.writerow(data)
-        logger.debug("Data successfully written to CSV at %r", out_file_path)
+        LOGGER.debug("Data successfully written to CSV at %r", out_file_path)
         return True
     except Exception as e:
-        logger.error("%s writing output data to local CSV at %r: %s",
+        LOGGER.error("%s writing output data to local CSV at %r: %s",
                      type(e).__name__, out_file, e)
-        logger.info("Error details:", exc_info=1)
-        logger.info("Data details: %r", data)
+        LOGGER.info("Error details:", exc_info=1)
+        LOGGER.info("Data details: %r", data)
         return False
     finally:
         if close_file:
             try:
                 data_csv.close()
             except Exception as e:
-                logger.warning("%s attempting to close output CSV %r: %s",
+                LOGGER.warning("%s attempting to close output CSV %r: %s",
                                type(e).__name__, out_file, e)
-                logger.info("Error details:", exc_info=1)
+                LOGGER.info("Error details:", exc_info=1)
