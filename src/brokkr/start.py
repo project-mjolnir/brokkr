@@ -7,34 +7,13 @@ Startup code for running the Brokkr client mainloop as an application.
 import logging
 import logging.config
 from pathlib import Path
-import signal
-import threading
 
 # Local imports
 from brokkr.config.constants import PACKAGE_NAME, LEVEL_NAME_SYSTEM
 import brokkr.logger
 
 
-EXIT_EVENT = threading.Event()
-SIGNALS_SET = ["SIG" + signame for signame in {"TERM", "HUP", "INT", "BREAK"}]
-
 CONFIG_REQUIRE = ["system", "unit"]
-
-
-def quit_handler(signo, _frame):
-    logger = logging.getLogger(__name__)
-    logger.warning("Interrupted by signal %s; terminating %s",
-                   PACKAGE_NAME.title(), signo)
-    logging.shutdown()
-    EXIT_EVENT.set()
-
-
-def set_signal_handler(signal_handler, signals=SIGNALS_SET):
-    for signal_type in signals:
-        try:
-            signal.signal(getattr(signal, signal_type), signal_handler)
-        except AttributeError:  # Windows doesn't have SIGHUP
-            continue
 
 
 def warn_on_startup_issues():
@@ -110,8 +89,7 @@ def print_status(pretty=True):
 
 
 def start_monitoring(verbose=None, quiet=None, **monitor_args):
-    import brokkr.utils.misc
-
+    import brokkr.logger
     # Drop output_path arg if true to use default path in function signature
     if monitor_args.get("output_path_client", None) is True:
         monitor_args.pop("output_path_client", None)
@@ -123,15 +101,11 @@ def start_monitoring(verbose=None, quiet=None, **monitor_args):
     logger = logging.getLogger(__name__)
 
     # Print logging information
-    logger.info("Starting monitoring system...")
     logger.info("Monitor arguments: %s", monitor_args)
 
     # Start the mainloop
     import brokkr.monitoring.monitor
-    set_signal_handler(quit_handler)
-    logger.debug("Entering monitoring mainloop...")
-    brokkr.monitoring.monitor.start_monitoring(
-        exit_event=EXIT_EVENT, **monitor_args)
+    brokkr.monitoring.monitor.start_monitoring(**monitor_args)
 
 
 def start_brokkr(log_level_file=None, log_level_console=None, **monitor_args):
@@ -140,6 +114,7 @@ def start_brokkr(log_level_file=None, log_level_console=None, **monitor_args):
     from brokkr.config.log import LOG_CONFIGS, LOG_CONFIG
     from brokkr.config.system import SYSTEM_CONFIGS, SYSTEM_CONFIG
     from brokkr.config.unit import UNIT_CONFIGS, UNIT_CONFIG
+    import brokkr.logger
 
     # Setup logging
     log_config = brokkr.logger.setup_full_log_config(
@@ -172,7 +147,8 @@ def start_brokkr(log_level_file=None, log_level_console=None, **monitor_args):
         logger.debug("%s config hierarchy: %s", config_name, config_data[1])
 
     # Start monitoring system
-    start_monitoring(**monitor_args)
+    import brokkr.monitoring.monitor
+    brokkr.monitoring.monitor.start_monitoring(**monitor_args)
 
 
 if __name__ == "__main__":

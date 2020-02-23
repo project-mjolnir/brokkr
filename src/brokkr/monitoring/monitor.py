@@ -5,7 +5,6 @@ High-level functions to monitor and record sensor and sunsaver status data.
 # Standard library imports
 import logging
 from pathlib import Path
-import threading
 import sys
 
 # Local imports
@@ -59,49 +58,38 @@ def write_status_data(status_data,
     return status_data
 
 
-def start_monitoring(
+def run_monitoring_pass(
         output_path=CONFIG["monitor"]["output_path_client"],
-        monitor_interval_s=DYNAMIC_CONFIG["monitor"]["monitor_interval_s"],
-        sleep_interval=CONFIG["monitor"]["sleep_interval_s"],
         pretty=False,
-        exit_event=None,
+        delete_previous=False,
         ):
-    if exit_event is None:
-        exit_event = threading.Event()
-    delete_previous = False
+    try:
+        status_data = get_status_data()
+        if output_path is not None:
+            write_status_data(status_data, output_path=output_path)
+        elif logger.getEffectiveLevel() > logging.DEBUG:
+            if pretty:
+                output_str = format_status_data(status_data)
+                if delete_previous:
+                    output_str = ((CURSOR_UP_CHAR + ERASE_LINE_CHAR)
+                                  * output_str.count("\n") + output_str)
+                sys.stdout.write(output_str)
+                sys.stdout.flush()
+            else:
+                print(f"Status data: {status_data}")
+    except Exception as e:  # Keep recording data if an error occurs
+        logger.critical("%s caught at main level: %s", type(e).__name__, e)
+        logger.info("Details:", exc_info=1)
+    logging.disable()
+    return status_data
 
-    while not exit_event.is_set():
-        try:
-            status_data = get_status_data()
-            if output_path is not None:
-                write_status_data(status_data, output_path=output_path)
-            elif logger.getEffectiveLevel() > logging.DEBUG:
-                if pretty:
-                    output_str = format_status_data(status_data)
-                    if delete_previous:
-                        output_str = ((CURSOR_UP_CHAR + ERASE_LINE_CHAR)
-                                      * output_str.count("\n") + output_str)
-                    else:
-                        delete_previous = True
-                    sys.stdout.write(output_str)
-                    sys.stdout.flush()
-                    logging.disable(logging.NOTSET)
-                else:
-                    print(f"Status data: {status_data}")
-        except Exception as e:  # Keep recording data if an error occurs
-            logger.critical("%s caught at main level: %s",
-                            type(e).__name__, e)
-            logger.info("Details:", exc_info=1)
-        next_time = (brokkr.utils.misc.monotonic_ns()
-                     + monitor_interval_s * 1e9
-                     - (brokkr.utils.misc.monotonic_ns()
-                        - brokkr.utils.misc.START_TIME)
-                     % (monitor_interval_s * 1e9))
-        while (not exit_event.is_set()
-               and brokkr.utils.misc.monotonic_ns() < next_time):
-            exit_event.wait(min(
-                [sleep_interval,
-                 (next_time - brokkr.utils.misc.monotonic_ns()) / 1e9]))
-        if pretty:
-            logging.disable()
-    exit_event.clear()
+
+def start_monitoring(monitor_interval_s=None, **monitoring_args):
+    logger.info("Starting monitoring system...")
+    if monitor_interval_s is None:
+        monitor_interval_s = DYNAMIC_CONFIG["monitor"]["monitor_interval_s"]
+    logger.debug("Entering monitoring mainloop...")
+    run_monitoring_pass(**monitoring_args)
+    brokkr.utils.misc.run_periodic(
+        run_monitoring_pass, period_s=monitor_interval_s)(
+            **monitoring_args, delete_previous=True)

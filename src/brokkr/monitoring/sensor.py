@@ -42,8 +42,10 @@ HS_CONVERSION_FUNCTIONS = {
 logger = logging.getLogger(__name__)
 
 
-def ping(host=CONFIG["general"]["ip_sensor"],
-         timeout=DYNAMIC_CONFIG["monitor"]["ping_timeout_s"]):
+def ping(host=CONFIG["general"]["ip_sensor"], timeout=None):
+    if timeout is None:
+        timeout = DYNAMIC_CONFIG["monitor"]["ping_timeout_s"]
+
     # Set the correct option for the number of packets based on platform.
     if platform.system().lower() == "windows":
         count_param = "-n"
@@ -85,12 +87,15 @@ def ping(host=CONFIG["general"]["ip_sensor"],
 
 
 def read_hs_packet(
-        timeout=DYNAMIC_CONFIG["monitor"]["hs_timeout_s"],
+        timeout=None,
         host_address="",
         port=CONFIG["monitor"]["hs_port"],
         packet_size=HS_PACKET_SIZE,
         buffer_size=HS_BUFFER_SIZE,
         ):
+    if timeout is None:
+        timeout = DYNAMIC_CONFIG["monitor"]["hs_timeout_s"]
+
     logger.debug("Reading H&S data...")
     with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
         try:

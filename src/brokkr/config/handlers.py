@@ -166,7 +166,6 @@ DEFAULT_CONFIG_STATIC = {
         "filename_args": {"output_type": "telemetry"},
         "hs_port": 8084,
         "output_path_client": OUTPUT_SUBPATH_MONITOR.as_posix(),
-        "sleep_interval_s": 0.5,
         "sunsaver_pid_list": [],
         "sunsaver_port": "",
         "sunsaver_start_offset": 0,
