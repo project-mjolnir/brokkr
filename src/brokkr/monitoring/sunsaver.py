@@ -6,6 +6,7 @@ Functions to read data from a Sunsaver MPPT-15L charge controller.
 import logging
 import os
 from pathlib import Path
+import struct
 import time
 
 # Third party imports
@@ -15,11 +16,13 @@ import serial.tools.list_ports
 
 # Local imports
 from brokkr.config.static import CONFIG
+import brokkr.decode
 
 
+REGISTER_TYPE = "H"
 USBDEVFS_RESET = 21780
 
-SERIAL_PARAMS_SUNSAVERMPPT15L = {
+SERIAL_PARAMS_MPPT15L = {
     "method": "rtu",
     "stopbits": 2,
     "bytesize": 8,
@@ -29,70 +32,53 @@ SERIAL_PARAMS_SUNSAVERMPPT15L = {
     "timeout": 2,
     }
 
-REGISTER_VARIABLES = (
-    ("adc_vb_f", "V"),
-    ("adc_va_f", "V"),
-    ("adc_vl_f", "V"),
-    ("adc_ic_f", "A"),
-    ("adc_il_f", "A"),
-    ("t_hs", "T"),
-    ("t_batt", "T"),
-    ("t_amb", "T"),
-    ("t_rts", "T"),
-    ("charge_state", "S"),
-    ("array_fault", "B"),
-    ("vb_f", "V"),
-    ("vb_ref", "Vr"),
-    ("ahc_r_hi", "HI"),
-    ("ahc_r_lo", "AhL"),
-    ("ahc_t_hi", "HI"),
-    ("ahc_t_lo", "AhL"),
-    ("kwhc", "Ah"),
-    ("load_state", "S"),
-    ("load_fault", "B"),
-    ("v_lvd", "V"),
-    ("ahl_r_hi", "HI"),
-    ("ahl_r_lo", "AhL"),
-    ("ahl_t_hi", "HI"),
-    ("ahl_t_lo", "AhL"),
-    ("hourmeter_hi", "HI"),
-    ("hourmeter_lo", "hL"),
-    ("alarm_hi", "HI"),
-    ("alarm_lo", "BL"),
-    ("dip_switch", "B"),
-    ("led_state", "S"),
-    ("power_out", "W"),
-    ("sweep_vmp", "V"),
-    ("sweep_pmax", "W"),
-    ("sweep_voc", "V"),
-    ("vb_min_daily", "V"),
-    ("vb_max_daily", "V"),
-    ("ahc_daily", "Ah"),
-    ("ahl_daily", "Ah"),
-    ("array_fault_daily", "B"),
-    ("load_fault_daily", "B"),
-    ("alarm_hi_daily", "HI"),
-    ("alarm_Lo_daily", "BL"),
-    ("vb_min", "V"),
-    ("vb_max", "V"),
-    )
+VARIABLE_PARAMS_MPPT15L = [
+    {"name": "adc_vb_f", "output_type": "xV"},
+    {"name": "adc_va_f", "output_type": "xV"},
+    {"name": "adc_vl_f", "output_type": "xV"},
+    {"name": "adc_ic_f", "output_type": "xA"},
+    {"name": "adc_il_f", "output_type": "xA"},
+    {"name": "t_hs", "raw_type": "h"},
+    {"name": "t_batt", "raw_type": "h"},
+    {"name": "t_amb", "raw_type": "h"},
+    {"name": "t_rts", "raw_type": "h"},
+    {"name": "charge_state"},
+    {"name": "array_fault", "output_type": "B"},
+    {"name": "vb_f", "output_type": "xV"},
+    {"name": "vb_ref", "output_type": "xVr"},
+    {"name": "ahc_r", "raw_type": "I", "output_type": "xAh"},
+    {"name": "ahc_t", "raw_type": "I", "output_type": "xAh"},
+    {"name": "kwhc", "output_type": "xAh"},
+    {"name": "load_state", "output_type": "I"},
+    {"name": "load_fault", "output_type": "B"},
+    {"name": "v_lvd", "output_type": "xV"},
+    {"name": "ahl_r", "raw_type": "I", "output_type": "xAh"},
+    {"name": "ahl_t", "raw_type": "I", "output_type": "xAh"},
+    {"name": "hourmeter", "raw_type": "I"},
+    {"name": "alarm", "raw_type": "I", "output_type": "B"},
+    {"name": "dip_switch", "output_type": "B"},
+    {"name": "led_state"},
+    {"name": "power_out", "output_type": "xW"},
+    {"name": "sweep_vmp", "output_type": "xV"},
+    {"name": "sweep_pmax", "output_type": "xW"},
+    {"name": "sweep_voc", "output_type": "xV"},
+    {"name": "vb_min_daily", "output_type": "xV"},
+    {"name": "vb_max_daily", "output_type": "xV"},
+    {"name": "ahc_daily", "output_type": "xAh"},
+    {"name": "ahl_daily", "output_type": "xAh"},
+    {"name": "array_fault_daily", "output_type": "B"},
+    {"name": "load_fault_daily", "output_type": "B"},
+    {"name": "alarm_daily", "raw_type": "I", "output_type": "B"},
+    {"name": "vb_min", "output_type": "xV"},
+    {"name": "vb_max", "output_type": "xV"},
+    ]
 
-CONVERSION_FUNCTIONS = {
-    None: lambda val: None,
-    "HI": lambda val: None,
-    "S": lambda val: str(val),
-    "I": lambda val: int(val),
-    "F": lambda val: float(val),
-    "T": lambda val: float(val) - 2**16 if val > 2**8 else float(val),
-    "B": lambda val: int(val),
-    "BL": lambda hi, lo: int((hi << 16) | lo),
-    "V": lambda val: round(val * 100 * 2 ** -15, 3),
-    "Vr": lambda val: round(val * 96.667 * 2 ** -15, 3),
-    "A": lambda val: round(val * 79.16 * 2 ** -15, 3),
-    "Ah": lambda val: round(val * 0.1, 1),
-    "AhL": lambda hi, lo: round(((hi << 16) | lo) * 0.1, 1),
-    "hL": lambda hi, lo: int((hi << 16) | lo),
-    "W": lambda val: round(val * 989.5 * 2 ** -16, 3),
+CONVERSION_FUNCTIONS_MPTT15L = {
+    "xV": lambda val: round(val * 100 * 2 ** -15, 3),
+    "xVr": lambda val: round(val * 96.667 * 2 ** -15, 3),
+    "xA": lambda val: round(val * 79.16 * 2 ** -15, 3),
+    "xAh": lambda val: round(val * 0.1, 1),
+    "xW": lambda val: round(val * 989.5 * 2 ** -16, 3),
     }
 
 LOGGER = logging.getLogger(__name__)
@@ -208,7 +194,7 @@ def read_raw_sunsaver_data(
         return None
 
     # Read charge controller data over serial Modbus
-    serial_params = {**SERIAL_PARAMS_SUNSAVERMPPT15L, **serial_params}
+    serial_params = {**SERIAL_PARAMS_MPPT15L, **serial_params}
     mppt_client = pymodbus.client.sync.ModbusSerialClient(
         port=port_object.device, **serial_params)
     LOGGER.debug("Connecting to client %r", mppt_client)
@@ -235,8 +221,12 @@ def read_raw_sunsaver_data(
             LOGGER.info("Client details: %r", mppt_client.__dict__)
         if connect_successful:
             try:
+                data_decoder = brokkr.decode.DataDecoder(
+                    VARIABLE_PARAMS_MPPT15L)
+                register_count = (data_decoder.packet_size
+                                  // struct.calcsize("!" + REGISTER_TYPE))
                 register_data = mppt_client.read_holding_registers(
-                    start_offset, len(REGISTER_VARIABLES), unit=unit)
+                    start_offset, register_count, unit=unit)
                 if isinstance(register_data, BaseException):
                     raise register_data
                 # If register data is an exception, log it and return None
@@ -274,7 +264,7 @@ def read_raw_sunsaver_data(
             LOGGER.info("Device details: %r", port_object.__dict__)
             LOGGER.info("Client details: %r", mppt_client.__dict__)
             return None
-        LOGGER.debug("Register data: %s", register_data)
+        LOGGER.debug("Register data: %r", register_data.__dict__)
     except Exception as e:
         LOGGER.error("%s connecting to charge controller device %s: %s",
                      type(e).__name__, port_object, e)
@@ -286,81 +276,48 @@ def read_raw_sunsaver_data(
 
 
 def decode_sunsaver_data(
-        register_data,
-        na_marker=CONFIG["general"]["na_marker"],
-        register_variables=REGISTER_VARIABLES,
-        conversion_functions=None,
+        raw_data,
+        variables=None,
+        conversion_functions=None
         ):
+    if variables is None:
+        variables = VARIABLE_PARAMS_MPPT15L
     if conversion_functions is None:
-        conversion_functions = CONVERSION_FUNCTIONS
+        conversion_functions = CONVERSION_FUNCTIONS_MPTT15L
+
+    data_decoder = brokkr.decode.DataDecoder(
+        variables=variables,
+        conversion_functions=conversion_functions,
+        )
+    LOGGER.debug("Created data decoder: %r", data_decoder)
+
+    # Handle raw data not being present
+    if not raw_data:
+        sunsaver_data = data_decoder.output_na_data()
+        LOGGER.debug("No data to decode, returning: %r", sunsaver_data)
+        return sunsaver_data
+
     # Handle both register object and a simple list of register values
     try:
-        register_data.registers[0]
+        raw_data.registers[0]
     except AttributeError:
         LOGGER.debug("Register_data passed as list.")
     else:
-        register_data = register_data.registers
+        raw_data = raw_data.registers
         LOGGER.debug("Register_data passed as object.")
 
-    sunsaver_data = {}
-    last_hi = None
-    error_count = 0
-    try:
-        for register_val, (var_name, var_type) in zip(
-                register_data, register_variables):
-            try:
-                if last_hi is None:
-                    output_val = (
-                        conversion_functions[var_type](register_val))
-                else:
-                    output_val = (
-                        conversion_functions[var_type](last_hi, register_val))
+    # Convert uint16s back to packed bytes
+    struct_format = "!" + (REGISTER_TYPE * len(raw_data))
+    raw_data = struct.pack(struct_format, *raw_data)
+    LOGGER.debug("Converted register data to struct of format %r : %r",
+                 struct_format, raw_data)
 
-                if var_type == "HI":
-                    last_hi = register_val
-                else:
-                    last_hi = None
-
-                if output_val is not None:
-                    var_name = (var_name.lower()
-                                .replace("_lo", "").replace("_lo_", "_"))
-                    sunsaver_data[var_name] = output_val
-            # Catch any conversion errors and return NA
-            except Exception as e:
-                if error_count < 1:
-                    LOGGER.warning(
-                        "%s decoding data %r for register %r to %s: %s",
-                        type(e).__name__, register_val, var_name, var_type, e)
-                    LOGGER.info("Error details:", exc_info=1)
-                else:
-                    LOGGER.info(
-                        "%s decoding data %r for register %r to %s: %s",
-                        type(e).__name__, register_val, var_name, var_type, e)
-                    LOGGER.debug("Error details:", exc_info=1)
-
-                sunsaver_data[var_name] = na_marker
-                last_hi = None
-                error_count += 1
-    # Catch overall errrors, e.g. modbus exceptions
-    except Exception as e:
-        if register_data is not None:
-            LOGGER.error("%s decoding register data: %s",
-                         type(e).__name__, e)
-            LOGGER.info("Error details:", exc_info=1)
-            LOGGER.info("Register data: %r", register_data)
-        sunsaver_data = {
-            var_name.lower().replace("_lo", "").replace("_lo_", "_"): na_marker
-            for var_name, var_type in register_variables
-            if var_type and var_type != "HI"}
-
-    if error_count > 1:
-        LOGGER.warning("%s additional decode errors were suppressed.",
-                       error_count - 1)
+    sunsaver_data = data_decoder.decode_data(raw_data)
 
     return sunsaver_data
 
 
-def get_sunsaver_data(na_marker=CONFIG["general"]["na_marker"], **kwargs):
+def get_sunsaver_data(**kwargs):
     register_data = read_raw_sunsaver_data(**kwargs)
-    sunsaver_data = decode_sunsaver_data(register_data, na_marker=na_marker)
+    sunsaver_data = decode_sunsaver_data(register_data)
     return sunsaver_data

@@ -3,41 +3,31 @@ Functions to get status information from a HAMMA2 sensor over Ethernet.
 """
 
 # Standard library imports
-import datetime
 import logging
 import platform
 import socket
-import struct
 import subprocess
 
 # Local imports
 from brokkr.config.dynamic import DYNAMIC_CONFIG
 from brokkr.config.static import CONFIG
+import brokkr.decode
 
 
-HS_PACKET_SIZE = 60
-HS_BUFFER_SIZE = 128
+BUFFER_SIZE_HS = 128
 
-HS_STRUCT = "!8siqiiqqqii"
-HS_VARIABLES = (
-    ("marker_val", None),
-    ("sequence_count", "I"),
-    ("timestamp", "T"),
-    ("crc_errors", "I"),
-    ("valid_packets", "I"),
-    ("bytes_read", "B"),
-    ("bytes_written", "B"),
-    ("bytes_remaining", "B"),
-    ("packets_sent", "I"),
-    ("packets_dropped", "I"),
-    )
-HS_CONVERSION_FUNCTIONS = {
-    None: lambda val: None,
-    "I": lambda val: int(val),
-    "B": lambda val: int(val),
-    "S": lambda val: val.decode().rstrip("\x00"),
-    "T": lambda val: datetime.datetime.utcfromtimestamp(val / 1000),
-    }
+VARIABLE_PARAMS_HS = [
+    {"name": "marker_val", "raw_type": "8s", "output_type": None},
+    {"name": "sequence_count", "raw_type": "I", "output_type": "I"},
+    {"name": "timestamp", "raw_type": "q", "output_type": "tm"},
+    {"name": "crc_errors", "raw_type": "I", "output_type": "I"},
+    {"name": "valid_packets", "raw_type": "I", "output_type": "I"},
+    {"name": "bytes_read", "raw_type": "Q", "output_type": "B"},
+    {"name": "bytes_written", "raw_type": "Q", "output_type": "B"},
+    {"name": "bytes_remaining", "raw_type": "Q", "output_type": "B"},
+    {"name": "packets_sent", "raw_type": "I", "output_type": "I"},
+    {"name": "packets_dropped", "raw_type": "I", "output_type": "I"},
+    ]
 
 LOGGER = logging.getLogger(__name__)
 
@@ -70,7 +60,7 @@ def ping(host=CONFIG["general"]["ip_sensor"], timeout=None):
 
     try:
         ping_output = subprocess.run(command, timeout=timeout + 1,
-                                     **extra_args)
+                                     check=False, **extra_args)
     except subprocess.TimeoutExpired:
         LOGGER.warning("Timeout in %s s running ping command %s",
                        timeout, " ".join(command))
@@ -90,11 +80,13 @@ def read_hs_packet(
         timeout=None,
         host_address="",
         port=CONFIG["monitor"]["hs_port"],
-        packet_size=HS_PACKET_SIZE,
-        buffer_size=HS_BUFFER_SIZE,
+        packet_size=None,
+        buffer_size=BUFFER_SIZE_HS,
         ):
     if timeout is None:
         timeout = DYNAMIC_CONFIG["monitor"]["hs_timeout_s"]
+    if packet_size is None:
+        packet_size = brokkr.decode.DataDecoder(VARIABLE_PARAMS_HS).packet_size
 
     LOGGER.debug("Reading H&S data...")
     with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
@@ -132,55 +124,24 @@ def read_hs_packet(
 
 
 def decode_hs_packet(
-        packet,
-        na_marker=CONFIG["general"]["na_marker"],
-        struct_str=HS_STRUCT,
-        hs_variables=HS_VARIABLES,
+        raw_data,
+        variables=None,
         conversion_functions=None,
         ):
-    if conversion_functions is None:
-        conversion_functions = HS_CONVERSION_FUNCTIONS
-    hs_dict = {}
-    error_count = 0
-    try:
-        decoded_vals = struct.unpack(struct_str, packet)
-        for var_name, var_type, val in zip(*zip(*hs_variables), decoded_vals):
-            try:
-                output_val = conversion_functions[var_type](val)
-                if output_val is not None:
-                    hs_dict[var_name] = output_val
-            # Handle errors decoding specific values
-            except Exception as e:
-                if error_count < 1:
-                    LOGGER.warning(
-                        "%s decoding H&S data %r for variable %r to %s: %s",
-                        type(e).__name__, val, var_name, var_type, e)
-                    LOGGER.info("Error details:", exc_info=1)
-                else:
-                    LOGGER.info(
-                        "%s decoding H&S data %r for variable %r to %s: %s",
-                        type(e).__name__, val, var_name, var_type, e)
-                    LOGGER.debug("Error details:", exc_info=1)
+    if variables is None:
+        variables = VARIABLE_PARAMS_HS
 
-                hs_dict[var_name] = na_marker
-                error_count += 1
-    # Handle overall decoding errors
-    except Exception as e:
-        if packet is not None:
-            LOGGER.error("%s decoding H&S data: %s", type(e).__name__, e)
-            LOGGER.info("Error details:", exc_info=1)
-            LOGGER.info("Packet data: %r", packet)
-        hs_dict = {var_name: na_marker
-                   for var_name, var_type in hs_variables if var_type}
+    data_decoder = brokkr.decode.DataDecoder(
+        variables=variables,
+        conversion_functions=conversion_functions,
+        )
+    LOGGER.debug("Created data decoder: %r", data_decoder)
+    hs_data = data_decoder.decode_data(raw_data)
 
-    if error_count > 1:
-        LOGGER.warning("%s additioanl decode errors were suppressed.",
-                       error_count - 1)
-
-    return hs_dict
+    return hs_data
 
 
-def get_hs_data(na_marker=CONFIG["general"]["na_marker"], **kwargs):
+def get_hs_data(**kwargs):
     packet = read_hs_packet(**kwargs)
-    hs_data = decode_hs_packet(packet, na_marker=na_marker)
+    hs_data = decode_hs_packet(packet)
     return hs_data

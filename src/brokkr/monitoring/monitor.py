@@ -42,8 +42,8 @@ def format_status_data(status_data=None, seperator="\n"):
         "{key}: {value!s}".format(
             key=key.replace("_", " ").title(), value=value)
         for key, value in status_data.items()]
-    status_data_pretty = seperator.join(status_data_list) + "\n"
-    return status_data_pretty
+    formatted_status_data = seperator.join(status_data_list) + "\n"
+    return formatted_status_data
 
 
 def write_status_data(status_data,
@@ -54,7 +54,6 @@ def write_status_data(status_data,
             output_path=output_path, **CONFIG["monitor"]["filename_args"])
     LOGGER.debug("Writing telemetry to file: %r", output_path.as_posix())
     brokkr.output.write_line_csv(status_data, output_path)
-    return status_data
 
 
 def run_monitoring_pass(
@@ -79,6 +78,7 @@ def run_monitoring_pass(
     except Exception as e:  # Keep recording data if an error occurs
         LOGGER.critical("%s caught at main level: %s", type(e).__name__, e)
         LOGGER.info("Details:", exc_info=1)
+        status_data = None
     logging.disable()
     return status_data
 
