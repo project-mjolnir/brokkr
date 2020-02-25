@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Setup script for Brokkr.
+Setup script for Brokkr, a scientific IoT sensor client.
 """
 
 from pathlib import Path
@@ -25,10 +25,11 @@ with open(Path(__file__).resolve().parent
 setuptools.setup(
     name=PROJECT_NAME,
     version=VERSION["__version__"],
-    author="C.A.M. Gerlach and the HAMMA group",
+    author="C.A.M. Gerlach/UAH HAMMA group",
     author_email="CAM.Gerlach@Gerlach.CAM",
-    description=("A package for data logging and management "
-                 "of HAMMA lightning sensors."),
+    description=("A client for data ingest/logging/uplink, remote management "
+                 "and autonomous & central control of scientific IoT sensors "
+                 "as part of the Mjolnir system."),
     long_description=LONG_DESCRIPTION,
     long_description_content_type="text/markdown",
     keywords="iot lightning sensor remote control research m2m raspberry pi",

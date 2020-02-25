@@ -1,18 +1,21 @@
 # Brokkr
 
-A Python package to receive science data and status information from a local HAMMA2 lightning sensor and a Sunsaver MPPT-15L charge controller, store it locally, and transmit it back to a central server (generally, but not necessarily one running the Sindri package).
-Further, it can maintain a reverse SSH tunnel to an accessible server for remote access, and receive and execute power, processing system and sensor control commands forwarded as custom binary TCP packets over said connection.
+A client for data ingest/logging/uplink, remote management and autonomous & central control of scientific IoT sensors as part of the Mjolnir system.
+Originally developed to receive science data and status information from a local HAMMA2 lightning sensor and a Sunsaver MPPT-15L charge controller, store it locally, and transmit it back to a central server (generally, but not necessarily one running the Sindri package), but is now being evolved to be extensible and configurable for a wide variety of applications, from low-cost, low-power arrays of hundreds of environmental monitoring sensors, to sophisticated instruments mounted on aircraft and UAVs.
+Further, it can maintain a reverse SSH tunnel to an accessible server for remote access, and receive and execute power, processing system and sensor control commands forwarded as TCP packets over said connection.
 
 
 
 ## Installation and Setup
 
-Built and tested under Python 3.7 (but should be compatible with Python >=3.6; lack thereof should be considered a bug) and recent (>= 2019) versions of the packages listed in the `requirements.txt` file.
+Built and tested under Python 3.7 (but should be compatible with Python >=3.6; lack thereof should be considered a bug), and should be forward-compatible with Python 3.8 (albeit as yet not fully tested).
+Compatible and tested with recent (>= 2019) versions of the packages listed in the `requirements.txt` file.
 Works best on Linux, but is tested to be fully functional (aside from service features) on Windows (and _should_ work equally macOS) under the Anaconda distribution.
 
 Following standard installation via ``pip`` (``venv`` highly recommended), the package will install the ``brokkr`` command, which can then be used to install the config files, firewall access, and (on Linux) serial port access, Brokkr systemd service, and SSH/AutoSSh service and configuration with ``brokkr install-all``.
 If on Linux, simply reboot to automatically complete setup and start the ``brokkr`` service, or on all platforms you can manually execute it on the command line immediately with ``brokkr start``.
-To just test the monitoring functions, run ``brokkr monitor``.
+
+To just test the monitoring functions, run ``brokkr monitor``, or use ``brokkr status`` to get a snapshot of current monitoring data output.
 The ``brokkr install-*`` commands perform installation functions and the ``brokkr configure-*`` scripts help set up a new or updated ``brokkr`` install.
 Use ``brokkr --help`` to get help, ``brokkr --version`` to get the current version.
 On Linux, the ``brokkr`` systemd service can be interacted with via the standard systemd commands, e.g. ``sudo systemd {start, stop, enable, disable} brokkr``, ``systemd status brokkr``, ``journalctl -u brokkr``, etc, and the same for ``autossh-brokkr`` which controls remote SSH connectivity.

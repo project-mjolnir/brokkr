@@ -1,5 +1,5 @@
 """
-Brokkr, a package for data logging and management of HAMMA lightning sensors.
+Brokkr, a scientific IoT sensor client for data logging, uplink and control.
 """
 
 from brokkr._version import __version__
