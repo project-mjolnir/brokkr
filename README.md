@@ -6,16 +6,66 @@ Further, it can maintain a reverse SSH tunnel to an accessible server for remote
 
 
 
-## Installation and Setup
+## Requirements
 
 Built and tested under Python 3.7 (but should be compatible with Python >=3.6; lack thereof should be considered a bug), and should be forward-compatible with Python 3.8 (albeit as yet not fully tested).
-Compatible and tested with recent (>= 2019) versions of the packages listed in the `requirements.txt` file.
+Compatible and tested with recent (>= 2019) versions of the packages listed in the ``requirements.txt`` file.
 Works best on Linux, but is tested to be fully functional (aside from service features) on Windows (and _should_ work equally macOS) under the Anaconda distribution.
 
-Following standard installation via ``pip`` (``venv`` highly recommended), the package will install the ``brokkr`` command, which can then be used to install the config files, firewall access, and (on Linux) serial port access, Brokkr systemd service, and SSH/AutoSSh service and configuration with ``brokkr install-all``.
-If on Linux, simply reboot to automatically complete setup and start the ``brokkr`` service, or on all platforms you can manually execute it on the command line immediately with ``brokkr start``.
 
-To just test the monitoring functions, run ``brokkr monitor``, or use ``brokkr status`` to get a snapshot of current monitoring data output.
+## Installation and Setup
+
+
+### Standard desktop install
+
+Brokkr can be installed like any other Python package via via ``pip`` (use of an isolated ``venv`` highly recommended), following which ``brokkr install-all`` can then be used to automatically install the config files, firewall access, and (on Linux) serial port access, Brokkr systemd service, and SSH/AutoSSH service and configuration.
+Simply reboot to automatically complete setup and start the ``brokkr`` service, or on all platforms you can manually execute it on the command line immediately with ``brokkr start``.
+
+
+### Automated clean install
+
+However, for setup on typical IoT devices (i.e. single-board computers like the Raspberry Pi) running a clean copy of a modern Linux-based operating system, Brokkr features a comprehensive setup routine that can bootstrap all key aspects of a factory-fresh system to be ready for deployment in the field.
+Simply declare the configuration files you want copied, packages and services you want installed/enabled/disabled/removed, firewall ports you want open closed, and other custom actions (move files, sed scripts, commands run, etc) for each phase of the install as part of the system config package, and on your command, brokkr will do the rest.
+
+A typical semi-automated install flow might look like the following
+
+1. Flash SD card with OS image
+2. Perform basic raspi-config, Fedora, etc. setup; change username if desired
+3. Create and activate venv, ``pip install brokkr --no-dependencies`` from offline sdist and copy system config dir and any keyfiles
+4. Run ``brokkr configure-system <systempath>`` to set the system config dir path
+5. Run ``brokkr install --phase 1`` to perform the necessary steps to enable Internet
+6. Update all packages to latest (``apt update && apt full-upgrade && apt autoremove``) and reinstall brokkr with all packages (``pip uninstall brokkr && pip install brokkr``)
+7. Run ``brokkr install --phase 2`` to install remaining items
+8. Run ``brokkr setup-device`` to trigger device-specific setup actions
+9. Create venv for Sindri and ``pip install`` it (optional)
+10. Once on-site, perform unit configuration (see below)
+
+A sample bash script will be provided that runs steps 3-9 of this workflow automatically, and can be customized to the needs of a specific system.
+
+
+### Flashing Brokkr onto a prepared card
+
+If a card is already prepared via the steps mentioned in the "Automated clean install" section (minus the `brokkr setup-device` step), flashing it onto another device and preparing it for deployment is simple.
+
+1. After flashing the Pi and activating the appropriate venv, run ``brokkr setup-device`` to regenerate the harnesses device-specific items (password, hashes, SSH keys, etc). You’ll need to enter the Pi’s current and desired password at the interactive prompt.
+2. Once a specific unit number is assigned to a Pi, or on site, run ``brokkr configure-unit <unit-number> <network-interface>`` to set the unit number, connection mode, and other unit-specific details.
+3. Finally, on site, once the final unit configuration is set (or after it is changed in the future), perform on-site setup as below
+
+
+### On-site setup
+
+On site, you'll want to take a couple additional actions to pair a specific device with a specific site, and test connectivity.
+
+1. Run ``brokkr configure-unit <unit-number> <network-interface>`` to set up the basic unit configuration
+2. Run ``brokkr setup-unit`` to perform final per-unit on-site setup, register and test the link to the sensor, and verify connectivity to the upstream server
+3. Power off the device, connect it to all desired hardware and reboot
+
+
+
+## Usage
+
+Run the `brokkr status` command to get a snapshot of the monitoring data, and the `brokkr monitor` command to get a pretty-printed display of all the main monitoring variables, updated in real time (1s) as you watch.
+
 The ``brokkr install-*`` commands perform installation functions and the ``brokkr configure-*`` scripts help set up a new or updated ``brokkr`` install.
 Use ``brokkr --help`` to get help, ``brokkr --version`` to get the current version.
 On Linux, the ``brokkr`` systemd service can be interacted with via the standard systemd commands, e.g. ``sudo systemd {start, stop, enable, disable} brokkr``, ``systemd status brokkr``, ``journalctl -u brokkr``, etc, and the same for ``autossh-brokkr`` which controls remote SSH connectivity.
