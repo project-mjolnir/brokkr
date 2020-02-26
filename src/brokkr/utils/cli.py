@@ -6,6 +6,9 @@ Main-level command handling routine for running brokkr on the command line.
 # Standard library imports
 import argparse
 
+# Local imports
+import brokkr.config.handlers
+
 
 VERSION_PARAM = "version"
 SUBCOMMAND_PARAM = "subcommand_name"
@@ -19,9 +22,7 @@ ARGS_TODELETE = {
 
 
 def generate_argparser_main():
-    import brokkr.config.handlers
-    from brokkr.config.mode import MODE_CONFIG
-
+    # pylint: disable=too-many-locals, too-many-statements
     parser_main = argparse.ArgumentParser(
         description="Client to monitor and manage remote IoT sensors.",
         argument_default=argparse.SUPPRESS)
@@ -34,8 +35,6 @@ def generate_argparser_main():
               "Overrides the settings in the config file and the env var."))
     parser_main.add_argument(
         "--mode", dest=MODE_PARAM,
-        choices={mode for mode in MODE_CONFIG
-                 if mode not in {"mode", "config_verison"}},
         help=("Sets the mode config preset to use"))
     subparsers = parser_main.add_subparsers(
         title="Subcommands", help="Subcommand to execute",
@@ -226,6 +225,7 @@ def parse_args(sys_argv=None):
 
 
 def dispatch_command(subcommand, parsed_args):
+    # pylint: disable=import-outside-toplevel, redefined-outer-name
     if subcommand == VERSION_PARAM:
         import brokkr.start
         print(brokkr.start.generate_version_message())

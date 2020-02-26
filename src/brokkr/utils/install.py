@@ -95,8 +95,9 @@ def _write_os_config_file(file_contents, filename, output_path):
 
 @brokkr.logger.basic_logging
 def install_autossh(skip_package_install=False, platform=None):
+    # pylint: disable=import-outside-toplevel
     from brokkr.config.static import CONFIG
-    if not CONFIG["link"]["hostname"]:
+    if not CONFIG["link"]["server_hostname"]:
         raise RuntimeError(
             "Cannot install autossh: Hostname not provided in config. "
             "Run 'brokkr configure-system' to set the system config path, "

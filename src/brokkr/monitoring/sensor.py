@@ -133,9 +133,8 @@ def decode_hs_packet(
 
     data_decoder = brokkr.decode.DataDecoder(
         variables=variables,
-        conversion_functions=conversion_functions,
-        )
-    LOGGER.debug("Created data decoder: %r", data_decoder)
+        conversion_functions=conversion_functions)
+    LOGGER.debug("Created H&S data decoder: %r", data_decoder)
     hs_data = data_decoder.decode_data(raw_data)
 
     return hs_data

@@ -70,7 +70,7 @@ class ConfigType(brokkr.utils.misc.AutoReprMixin):
             preset_config_path=None,
             path_variables=None,
             config_version=CONFIG_VERSION_DEFAULT,
-            ):
+                ):
         self.name = name
         self.defaults = defaults if defaults is not None else {}
         self.overlay = overlay
@@ -89,7 +89,7 @@ class ConfigLevel(brokkr.utils.misc.AutoReprMixin, metaclass=abc.ABCMeta):
             self,
             name,
             config_type=None,
-            ):
+                ):
         self.name = name
         self.config_type = (
             config_type if config_type is not None
@@ -141,7 +141,7 @@ class FileConfigLevel(WritableConfigLevel):
             path=None,
             append_level=False,
             **kwargs,
-            ):
+                ):
         if extension not in SUPPORTED_EXTENSIONS:
             raise ValueError("Extension must be one of "
                              f"{SUPPORTED_EXTENSIONS}, not {extension}")
@@ -221,7 +221,7 @@ class MappingConfigLevel(ConfigLevel):
             name,
             mapping,
             **kwargs,
-            ):
+                ):
         self.mapping = mapping
         super().__init__(name=name, **kwargs)
 
@@ -295,11 +295,7 @@ CONFIG_LEVEL_PRESETS = {
 
 
 class ConfigHandler(brokkr.utils.misc.AutoReprMixin):
-    def __init__(
-            self,
-            config_type=None,
-            config_levels=None,
-            ):
+    def __init__(self, config_type=None, config_levels=None):
         self.config_type = (
             config_type if config_type is not None
             else ConfigType(DEFAULT_CONFIG_TYPE_NAME))
@@ -347,7 +343,7 @@ class ConfigHandlerFactory(brokkr.utils.misc.AutoReprMixin):
             level_presets=None,
             overlays=None,
             **default_type_kwargs,
-            ):
+                ):
         self.level_presets = {} if level_presets is None else level_presets
         self.overlays = overlays
         self.default_type_kwargs = default_type_kwargs

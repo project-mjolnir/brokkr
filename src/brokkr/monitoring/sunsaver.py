@@ -17,6 +17,7 @@ import serial.tools.list_ports
 # Local imports
 from brokkr.config.static import CONFIG
 import brokkr.decode
+import brokkr.logger
 
 
 REGISTER_TYPE = "H"
@@ -88,8 +89,6 @@ def get_serial_port(port=None, pids=None):
     # Automatically detect serial port to use
     port_list = serial.tools.list_ports.comports()
     # Ignore built-in ARM serial port
-    port_list = [port_object for port_object in port_list
-                 if not port_object.device.startswith("/dev/ttyAMA")]
     if not port_list:
         LOGGER.error(
             "Error reading Sunsaver data: No serial devices found.")
@@ -109,8 +108,7 @@ def get_serial_port(port=None, pids=None):
             except Exception as e:  # Ignore any problems reading a device
                 LOGGER.debug("%s checking serial device %s: %s",
                              type(e).__name__, port_object, e)
-                LOGGER.debug("Error details:", exc_info=1)
-                LOGGER.debug("Device details: %r", port_object.__dict__)
+                brokkr.logger.log_details(LOGGER, port=port_object)
     # If we can't identify a device by pid, just try the first port
     else:
         port_object = port_list[0]
@@ -124,7 +122,7 @@ def get_serial_port(port=None, pids=None):
 def reset_usb_port(port_object):
     reset_success = False
     try:
-        import fcntl
+        import fcntl  # pylint: disable=import-outside-toplevel
         usb_num_parts = {}
         for usb_num_part in ["busnum", "devnum"]:
             with open(Path(port_object.usb_device_path) / usb_num_part,
@@ -143,8 +141,7 @@ def reset_usb_port(port_object):
     except Exception as e:
         LOGGER.warning("%s resetting charge controller device %s: %s",
                        type(e).__name__, port_object, e)
-        LOGGER.info("Error details:", exc_info=1)
-        LOGGER.info("Device details: %r", port_object.__dict__)
+        brokkr.logger.log_details(LOGGER, port=port_object)
     else:
         # If successful, wait to allow the reset to take effect
         LOGGER.debug("Reset successful; sleeping for 5 s...")
@@ -197,8 +194,7 @@ def read_raw_sunsaver_data(
     serial_params = {**SERIAL_PARAMS_MPPT15L, **serial_params}
     mppt_client = pymodbus.client.sync.ModbusSerialClient(
         port=port_object.device, **serial_params)
-    LOGGER.debug("Connecting to client %r", mppt_client)
-    LOGGER.debug("Client details: %r", mppt_client.__dict__)
+    brokkr.logger.log_details(LOGGER.debug, error=False, client=mppt_client)
     try:
         try:
             connect_successful = mppt_client.connect()
@@ -216,9 +212,8 @@ def read_raw_sunsaver_data(
             LOGGER.warning("Successfully reset charge controller device %s; "
                            "original error %s: %s",
                            port_object, type(e).__name__, e)
-            LOGGER.info("Error details:", exc_info=1)
-            LOGGER.info("Device details: %r", port_object.__dict__)
-            LOGGER.info("Client details: %r", mppt_client.__dict__)
+            brokkr.logger.log_details(
+                LOGGER, client=mppt_client, port=port_object)
         if connect_successful:
             try:
                 data_decoder = brokkr.decode.DataDecoder(
@@ -227,23 +222,22 @@ def read_raw_sunsaver_data(
                                   // struct.calcsize("!" + REGISTER_TYPE))
                 register_data = mppt_client.read_holding_registers(
                     start_offset, register_count, unit=unit)
+                # If register data is an exception, log it and return None
                 if isinstance(register_data, BaseException):
                     raise register_data
-                # If register data is an exception, log it and return None
                 if isinstance(register_data, pymodbus.pdu.ExceptionResponse):
                     LOGGER.error("Error reading register data for %s",
                                  port_object)
-                    LOGGER.info("Error details: %s", register_data.__dict__)
-                    LOGGER.info("Device details: %r", port_object.__dict__)
-                    LOGGER.info("Client details: %r", mppt_client.__dict__)
+                    brokkr.logger.log_details(
+                        LOGGER, error=register_data,
+                        client=mppt_client, port=port_object)
                     return None
             # Catch and log errors reading register data
             except Exception as e:
                 LOGGER.error("%s reading register data for %s: %s",
                              type(e).__name__, port_object, e)
-                LOGGER.info("Error details:", exc_info=1)
-                LOGGER.info("Device details: %r", port_object.__dict__)
-                LOGGER.info("Client details: %r", mppt_client.__dict__)
+                brokkr.logger.log_details(
+                    LOGGER, client=mppt_client, port=port_object)
                 return None
             finally:
                 LOGGER.debug("Closing MPPT client connection")
@@ -253,24 +247,23 @@ def read_raw_sunsaver_data(
                 except Exception as e:
                     LOGGER.info("%s closing modbus device at %s: %s",
                                 type(e).__name__, port_object, e)
-                    LOGGER.info("Error details:", exc_info=1)
-                    LOGGER.info("Device details: %r", port_object.__dict__)
-                    LOGGER.info("Client details: %r", mppt_client.__dict__)
+                    brokkr.logger.log_details(
+                        LOGGER, client=mppt_client, port=port_object)
         else:
             # Raise an error if connect not successful
             LOGGER.error(
                 "Error reading register data: Cannot connect to device %s",
                 port_object)
-            LOGGER.info("Device details: %r", port_object.__dict__)
-            LOGGER.info("Client details: %r", mppt_client.__dict__)
+            brokkr.logger.log_details(
+                LOGGER, error=False, client=mppt_client, port=port_object)
             return None
-        LOGGER.debug("Register data: %r", register_data.__dict__)
+        LOGGER.debug("Register data: %r",
+                     getattr(register_data, "__dict__", None))
     except Exception as e:
         LOGGER.error("%s connecting to charge controller device %s: %s",
                      type(e).__name__, port_object, e)
-        LOGGER.info("Error details:", exc_info=1)
-        LOGGER.info("Device details: %r", port_object.__dict__)
-        LOGGER.info("Client details: %r", mppt_client.__dict__)
+        brokkr.logger.log_details(
+            LOGGER, client=mppt_client, port=port_object)
         return None
     return register_data
 
@@ -287,9 +280,8 @@ def decode_sunsaver_data(
 
     data_decoder = brokkr.decode.DataDecoder(
         variables=variables,
-        conversion_functions=conversion_functions,
-        )
-    LOGGER.debug("Created data decoder: %r", data_decoder)
+        conversion_functions=conversion_functions)
+    LOGGER.debug("Created sunsaver data decoder: %r", data_decoder)
 
     # Handle raw data not being present
     if not raw_data:

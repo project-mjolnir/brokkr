@@ -31,6 +31,18 @@ LOG_FORMAT_BASIC = "{message}"
 LOG_FORMAT_FANCY = "{levelname} | {name} | {message}"
 
 
+def log_details(logger, error=None, **objs_tolog):
+    if isinstance(logger, logging.Logger):
+        logger = logging.info
+    if error is None:
+        # Add stacklevel in Python 3.8
+        logger("Error details:", exc_info=1)
+    elif error:
+        logger("Error details: %r", error.__dict__)
+    for obj_name, obj_value in objs_tolog.items():
+        logger("%s details: %r", obj_name.capitalize(), obj_value.__dict__)
+
+
 def determine_log_level(verbose=0):
     verbose = round(verbose)
     if verbose > MAX_VERBOSE:

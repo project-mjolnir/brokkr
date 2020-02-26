@@ -3,6 +3,8 @@
 Startup code for running the Brokkr client mainloop as an application.
 """
 
+# pylint: disable=import-outside-toplevel, redefined-outer-name, reimported
+
 # Standard library imports
 import logging
 import logging.config
@@ -109,6 +111,7 @@ def start_monitoring(verbose=None, quiet=None, **monitor_args):
 
 
 def start_brokkr(log_level_file=None, log_level_console=None, **monitor_args):
+    # pylint: disable=too-many-locals
     from brokkr.config.bootstrap import BOOTSTRAP_CONFIGS, BOOTSTRAP_CONFIG
     from brokkr.config.metadata import METADATA_CONFIGS, METADATA_CONFIG
     from brokkr.config.log import LOG_CONFIGS, LOG_CONFIG
@@ -142,7 +145,7 @@ def start_brokkr(log_level_file=None, log_level_console=None, **monitor_args):
             "Bootstrap": (BOOTSTRAP_CONFIG, BOOTSTRAP_CONFIGS),
             "Unit": (UNIT_CONFIG, UNIT_CONFIGS),
             "Log": (log_config, LOG_CONFIGS),
-            }.items():
+            }.items():  # pylint: disable=bad-continuation
         logger.info("%s config: %s", config_name, config_data[0])
         logger.debug("%s config hierarchy: %s", config_name, config_data[1])
 

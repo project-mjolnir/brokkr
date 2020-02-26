@@ -79,7 +79,7 @@ def run_monitoring_pass(
         LOGGER.critical("%s caught at main level: %s", type(e).__name__, e)
         LOGGER.info("Details:", exc_info=1)
         status_data = None
-    logging.disable()
+    logging.disable(level=logging.CRITICAL)
     return status_data
 
 

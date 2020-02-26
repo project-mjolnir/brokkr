@@ -6,6 +6,7 @@ General utility functions for Brokkr.
 import collections.abc
 import functools
 import getpass
+import logging
 import os
 import signal
 import threading
@@ -81,7 +82,6 @@ class AutoReprMixin:
 
 def generate_quit_handler(exit_event, logger=None):
     if logger is None:
-        import logging
         logger = logging.getLogger(__name__)
 
     def _quit_handler(signo, _frame):

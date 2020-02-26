@@ -13,6 +13,7 @@ import brokkr.utils.misc
 
 
 CONVERSION_FUNCTIONS = {
+    # pylint: disable=unnecessary-lambda
     None: lambda val: None,
     "": lambda val: val,
     "B": lambda val: int(val),
@@ -44,7 +45,7 @@ class DataDecoder(brokkr.utils.misc.AutoReprMixin):
             conversion_functions=None,
             struct_format=None,
             na_marker=CONFIG["general"]["na_marker"],
-            ):
+                ):
         self.na_marker = na_marker
 
         self.variables = []
