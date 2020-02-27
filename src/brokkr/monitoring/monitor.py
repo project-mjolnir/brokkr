@@ -46,8 +46,8 @@ def format_status_data(status_data=None, seperator="\n"):
     return formatted_status_data
 
 
-def write_status_data(status_data,
-                      output_path=CONFIG["monitor"]["output_path_client"]):
+def write_status_data(
+        status_data, output_path=CONFIG["monitor"]["output_path_client"]):
     output_path = Path(output_path)
     if not output_path.suffix:
         output_path = brokkr.output.render_output_filename(
@@ -83,12 +83,26 @@ def run_monitoring_pass(
     return status_data
 
 
-def start_monitoring(monitor_interval_s=None, **monitoring_args):
-    LOGGER.info("Starting monitoring system...")
+def start_monitoring(
+        monitor_interval_s=None, exit_event=None, **monitor_kwargs):
     if monitor_interval_s is None:
         monitor_interval_s = DYNAMIC_CONFIG["monitor"]["monitor_interval_s"]
-    LOGGER.debug("Entering monitoring mainloop...")
-    run_monitoring_pass(**monitoring_args)
+    LOGGER.debug("Starting monitoring mainloop")
+    run_monitoring_pass(**monitor_kwargs)
     brokkr.utils.misc.run_periodic(
-        run_monitoring_pass, period_s=monitor_interval_s)(
-            **monitoring_args, delete_previous=True)
+        run_monitoring_pass, period_s=monitor_interval_s,
+        exit_event=exit_event, logger=LOGGER)(
+            **monitor_kwargs, delete_previous=True)
+
+
+def start_monitoring_process(
+        log_configurator=None, configurator_kwargs=None,
+        exit_event=None, monitor_kwargs=None):
+    LOGGER.info("Starting monitoring system")
+    if log_configurator is not None:
+        if configurator_kwargs is None:
+            configurator_kwargs = {}
+        log_configurator(**configurator_kwargs)
+    if monitor_kwargs is None:
+        monitor_kwargs = {}
+    start_monitoring(exit_event=exit_event, **monitor_kwargs)

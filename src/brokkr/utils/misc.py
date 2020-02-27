@@ -13,36 +13,39 @@ import signal
 import threading
 import time
 
+# Local imports
+from brokkr.config.constants import SLEEP_TICK_S
+
 
 # Constants for run periodic
+NS_IN_S = int(1e9)
 PERIOD_S_DEFAULT = 1
 SIGNALS_SET = ["SIG" + signame for signame in {"TERM", "HUP", "INT", "BREAK"}]
-SLEEP_TICK_S = 0.5
 
 
 # --- Time functions --- #
 
 def time_ns():
-    # Fallback to non-ns time functions on Python <=3.6
+    # Fallback to non-ns time functions on <= Python 3.6
     try:
         return time.time_ns()
     except AttributeError:
-        return int(time.time()) * 1e9
+        return int(time.time() * NS_IN_S)
 
 
 def monotonic_ns():
-    # Fallback to non-ns time functions on Python <=3.6
+    # Fallback to non-ns time functions on <= Python 3.6
     try:
         return time.monotonic_ns()
     except AttributeError:
-        return int(time.monotonic()) * 1e9
+        return int(time.monotonic() * NS_IN_S)
 
 
 START_TIME = monotonic_ns()
 
 
 def start_time_offset(n_digits=3):
-    return round((monotonic_ns() - START_TIME) / 1e9, n_digits)
+    return round((monotonic_ns() - START_TIME) / NS_IN_S, n_digits)
 
 
 # --- General utility functions --- #
@@ -93,7 +96,8 @@ def generate_quit_handler(exit_event, logger=None):
 
     def _quit_handler(signo, _frame):
         """Signal handler that prints a message and sets an event."""
-        logger.warning("\nInterrupted by signal %s; terminating.", signo)
+        if logger:
+            logger.warning("Interrupted by signal %s; terminating.", signo)
         exit_event.set()
     return _quit_handler
 
@@ -107,28 +111,46 @@ def set_signal_handler(signal_handler, signals=SIGNALS_SET):
             continue
 
 
+def _pass_func():
+    pass
+
+
 def run_periodic(
-        func, period_s=PERIOD_S_DEFAULT, exit_event=None, logger=None):
+        func=None,
+        period_s=PERIOD_S_DEFAULT,
+        exit_event=None,
+        outer_exit_event=None,
+        logger=None,
+        ):
     """Decorator to run a function at a periodic interval w/signal handling."""
-    exit_event = threading.Event() if exit_event is None else exit_event
+    if exit_event is None:
+        exit_event = threading.Event()
+    if outer_exit_event is None:
+        outer_exit_event = exit_event
+    if logger is None:
+        logger = logging.getLogger(__name__)
+    if func is None:
+        func = _pass_func
 
     @functools.wraps(func)
     def _run_periodic(*args, **kwargs):
         # Set up quit signal handler
+        if logger:
+            logger.debug("Setting up signal handlers in periodic loop...")
         set_signal_handler(generate_quit_handler(exit_event, logger=logger))
 
         # Mainloop to run at intervals
-        while not exit_event.is_set():
+        while not outer_exit_event.is_set():
             func(*args, **kwargs)
 
             if period_s <= 0:
                 continue
             next_time = (
-                monotonic_ns() + period_s * 1e9 - (monotonic_ns() - START_TIME)
-                % (period_s * 1e9))
+                monotonic_ns() + int(period_s * NS_IN_S)
+                - (monotonic_ns() - START_TIME)
+                % int(period_s * NS_IN_S))
             while not exit_event.is_set() and monotonic_ns() < next_time:
-                exit_event.wait(max(0, min(
-                    [SLEEP_TICK_S, (next_time - monotonic_ns()) / 1e9])))
-        exit_event.clear()
+                time.sleep(max(0, min(
+                    [SLEEP_TICK_S, (next_time - monotonic_ns()) / NS_IN_S])))
 
     return _run_periodic

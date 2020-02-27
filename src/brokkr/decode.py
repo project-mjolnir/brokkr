@@ -110,7 +110,7 @@ class DataDecoder(brokkr.utils.misc.AutoReprMixin):
                 LOGGER.warning("%s additioanl decode errors were suppressed.",
                                error_count - 1)
 
-            LOGGER.debug("Converted data: %r", output_data)
+        LOGGER.debug("Converted data: %r", output_data)
         return output_data
 
     def decode_data(self, data_packet):

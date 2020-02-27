@@ -98,8 +98,8 @@ CONFIG_HANDLER_METADATA = CONFIG_HANDLER_FACTORY.create_config_handler(
     )
 
 
-LOG_FORMAT_DETAILED = ("{asctime}.{msecs:0>3.0f} | {levelname} | {name} | "
-                       "{message} (T+{relativeCreated:.0f} ms)")
+LOG_FORMAT_DETAILED = ("{asctime}.{msecs:0>3.0f} | {levelname} | {processName}"
+                       " | {name} | {message} (T+{relativeCreated:.0f} ms)")
 DEFAULT_LOG_LEVEL = "INFO"
 
 DEFAULT_CONFIG_LOG = {
@@ -170,6 +170,9 @@ DEFAULT_CONFIG_STATIC = {
         "sunsaver_port": "",
         "sunsaver_start_offset": 0,
         "sunsaver_unit": 1,
+        },
+    "multiprocess": {
+        "shutdown_wait_s": 10,
         },
     }
 

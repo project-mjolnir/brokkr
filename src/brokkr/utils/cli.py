@@ -5,6 +5,7 @@ Main-level command handling routine for running brokkr on the command line.
 
 # Standard library imports
 import argparse
+import multiprocessing
 
 # Local imports
 import brokkr.config.handlers
@@ -22,7 +23,7 @@ ARGS_TODELETE = {
 
 
 def generate_argparser_main():
-    # pylint: disable=too-many-locals, too-many-statements
+    # pylint: disable=too-many-locals, too-many-statements, useless-suppression
     parser_main = argparse.ArgumentParser(
         description="Client to monitor and manage remote IoT sensors.",
         argument_default=argparse.SUPPRESS)
@@ -256,4 +257,5 @@ def main():
 
 
 if __name__ == "__main__":
+    multiprocessing.freeze_support()
     main()

@@ -70,7 +70,9 @@ disable=missing-function-docstring,
         missing-class-docstring,
         too-few-public-methods,
         import-error,
-        I,
+        locally-disabled,
+        file-ignored,
+        suppressed-message,
 
 
 [REPORTS]
@@ -89,7 +91,7 @@ evaluation=10.0 - ((float(5 * error + warning + refactor + convention) / stateme
 # Set the output format. Available formats are text, parseable, colorized, json
 # and msvs (visual studio). You can also give a reporter class, e.g.
 # mypackage.mymodule.MyReporterClass.
-output-format=text
+output-format=colorized
 
 # Tells whether to display a full report or only the messages.
 reports=no
@@ -447,7 +449,7 @@ max-bool-expr=5
 max-branches=12
 
 # Maximum number of locals for function / method body.
-max-locals=15
+max-locals=20
 
 # Maximum number of parents for a class (see R0901).
 max-parents=7

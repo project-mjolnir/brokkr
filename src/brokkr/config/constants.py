@@ -7,8 +7,19 @@ import os
 from pathlib import Path
 
 
+# --- General global constants ---
+
+# Package name
 PACKAGE_NAME = "brokkr"
 
+# Duration of sleep/wait tickets
+SLEEP_TICK_S = 0.5
+
+# Value to use to shut down the logging system
+LOG_RECORD_SENTINEL = None
+
+
+# --- Path constants ---
 
 # Subpaths of output dir
 OUTPUT_SUBPATH_LOG = Path("log")
@@ -26,6 +37,8 @@ OUTPUT_PATH_DEFAULT = OUTPUT_PATH_BASE / OUTPUT_SUBPATH_DEFAULT
 # Subpaths of system dir
 SYSTEM_SUBPATH_CONFIG = Path("config")
 
+
+# --- Config constants ---
 
 # Config type names
 CONFIG_NAME_SYSTEM = "system"

@@ -8,10 +8,12 @@ Startup code for running the Brokkr client mainloop as an application.
 # Standard library imports
 import logging
 import logging.config
+import multiprocessing
 from pathlib import Path
+import time
 
 # Local imports
-from brokkr.config.constants import PACKAGE_NAME, LEVEL_NAME_SYSTEM
+from brokkr.config.constants import LEVEL_NAME_SYSTEM, PACKAGE_NAME
 import brokkr.logger
 
 
@@ -24,6 +26,7 @@ def warn_on_startup_issues():
     from brokkr.config.handlers import (CONFIG_HANDLER_UNIT,
                                         CONFIG_HANDLER_METADATA)
     from brokkr.config.unit import UNIT_CONFIGS
+
     logger = logging.getLogger(__name__)
 
     # Avoid users trying to start Brokkr without setting up the basic config
@@ -53,6 +56,29 @@ def warn_on_startup_issues():
         issues_found = True
 
     return issues_found
+
+
+def log_config_info(log_config=None):
+    # pylint: disable=too-many-locals, useless-suppression
+    from brokkr.config.bootstrap import BOOTSTRAP_CONFIGS, BOOTSTRAP_CONFIG
+    from brokkr.config.metadata import METADATA_CONFIGS, METADATA_CONFIG
+    from brokkr.config.log import LOG_CONFIGS, LOG_CONFIG
+    from brokkr.config.system import SYSTEM_CONFIGS, SYSTEM_CONFIG
+    from brokkr.config.unit import UNIT_CONFIGS, UNIT_CONFIG
+
+    log_config = LOG_CONFIG if log_config is None else log_config
+    logger = logging.getLogger(__name__)
+
+    # Print config information
+    for config_name, config_data in {
+            "System path": (SYSTEM_CONFIG, SYSTEM_CONFIGS),
+            "Metadata": (METADATA_CONFIG, METADATA_CONFIGS),
+            "Bootstrap": (BOOTSTRAP_CONFIG, BOOTSTRAP_CONFIGS),
+            "Unit": (UNIT_CONFIG, UNIT_CONFIGS),
+            "Log": (log_config, LOG_CONFIGS),
+            }.items():  # pylint: disable=bad-continuation
+        logger.info("%s config: %s", config_name, config_data[0])
+        logger.debug("%s config hierarchy: %s", config_name, config_data[1])
 
 
 def generate_version_message():
@@ -110,17 +136,16 @@ def start_monitoring(verbose=None, quiet=None, **monitor_args):
     brokkr.monitoring.monitor.start_monitoring(**monitor_args)
 
 
-def start_brokkr(log_level_file=None, log_level_console=None, **monitor_args):
-    # pylint: disable=too-many-locals
-    from brokkr.config.bootstrap import BOOTSTRAP_CONFIGS, BOOTSTRAP_CONFIG
-    from brokkr.config.metadata import METADATA_CONFIGS, METADATA_CONFIG
-    from brokkr.config.log import LOG_CONFIGS, LOG_CONFIG
-    from brokkr.config.system import SYSTEM_CONFIGS, SYSTEM_CONFIG
-    from brokkr.config.unit import UNIT_CONFIGS, UNIT_CONFIG
+def start_brokkr(
+        log_level_file=None, log_level_console=None, **monitor_kwargs):
+    from brokkr.config.bootstrap import BOOTSTRAP_CONFIG
+    from brokkr.config.metadata import METADATA_CONFIG
+    from brokkr.config.log import LOG_CONFIG
+    from brokkr.config.unit import UNIT_CONFIG
     import brokkr.logger
 
-    # Setup logging
-    log_config = brokkr.logger.setup_full_log_config(
+    # Setup logging config
+    log_config = brokkr.logger.render_full_log_config(
         LOG_CONFIG,
         log_level_file=log_level_file,
         log_level_console=log_level_console,
@@ -129,30 +154,49 @@ def start_brokkr(log_level_file=None, log_level_console=None, **monitor_args):
         system_prefix=BOOTSTRAP_CONFIG["system_prefix"],
         unit_number=UNIT_CONFIG["number"],
         )
+    log_queue = multiprocessing.Queue()
+    exit_event = multiprocessing.Event()
+
+    # Start log listener process
+    log_listener = multiprocessing.Process(
+        target=brokkr.logger.run_log_listener,
+        name="LogProcess",
+        kwargs={
+            "log_queue": log_queue,
+            "log_configurator": brokkr.logger.setup_listener_config,
+            "configurator_kwargs": {"log_config": log_config},
+            "exit_event": exit_event,
+            },
+        )
+    log_listener.start()
+    time.sleep(0.5)  # Ensure logger is ready
+
+    # Setup logging for main thread
+    brokkr.logger.setup_worker_config(
+        log_queue, filter_level=log_config["root"]["level"])
     logger = logging.getLogger(__name__)
 
-    # Print startup message and warn on some problem states
+    # Print startup message, warn on some problem states and log config info
     logger.info("Starting %s...", generate_version_message())
     warn_on_startup_issues()
-
-    # Print config information
     if any((log_level_file, log_level_console)):
         logger.info("Using manual log levels: %s (file), %s (console)",
                     log_level_file, log_level_console)
-    for config_name, config_data in {
-            "System path": (SYSTEM_CONFIG, SYSTEM_CONFIGS),
-            "Metadata": (METADATA_CONFIG, METADATA_CONFIGS),
-            "Bootstrap": (BOOTSTRAP_CONFIG, BOOTSTRAP_CONFIGS),
-            "Unit": (UNIT_CONFIG, UNIT_CONFIGS),
-            "Log": (log_config, LOG_CONFIGS),
-            }.items():  # pylint: disable=bad-continuation
-        logger.info("%s config: %s", config_name, config_data[0])
-        logger.debug("%s config hierarchy: %s", config_name, config_data[1])
+    log_config_info(log_config)
 
-    # Start monitoring system
-    import brokkr.monitoring.monitor
-    brokkr.monitoring.monitor.start_monitoring(**monitor_args)
+    # Start manager and run it
+    import brokkr.manager
+    manager = brokkr.manager.Manager(
+        log_queue=log_queue,
+        log_listener=log_listener,
+        log_filter_level=log_config["root"]["level"],
+        exit_event=exit_event,
+        monitor_kwargs=monitor_kwargs,
+        )
+    logger.debug("Starting manager %r ...", manager)
+    manager.main()
 
 
 if __name__ == "__main__":
+    multiprocessing.freeze_support()
     start_brokkr()

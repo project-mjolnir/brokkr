@@ -3,6 +3,9 @@
 Main-level brokkr entry point.
 """
 
+# Standard library imports
+import multiprocessing
+
 # Local imports
 import brokkr.utils.cli
 
@@ -12,4 +15,5 @@ def main():
 
 
 if __name__ == "__main__":
+    multiprocessing.freeze_support()
     main()
