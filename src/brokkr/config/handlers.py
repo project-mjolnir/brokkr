@@ -46,6 +46,7 @@ CONFIG_HANDLER_FACTORY = brokkr.config.base.ConfigHandlerFactory(
 DEFAULT_CONFIG_BOOTSTRAP = {
     "output_path_client": OUTPUT_PATH_DEFAULT.as_posix(),
     "system_prefix": "mjolnir",
+    "worker_shutdown_wait_s": 10,
     }
 
 CONFIG_HANDLER_BOOTSTRAP = CONFIG_HANDLER_FACTORY.create_config_handler(
@@ -170,9 +171,6 @@ DEFAULT_CONFIG_STATIC = {
         "sunsaver_port": "",
         "sunsaver_start_offset": 0,
         "sunsaver_unit": 1,
-        },
-    "multiprocess": {
-        "shutdown_wait_s": 10,
         },
     }
 

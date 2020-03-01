@@ -10,7 +10,6 @@ import logging
 import logging.config
 import multiprocessing
 from pathlib import Path
-import time
 
 # Local imports
 from brokkr.config.constants import LEVEL_NAME_SYSTEM, PACKAGE_NAME
@@ -19,6 +18,8 @@ import brokkr.logger
 
 CONFIG_REQUIRE = ["system", "unit"]
 
+
+# --- Startup helper functions --- #
 
 def warn_on_startup_issues():
     from brokkr.config.systemhandler import CONFIG_HANDLER_SYSTEM
@@ -58,16 +59,20 @@ def warn_on_startup_issues():
     return issues_found
 
 
-def log_config_info(log_config=None):
+def log_config_info(log_config=None, logger=None):
     # pylint: disable=too-many-locals, useless-suppression
-    from brokkr.config.bootstrap import BOOTSTRAP_CONFIGS, BOOTSTRAP_CONFIG
-    from brokkr.config.metadata import METADATA_CONFIGS, METADATA_CONFIG
-    from brokkr.config.log import LOG_CONFIGS, LOG_CONFIG
-    from brokkr.config.system import SYSTEM_CONFIGS, SYSTEM_CONFIG
-    from brokkr.config.unit import UNIT_CONFIGS, UNIT_CONFIG
+    from brokkr.config.bootstrap import BOOTSTRAP_CONFIG, BOOTSTRAP_CONFIGS
+    from brokkr.config.dynamic import DYNAMIC_CONFIG, DYNAMIC_CONFIGS
+    from brokkr.config.log import LOG_CONFIG, LOG_CONFIGS
+    from brokkr.config.metadata import METADATA_CONFIG, METADATA_CONFIGS
+    from brokkr.config.static import CONFIG, CONFIGS
+    from brokkr.config.system import SYSTEM_CONFIG, SYSTEM_CONFIGS
+    from brokkr.config.unit import UNIT_CONFIG, UNIT_CONFIGS
 
-    log_config = LOG_CONFIG if log_config is None else log_config
-    logger = logging.getLogger(__name__)
+    if logger is None:
+        logger = logging.getLogger(__name__)
+    if log_config is None:
+        log_config = LOG_CONFIG
 
     # Print config information
     for config_name, config_data in {
@@ -76,6 +81,8 @@ def log_config_info(log_config=None):
             "Bootstrap": (BOOTSTRAP_CONFIG, BOOTSTRAP_CONFIGS),
             "Unit": (UNIT_CONFIG, UNIT_CONFIGS),
             "Log": (log_config, LOG_CONFIGS),
+            "Static": (CONFIG, CONFIGS),
+            "Dynamic": (DYNAMIC_CONFIG, DYNAMIC_CONFIGS),
             }.items():  # pylint: disable=bad-continuation
         logger.info("%s config: %s", config_name, config_data[0])
         logger.debug("%s config hierarchy: %s", config_name, config_data[1])
@@ -104,6 +111,22 @@ def generate_version_message():
     full_message = ", ".join([client_version_message, system_version_message])
     return full_message
 
+
+def log_startup_messages(log_config=None, log_level_file=None,
+                         log_level_console=None, logger=None):
+    if logger is None:
+        logger = logging.getLogger(__name__)
+
+    # Print startup message, warn on some problem states and log config info
+    logger.info("Starting %s...", generate_version_message())
+    warn_on_startup_issues()
+    if any((log_level_file, log_level_console)):
+        logger.info("Using manual log levels: %s (file), %s (console)",
+                    log_level_file, log_level_console)
+    log_config_info(log_config=log_config, logger=logger)
+
+
+# --- Primary commands --- #
 
 @brokkr.logger.basic_logging
 def print_status(pretty=True):
@@ -139,10 +162,12 @@ def start_monitoring(verbose=None, quiet=None, **monitor_args):
 def start_brokkr(
         log_level_file=None, log_level_console=None, **monitor_kwargs):
     from brokkr.config.bootstrap import BOOTSTRAP_CONFIG
-    from brokkr.config.metadata import METADATA_CONFIG
     from brokkr.config.log import LOG_CONFIG
+    from brokkr.config.metadata import METADATA_CONFIG
     from brokkr.config.unit import UNIT_CONFIG
     import brokkr.logger
+    import brokkr.manager
+    import brokkr.monitoring.monitor
 
     # Setup logging config
     log_config = brokkr.logger.render_full_log_config(
@@ -154,46 +179,31 @@ def start_brokkr(
         system_prefix=BOOTSTRAP_CONFIG["system_prefix"],
         unit_number=UNIT_CONFIG["number"],
         )
-    log_queue = multiprocessing.Queue()
-    exit_event = multiprocessing.Event()
 
-    # Start log listener process
-    log_listener = multiprocessing.Process(
-        target=brokkr.logger.run_log_listener,
-        name="LogProcess",
-        kwargs={
-            "log_queue": log_queue,
-            "log_configurator": brokkr.logger.setup_listener_config,
-            "configurator_kwargs": {"log_config": log_config},
-            "exit_event": exit_event,
-            },
-        )
-    log_listener.start()
-    time.sleep(0.5)  # Ensure logger is ready
+    # Setup worker configs
+    worker_configs = [
+        brokkr.manager.WorkerConfig(
+            target=brokkr.monitoring.monitor.start_monitoring,
+            name="MonitorProcess",
+            process_kwargs=monitor_kwargs,
+            )
+        ]
 
-    # Setup logging for main thread
-    brokkr.logger.setup_worker_config(
-        log_queue, filter_level=log_config["root"]["level"])
-    logger = logging.getLogger(__name__)
-
-    # Print startup message, warn on some problem states and log config info
-    logger.info("Starting %s...", generate_version_message())
-    warn_on_startup_issues()
-    if any((log_level_file, log_level_console)):
-        logger.info("Using manual log levels: %s (file), %s (console)",
-                    log_level_file, log_level_console)
-    log_config_info(log_config)
-
-    # Start manager and run it
-    import brokkr.manager
+    # Create manager and start logging process
     manager = brokkr.manager.Manager(
-        log_queue=log_queue,
-        log_listener=log_listener,
-        log_filter_level=log_config["root"]["level"],
-        exit_event=exit_event,
-        monitor_kwargs=monitor_kwargs,
+        worker_configs=worker_configs,
+        worker_shutdown_wait_s=BOOTSTRAP_CONFIG["worker_shutdown_wait_s"],
+        log_config=log_config,
         )
-    logger.debug("Starting manager %r ...", manager)
+    manager.start_logging()
+
+    # Log startup messages
+    logger = logging.getLogger(__name__)
+    log_startup_messages(log_config=log_config, log_level_file=log_level_file,
+                         log_level_console=log_level_console, logger=logger)
+
+    # Start manager mainloop
+    logger.debug("Starting mainloop of manager: %r", manager)
     manager.main()
 
 

@@ -15,9 +15,6 @@ PACKAGE_NAME = "brokkr"
 # Duration of sleep/wait tickets
 SLEEP_TICK_S = 0.5
 
-# Value to use to shut down the logging system
-LOG_RECORD_SENTINEL = None
-
 
 # --- Path constants ---
 

@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """
 High-level functions to monitor and record sensor and sunsaver status data.
 """
@@ -95,14 +96,5 @@ def start_monitoring(
             **monitor_kwargs, delete_previous=True)
 
 
-def start_monitoring_process(
-        log_configurator=None, configurator_kwargs=None,
-        exit_event=None, monitor_kwargs=None):
-    LOGGER.info("Starting monitoring system")
-    if log_configurator is not None:
-        if configurator_kwargs is None:
-            configurator_kwargs = {}
-        log_configurator(**configurator_kwargs)
-    if monitor_kwargs is None:
-        monitor_kwargs = {}
-    start_monitoring(exit_event=exit_event, **monitor_kwargs)
+if __name__ == "__main__":
+    start_monitoring()
