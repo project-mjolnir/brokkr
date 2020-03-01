@@ -2,6 +2,8 @@
 General shared configuration constants for Brokkr.
 """
 
+# Standard library imports
+import os
 from pathlib import Path
 
 
@@ -42,6 +44,7 @@ LEVEL_NAME_REMOTE = "remote"
 LEVEL_NAME_LOCAL = "local"
 
 # Config variables
-CONFIG_PATH_XDG = Path("~/.config").expanduser()
+CONFIG_PATH_XDG = Path(
+    f"~{os.environ.get('SUDO_USER', '')}/.config").expanduser()
 CONFIG_PATH_MAIN = CONFIG_PATH_XDG / PACKAGE_NAME
 CONFIG_VERSION = 1

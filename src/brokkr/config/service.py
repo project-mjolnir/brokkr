@@ -13,7 +13,7 @@ SERVICE_FILENAME = f"{PACKAGE_NAME}.service"
 
 SERVICE_DEFAULTS = {
     "Unit": {
-        "Description": f"Client to monitor, log and control IoT sensors",
+        "Description": f"Brokkr IoT Monitoring, Logging and Control Client",
         "Wants": (
             "network-online.target systemd-time-wait-sync.service "
             "systemd-timesyncd.service sshd.service "

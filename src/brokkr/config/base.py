@@ -52,8 +52,8 @@ def convert_paths(config_data, path_variables):
         try:
             for key in key_name[:-1]:
                 inner_dict = inner_dict[key]
-            inner_dict[key_name[-1]] = Path(
-                inner_dict[key_name[-1]]).expanduser()
+            inner_dict[key_name[-1]] = brokkr.utils.misc.convert_path(
+                inner_dict[key_name[-1]])
         # Ignore missing keys
         except KeyError:
             continue

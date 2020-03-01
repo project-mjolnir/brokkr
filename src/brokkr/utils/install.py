@@ -54,7 +54,7 @@ FIREWALL_COMMANDS_WINDOWS = {
     }
 
 # Udev constants
-UDEV_INSTALL_PATH = Path("etc", "udev", "rules.d")
+UDEV_INSTALL_PATH = Path("/", "etc", "udev", "rules.d")
 UDEV_FILENAME = "98-brokkr-usb.rules"
 UDEV_RULES = """
 # Enable brokkr client to reset and power up/down USB devices
@@ -136,9 +136,7 @@ def install_config():
     for config_name, handler in config_handlers.items():
         logging.debug("Installing %s config...", config_name)
         handler.read_configs()
-    logging.info(
-        "Config files installed to %r",
-        CONFIG_PATH_MAIN.as_posix())
+    logging.info("Config files installed to %r", CONFIG_PATH_MAIN.as_posix())
 
 
 @brokkr.logger.basic_logging

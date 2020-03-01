@@ -8,6 +8,7 @@ import functools
 import getpass
 import logging
 import os
+from pathlib import Path
 import signal
 import threading
 import time
@@ -67,6 +68,12 @@ def get_actual_username():
     except KeyError:
         pass
     return getpass.getuser()
+
+
+def convert_path(path):
+    path = Path(
+        str(path).replace("~", "~" + os.getenv("SUDO_USER", ""))).expanduser()
+    return path
 
 
 # --- Common utility mixins and decorators --- #

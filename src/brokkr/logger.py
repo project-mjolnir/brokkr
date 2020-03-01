@@ -7,12 +7,12 @@ import copy
 import functools
 import logging
 import os
-from pathlib import Path
 import sys
 import time
 
 # Local imports
 from brokkr.config.constants import PACKAGE_NAME, OUTPUT_PATH_DEFAULT
+import brokkr.utils.misc
 
 
 MAX_VERBOSE = 3
@@ -111,8 +111,8 @@ def setup_log_handler_paths(
         ):
     for log_handler in log_config["handlers"].values():
         if log_handler.get("filename", None):
-            log_filename = Path(
-                log_handler["filename"].format(**filename_args)).expanduser()
+            log_filename = brokkr.utils.misc.convert_path(
+                log_handler["filename"].format(**filename_args))
             if not log_filename.is_absolute() and output_path:
                 log_filename = output_path / log_filename
             os.makedirs(log_filename.parent, exist_ok=True)

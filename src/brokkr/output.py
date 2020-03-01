@@ -15,6 +15,7 @@ from brokkr.config.bootstrap import BOOTSTRAP_CONFIG
 from brokkr.config.metadata import METADATA_CONFIG
 from brokkr.config.static import CONFIG
 from brokkr.config.unit import UNIT_CONFIG
+import brokkr.utils.misc
 
 
 CSV_PARAMS = {
@@ -34,7 +35,7 @@ def render_output_filename(
         **filename_args,
         ):
     # Add master output path to output path if is relative
-    output_path = Path(output_path).expanduser()
+    output_path = brokkr.utils.misc.convert_path(output_path)
     if (not output_path.is_absolute()
             and BOOTSTRAP_CONFIG["output_path_client"]):
         output_path = BOOTSTRAP_CONFIG["output_path_client"] / output_path

@@ -14,7 +14,7 @@ AUTOSSH_SERVICE_FILENAME = f"autossh-{PACKAGE_NAME}.service"
 
 AUTOSSH_SERVICE_DEFAULTS = {
     "Unit": {
-        "Description": "AutoSSH tunnel for remote IoT SSH connectivity",
+        "Description": "AutoSSH tunnel for Brokkr client",
         "Wants": "network-online.target sshd.service",
         "After": "network-online.target multi-user.target sshd.service",
         "Before": f"{PACKAGE_NAME}.service",
