@@ -166,7 +166,7 @@ def start_brokkr(
     from brokkr.config.metadata import METADATA_CONFIG
     from brokkr.config.unit import UNIT_CONFIG
     import brokkr.logger
-    import brokkr.manager
+    import brokkr.multiprocess.handler
     import brokkr.monitoring.monitor
 
     # Setup logging config
@@ -182,29 +182,29 @@ def start_brokkr(
 
     # Setup worker configs
     worker_configs = [
-        brokkr.manager.WorkerConfig(
+        brokkr.multiprocess.handler.WorkerConfig(
             target=brokkr.monitoring.monitor.start_monitoring,
             name="MonitorProcess",
             process_kwargs=monitor_kwargs,
             )
         ]
 
-    # Create manager and start logging process
-    manager = brokkr.manager.Manager(
+    # Create multiprocess handler and start logging process
+    mp_handler = brokkr.multiprocess.handler.MultiprocessHandler(
         worker_configs=worker_configs,
         worker_shutdown_wait_s=BOOTSTRAP_CONFIG["worker_shutdown_wait_s"],
         log_config=log_config,
         )
-    manager.start_logging()
+    mp_handler.start_logging()
 
     # Log startup messages
     logger = logging.getLogger(__name__)
     log_startup_messages(log_config=log_config, log_level_file=log_level_file,
                          log_level_console=log_level_console, logger=logger)
 
-    # Start manager mainloop
-    logger.debug("Starting mainloop of manager: %r", manager)
-    manager.main()
+    # Start multiprocess manager mainloop
+    logger.debug("Starting multiprocess manager mainloop: %r", mp_handler)
+    mp_handler.run()
 
 
 if __name__ == "__main__":
