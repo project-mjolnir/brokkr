@@ -17,7 +17,7 @@ import brokkr.utils.misc
 
 
 # Startup and shutdown delays for logging
-LOGGING_STARTUP_WAIT_S = 0.5
+LOGGING_STARTUP_WAIT_S = 1
 LOGGING_SHUTDOWN_WAIT_S = 5
 WORKER_SHUTDOWN_WAIT_S = 10
 
@@ -69,6 +69,30 @@ def setup_listener_log_config(log_config=None):
         logging.config.dictConfig(log_config)
 
 
+def shutdown_log_listener(log_queue):
+    logger = logging.getLogger(__name__)
+    logger.info("Shutting down logging system")
+
+    try:
+        while True:
+            try:
+                log_record = log_queue.get(block=False)
+                logger.warning(
+                    "Record found in log queue past shutdown: %r",
+                    log_record)
+            except queue.Empty:
+                break  # Break once queue is empty
+        log_queue.close()
+        log_queue.join_thread()
+    except Exception as e:  # Log and pass errors flushing the logging queue
+        logger.error("%s cleaning up log queue: %s",
+                     type(e).__name__, e)
+        logger.info("Error info:", exc_info=True)
+
+    logger.info("Logging system shut down")
+    logging.shutdown()
+
+
 def handle_queued_log_record(log_queue, outer_exit_event=None):
     logger = logging.getLogger(__name__)
     log_record = None
@@ -83,27 +107,11 @@ def handle_queued_log_record(log_queue, outer_exit_event=None):
         logger.info("Error details:", exc_info=True)
     else:
         if log_record is LOG_RECORD_SENTINEL:
-            outer_exit_event.set()
-            logger.info("Shutting down logging system")
+            if outer_exit_event is not None:
+                outer_exit_event.set()
 
-            try:
-                while True:
-                    try:
-                        log_record = log_queue.get(block=False)
-                        logger.warning(
-                            "Record found in log queue past shutdown: %r",
-                            log_record)
-                    except queue.Empty:
-                        break  # Break once queue is empty
-                log_queue.close()
-                log_queue.join_thread()
-            except Exception as e:
-                logger.error("%s cleaning up log queue: %s",
-                             type(e).__name__, e)
-                logger.info("Error info:", exc_info=True)
+            shutdown_log_listener(log_queue=log_queue)
 
-            logger.info("Logging system shut down")
-            logging.shutdown()
             if outer_exit_event is None:
                 raise StopIteration
             return None
@@ -208,7 +216,7 @@ class Manager(brokkr.utils.misc.AutoReprMixin):
         setup_worker_log_config(
             self.log_queue, filter_level=self.log_filter_level)
         self.logger = logging.getLogger(__name__)
-        self.logger.debug("Set up logging for manager thread")
+        self.logger.info("Set up logging for manager thread")
 
     def start_workers(self, ignore_started=False):
         # Check for processes already started
