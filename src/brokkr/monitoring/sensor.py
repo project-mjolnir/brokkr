@@ -78,7 +78,7 @@ def ping(host=CONFIG["general"]["ip_sensor"], timeout=None):
 
 def read_hs_packet(
         timeout=None,
-        host_address="",
+        host_address=CONFIG["general"]["ip_local"],
         port=CONFIG["monitor"]["hs_port"],
         packet_size=None,
         buffer_size=BUFFER_SIZE_HS,

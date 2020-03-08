@@ -86,13 +86,13 @@ class MultiprocessHandler(brokkr.utils.misc.AutoReprMixin):
             exit_event = multiprocessing.Event()
         self.exit_event = exit_event
 
-    def start_logging(self, ignore_started=False):
+    def start_logger(self, ignore_started=False):
         # If logging already started, don't start another
         if self.logger is not None or self.log_process is not None:
             if ignore_started:
                 self.logger.debug("Logging already started, not restarting")
-                self.logger.debug("Log process info: %r", self.log_process)
-                self.logger.debug("Logger info: %r", self.logger)
+                self.logger.debug("Log process details: %r", self.log_process)
+                self.logger.debug("Logger details: %r", self.logger)
                 return
             raise RuntimeError("Logging is already started")
 
@@ -125,7 +125,7 @@ class MultiprocessHandler(brokkr.utils.misc.AutoReprMixin):
         if self.workers is not None:
             if ignore_started:
                 self.logger.debug("Workers already started, not restarting")
-                self.logger.debug("Process info: %r", self.workers)
+                self.logger.debug("Process details: %r", self.workers)
                 return
             raise RuntimeError("Workers are already started")
 
@@ -159,7 +159,7 @@ class MultiprocessHandler(brokkr.utils.misc.AutoReprMixin):
             self.logger.info("Finished starting worker process %s", worker)
 
     def start(self, ignore_started=False):
-        self.start_logging(ignore_started=ignore_started)
+        self.start_logger(ignore_started=ignore_started)
         self.start_workers(ignore_started=ignore_started)
 
     def manage(self):  # pylint: disable=no-self-use
@@ -169,8 +169,7 @@ class MultiprocessHandler(brokkr.utils.misc.AutoReprMixin):
         self.logger.info("Starting manager")
         while not self.exit_event.is_set():
             brokkr.utils.misc.run_periodic(
-                self.manage, period_s=0,
-                exit_event=self.exit_event, logger=self.logger)()
+                self.manage, exit_event=self.exit_event, logger=self.logger)()
         self.logger.info("Exiting manager")
 
     def shutdown_workers(self):
@@ -222,6 +221,7 @@ class MultiprocessHandler(brokkr.utils.misc.AutoReprMixin):
                 else:
                     self.logger.info("Worker %s killed", worker)
 
+        # Final cleanup
         self.exit_event.clear()
         self.workers = None
         self.logger.info(
@@ -229,14 +229,20 @@ class MultiprocessHandler(brokkr.utils.misc.AutoReprMixin):
             time.monotonic() - shutdown_start_time, n_terminated, n_failed)
         return n_terminated, n_failed
 
-    def shutdown_logging(self):
+    def shutdown_logger(self):
+        # Shut down local logging
         self.logger.info("Shutting down logging process")
         self.logger = None
-        self.log_queue.put_nowait(
-            brokkr.multiprocess.loglistener.LOG_RECORD_SENTINEL)
-        self.log_queue = None
         logging.shutdown()
 
+        # Command logger and queue to shut down
+        self.log_queue.put_nowait(
+            brokkr.multiprocess.loglistener.LOG_RECORD_SENTINEL)
+        self.log_queue.close()
+        self.log_queue.join_thread()
+        self.log_queue = None
+
+        # Ensure logger process actually terminates
         self.log_process.join(self.logging_shutdown_wait_s)
         if self.log_process.is_alive():
             self.log_process.terminate()
@@ -254,7 +260,7 @@ class MultiprocessHandler(brokkr.utils.misc.AutoReprMixin):
 
     def shutdown(self):
         self.shutdown_workers()
-        self.shutdown_logging()
+        self.shutdown_logger()
 
     def run(self):
         self.start(ignore_started=True)

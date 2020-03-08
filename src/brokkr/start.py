@@ -159,8 +159,7 @@ def start_monitoring(verbose=None, quiet=None, **monitor_args):
     brokkr.monitoring.monitor.start_monitoring(**monitor_args)
 
 
-def start_brokkr(
-        log_level_file=None, log_level_console=None, **monitor_kwargs):
+def start_brokkr(log_level_file=None, log_level_console=None):
     from brokkr.config.bootstrap import BOOTSTRAP_CONFIG
     from brokkr.config.log import LOG_CONFIG
     from brokkr.config.metadata import METADATA_CONFIG
@@ -185,7 +184,6 @@ def start_brokkr(
         brokkr.multiprocess.handler.WorkerConfig(
             target=brokkr.monitoring.monitor.start_monitoring,
             name="MonitorProcess",
-            process_kwargs=monitor_kwargs,
             )
         ]
 
@@ -195,7 +193,7 @@ def start_brokkr(
         worker_shutdown_wait_s=BOOTSTRAP_CONFIG["worker_shutdown_wait_s"],
         log_config=log_config,
         )
-    mp_handler.start_logging()
+    mp_handler.start_logger()
 
     # Log startup messages
     logger = logging.getLogger(__name__)

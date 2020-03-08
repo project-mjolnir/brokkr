@@ -19,7 +19,6 @@ from brokkr.config.constants import SLEEP_TICK_S
 
 # Constants for run periodic
 NS_IN_S = int(1e9)
-PERIOD_S_DEFAULT = 1
 SIGNALS_SET = ["SIG" + signame for signame in {"TERM", "HUP", "INT", "BREAK"}]
 
 
@@ -117,20 +116,20 @@ def _pass_func():
 
 def run_periodic(
         func=None,
-        period_s=PERIOD_S_DEFAULT,
+        period_s=0,
         exit_event=None,
         outer_exit_event=None,
         logger=None,
         ):
     """Decorator to run a function at a periodic interval w/signal handling."""
+    if func is None:
+        func = _pass_func
     if exit_event is None:
         exit_event = threading.Event()
     if outer_exit_event is None:
         outer_exit_event = exit_event
     if logger is None:
         logger = logging.getLogger(__name__)
-    if func is None:
-        func = _pass_func
 
     @functools.wraps(func)
     def _run_periodic(*args, **kwargs):

@@ -52,12 +52,10 @@ def shutdown_log_listener(log_queue):
                     log_record)
             except queue.Empty:
                 break  # Break once queue is empty
-        log_queue.close()
-        log_queue.join_thread()
     except Exception as e:  # Log and pass errors flushing the logging queue
         logger.error("%s cleaning up log queue: %s",
                      type(e).__name__, e)
-        logger.info("Error info:", exc_info=True)
+        logger.info("Error details:", exc_info=True)
 
     logger.info("Logging system shut down")
     logging.shutdown()
@@ -76,7 +74,7 @@ def handle_queued_log_record(log_queue, outer_exit_event=None):
                      type(e).__name__, log_queue, e)
         logger.info("Error details:", exc_info=True)
     else:
-        if log_record is LOG_RECORD_SENTINEL:
+        if log_record == LOG_RECORD_SENTINEL:
             if outer_exit_event is not None:
                 outer_exit_event.set()
 
@@ -92,8 +90,8 @@ def handle_queued_log_record(log_queue, outer_exit_event=None):
         except Exception as e:  # If an error occurs logging, log and move on
             logger.warning("%s logging record %s: %s",
                            type(e).__name__, log_record, e)
-            logger.info("Error info:", exc_info=True)
-            logger.info("Log record info: %r", log_record)
+            logger.info("Error details:", exc_info=True)
+            logger.info("Log record details: %r", log_record)
         return log_record
 
     return log_record
@@ -109,6 +107,6 @@ def run_log_listener(log_queue, log_configurator,
     outer_exit_event = threading.Event()
 
     brokkr.utils.misc.run_periodic(
-        handle_queued_log_record, period_s=0, exit_event=exit_event,
+        handle_queued_log_record, exit_event=exit_event,
         outer_exit_event=outer_exit_event, logger=False)(
             log_queue, outer_exit_event=outer_exit_event)

@@ -151,6 +151,7 @@ CONFIG_HANDLER_LOG = CONFIG_HANDLER_FACTORY.create_config_handler(
 
 DEFAULT_CONFIG_STATIC = {
     "general": {
+        "ip_local": "",
         "ip_sensor": "",
         "na_marker": "NA",
         "output_filename_client":
