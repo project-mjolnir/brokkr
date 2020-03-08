@@ -12,7 +12,7 @@ import os
 import sys
 
 # Local imports
-from brokkr.config.constants import (
+from brokkr.constants import (
     OUTPUT_PATH_DEFAULT,
     PACKAGE_NAME,
     )

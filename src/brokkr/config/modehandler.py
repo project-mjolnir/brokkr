@@ -4,7 +4,7 @@ The configuration handler for the config modes system, loaded second.
 
 # Local imports
 import brokkr.config.base
-from brokkr.config.constants import (
+from brokkr.constants import (
     CONFIG_NAME_BOOTSTRAP,
     CONFIG_NAME_DYNAMIC,
     CONFIG_NAME_MODE,

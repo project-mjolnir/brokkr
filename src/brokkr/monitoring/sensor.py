@@ -11,7 +11,7 @@ import subprocess
 # Local imports
 from brokkr.config.dynamic import DYNAMIC_CONFIG
 from brokkr.config.static import CONFIG
-import brokkr.decode
+import brokkr.utils.decode
 
 
 BUFFER_SIZE_HS = 128
@@ -86,7 +86,8 @@ def read_hs_packet(
     if timeout is None:
         timeout = DYNAMIC_CONFIG["monitor"]["hs_timeout_s"]
     if packet_size is None:
-        packet_size = brokkr.decode.DataDecoder(VARIABLE_PARAMS_HS).packet_size
+        packet_size = brokkr.utils.decode.DataDecoder(
+            VARIABLE_PARAMS_HS).packet_size
 
     LOGGER.debug("Reading H&S data...")
     with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
@@ -131,7 +132,7 @@ def decode_hs_packet(
     if variables is None:
         variables = VARIABLE_PARAMS_HS
 
-    data_decoder = brokkr.decode.DataDecoder(
+    data_decoder = brokkr.utils.decode.DataDecoder(
         variables=variables,
         conversion_functions=conversion_functions)
     LOGGER.debug("Created H&S data decoder: %r", data_decoder)

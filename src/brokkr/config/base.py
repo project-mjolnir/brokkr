@@ -15,7 +15,7 @@ from pathlib import Path
 import toml
 
 # Local imports
-from brokkr.config.constants import (
+from brokkr.constants import (
     LEVEL_NAME_LOCAL,
     LEVEL_NAME_REMOTE,
     LEVEL_NAME_SYSTEM,

@@ -14,7 +14,7 @@ import threading
 import time
 
 # Local imports
-from brokkr.config.constants import SLEEP_TICK_S
+from brokkr.constants import SLEEP_TICK_S
 
 
 # Constants for run periodic

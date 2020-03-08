@@ -6,7 +6,7 @@ Configuration to run Brokkr as a service for supported platforms (Linux).
 import sys
 
 # Local imports
-from brokkr.config.constants import PACKAGE_NAME
+from brokkr.constants import PACKAGE_NAME
 
 
 SERVICE_FILENAME = f"{PACKAGE_NAME}.service"

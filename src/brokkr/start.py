@@ -12,8 +12,8 @@ import multiprocessing
 from pathlib import Path
 
 # Local imports
-from brokkr.config.constants import LEVEL_NAME_SYSTEM, PACKAGE_NAME
-import brokkr.logger
+from brokkr.constants import LEVEL_NAME_SYSTEM, PACKAGE_NAME
+import brokkr.utils.log
 
 
 CONFIG_REQUIRE = ["system", "unit"]
@@ -128,7 +128,7 @@ def log_startup_messages(log_config=None, log_level_file=None,
 
 # --- Primary commands --- #
 
-@brokkr.logger.basic_logging
+@brokkr.utils.log.basic_logging
 def print_status(pretty=True):
     logger = logging.getLogger(__name__)
     logger.debug("Getting oneshot status data...")
@@ -140,14 +140,14 @@ def print_status(pretty=True):
 
 
 def start_monitoring(verbose=None, quiet=None, **monitor_args):
-    import brokkr.logger
+    import brokkr.utils.log
     # Drop output_path arg if true to use default path in function signature
     if monitor_args.get("output_path_client", None) is True:
         monitor_args.pop("output_path_client", None)
 
     # Setup logging if not already configured
     if verbose is not None or quiet is not None:
-        brokkr.logger.setup_basic_logging(
+        brokkr.utils.log.setup_basic_logging(
             verbose=verbose, quiet=quiet, script_mode=False)
     logger = logging.getLogger(__name__)
 
@@ -164,12 +164,12 @@ def start_brokkr(log_level_file=None, log_level_console=None):
     from brokkr.config.log import LOG_CONFIG
     from brokkr.config.metadata import METADATA_CONFIG
     from brokkr.config.unit import UNIT_CONFIG
-    import brokkr.logger
+    import brokkr.utils.log
     import brokkr.multiprocess.handler
     import brokkr.monitoring.monitor
 
     # Setup logging config
-    log_config = brokkr.logger.render_full_log_config(
+    log_config = brokkr.utils.log.render_full_log_config(
         LOG_CONFIG,
         log_level_file=log_level_file,
         log_level_console=log_level_console,

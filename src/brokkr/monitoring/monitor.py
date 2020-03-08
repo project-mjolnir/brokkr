@@ -12,8 +12,8 @@ import sys
 from brokkr.config.dynamic import DYNAMIC_CONFIG
 import brokkr.config.monitoring
 from brokkr.config.static import CONFIG
-import brokkr.output
 import brokkr.utils.misc
+import brokkr.utils.output
 
 
 CURSOR_UP_CHAR = '\x1b[1A'
@@ -51,10 +51,10 @@ def write_status_data(
         status_data, output_path=CONFIG["monitor"]["output_path_client"]):
     output_path = Path(output_path)
     if not output_path.suffix:
-        output_path = brokkr.output.render_output_filename(
+        output_path = brokkr.utils.output.render_output_filename(
             output_path=output_path, **CONFIG["monitor"]["filename_args"])
     LOGGER.debug("Writing telemetry to file: %r", output_path.as_posix())
-    brokkr.output.write_line_csv(status_data, output_path)
+    brokkr.utils.output.write_line_csv(status_data, output_path)
 
 
 def run_monitoring_pass(

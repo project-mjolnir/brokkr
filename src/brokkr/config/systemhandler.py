@@ -4,7 +4,7 @@ The configuration handler for the system preset path, loaded first.
 
 # Local imports
 import brokkr.config.base
-from brokkr.config.constants import (
+from brokkr.constants import (
     CONFIG_NAME_SYSTEM,
     CONFIG_PATH_MAIN,
     CONFIG_VERSION,

@@ -8,7 +8,7 @@ import multiprocessing
 import time
 
 # Local imports
-from brokkr.config.constants import SLEEP_TICK_S
+from brokkr.constants import SLEEP_TICK_S
 import brokkr.multiprocess.loglistener
 import brokkr.utils.misc
 

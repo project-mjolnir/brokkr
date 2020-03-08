@@ -4,7 +4,7 @@ Config handler setup for Brokkr's main managed configs.
 
 # Local imports
 import brokkr.config.base
-from brokkr.config.constants import (
+from brokkr.constants import (
     CONFIG_NAME_BOOTSTRAP,
     CONFIG_NAME_DYNAMIC,
     CONFIG_NAME_LOG,
