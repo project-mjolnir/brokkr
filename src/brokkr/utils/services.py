@@ -2,15 +2,50 @@
 Configuration to run Brokkr as a service for supported platforms (Linux).
 """
 
+# Standard library imports
+import sys
+
+# Local imports
+from brokkr.config.static import CONFIG
 from brokkr.config.unit import UNIT_CONFIG
 from brokkr.constants import PACKAGE_NAME
-from brokkr.config.static import CONFIG
 
 
 AUTOSSH_REMOTE_PORT = (
     CONFIG["link"]["tunnel_port_offset"] + UNIT_CONFIG["number"])
 
-AUTOSSH_SERVICE_FILENAME = f"autossh-{PACKAGE_NAME}.service"
+
+BROKKR_SERVICE_DEFAULTS = {
+    "Unit": {
+        "Description": f"Brokkr IoT Monitoring, Logging and Control Client",
+        "Wants": (
+            "network-online.target systemd-time-wait-sync.service "
+            "systemd-timesyncd.service sshd.service "
+            "autossh-brokkr.service"
+            ),
+        "After": (
+            "time-sync.target network-online.target multi-user.target "
+            "sshd.service systemd-time-wait-sync.service "
+            "systemd-timesyncd.service autossh-brokkr.service"
+            ),
+        },
+    "Service": {
+        "Type": "simple",
+        "ExecStart": f"{sys.executable} -m brokkr start",
+        "Restart": "on-failure",
+        "RestartSec": str(15),
+        "TimeoutStartSec": str(30),
+        "TimeoutStopSec": str(30),
+        },
+    }
+
+BROKKR_SERVICE_KWARGS = {
+    "service_filename": f"{PACKAGE_NAME}.service",
+    "service_settings": BROKKR_SERVICE_DEFAULTS,
+    "services_enable": ["systemd-timesyncd.service"],
+    "services_disable": ["chronyd.service", "ntpd.service"],
+    }
+
 
 AUTOSSH_SERVICE_DEFAULTS = {
     "Unit": {
@@ -41,5 +76,7 @@ AUTOSSH_SERVICE_DEFAULTS = {
         },
     }
 
-AUTOSSH_SERVICES_ENABLE = ()
-AUTOSSH_SERVICES_DISABLE = ()
+AUTOSSH_SERVICE_KWARGS = {
+    "service_filename": f"autossh-{PACKAGE_NAME}.service",
+    "service_settings": AUTOSSH_SERVICE_DEFAULTS,
+    }

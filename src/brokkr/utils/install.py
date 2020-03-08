@@ -10,16 +10,19 @@ import subprocess
 import sys
 
 # Third party imports
-import serviceinstaller
+try:
+    import serviceinstaller
+except ModuleNotFoundError:
+    # pylint: disable=invalid-name
+    serviceinstaller = None
 
 # Local imports
-import brokkr.config.autossh
 import brokkr.config.base
 from brokkr.constants import CONFIG_PATH_MAIN
 import brokkr.config.handlers
-import brokkr.config.service
 import brokkr.utils.log
 import brokkr.utils.misc
+import brokkr.utils.services
 
 
 # General constants
@@ -97,6 +100,8 @@ def _write_os_config_file(file_contents, filename, output_path):
 def install_autossh(skip_package_install=False, platform=None):
     # pylint: disable=import-outside-toplevel
     from brokkr.config.static import CONFIG
+    if serviceinstaller is None:
+        raise ModuleNotFoundError("Serviceinstaller must be installed.")
     if not CONFIG["link"]["server_hostname"]:
         raise RuntimeError(
             "Cannot install autossh: Hostname not provided in config. "
@@ -110,24 +115,16 @@ def install_autossh(skip_package_install=False, platform=None):
             return install_succeeded
 
     serviceinstaller.install_service(
-        brokkr.config.autossh.AUTOSSH_SERVICE_DEFAULTS,
-        service_filename=brokkr.config.autossh.AUTOSSH_SERVICE_FILENAME,
-        services_enable=brokkr.config.autossh.AUTOSSH_SERVICES_ENABLE,
-        services_disable=brokkr.config.autossh.AUTOSSH_SERVICES_DISABLE,
-        platform=platform,
-        )
+        **brokkr.utils.services.AUTOSSH_SERVICE_KWARGS, platform=platform)
     return True
 
 
 @brokkr.utils.log.basic_logging
 def install_service(platform=None):
+    if serviceinstaller is None:
+        raise ModuleNotFoundError("Serviceinstaller must be installed.")
     serviceinstaller.install_service(
-        brokkr.config.service.SERVICE_DEFAULTS,
-        service_filename=brokkr.config.service.SERVICE_FILENAME,
-        services_enable=brokkr.config.service.SERVICES_ENABLE,
-        services_disable=brokkr.config.service.SERVICES_DISABLE,
-        platform=platform,
-    )
+        **brokkr.utils.services.BROKKR_SERVICE_KWARGS, platform=platform)
 
 
 @brokkr.utils.log.basic_logging
