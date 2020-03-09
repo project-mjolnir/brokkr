@@ -6,7 +6,7 @@ The configuration handler for the system preset path, loaded first.
 import brokkr.config.base
 from brokkr.constants import (
     CONFIG_NAME_SYSTEM,
-    CONFIG_PATH_MAIN,
+    CONFIG_PATH_LOCAL,
     CONFIG_VERSION,
     LEVEL_NAME_LOCAL,
     PACKAGE_NAME,
@@ -15,7 +15,7 @@ from brokkr.constants import (
 
 CONFIG_HANDLER_FACTORY = brokkr.config.base.ConfigHandlerFactory(
     level_presets=brokkr.config.base.CONFIG_LEVEL_PRESETS,
-    main_config_path=CONFIG_PATH_MAIN,
+    local_config_path=CONFIG_PATH_LOCAL,
     config_version=CONFIG_VERSION,
     )
 

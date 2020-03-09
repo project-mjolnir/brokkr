@@ -8,7 +8,7 @@ import logging
 import struct
 
 # Local imports
-from brokkr.config.static import CONFIG
+from brokkr.config.main import CONFIG
 import brokkr.utils.misc
 
 

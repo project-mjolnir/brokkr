@@ -1,17 +1,16 @@
 """
-The configuration handler for the config modes system, loaded second.
+The configuration handler for the config modes system, loaded after systempath.
 """
 
 # Local imports
 import brokkr.config.base
+from brokkr.config.system import SYSTEM_CONFIG
 from brokkr.constants import (
-    CONFIG_NAME_BOOTSTRAP,
-    CONFIG_NAME_DYNAMIC,
+    CONFIG_NAME_MAIN,
     CONFIG_NAME_MODE,
-    CONFIG_PATH_MAIN,
+    CONFIG_PATH_LOCAL,
     CONFIG_VERSION,
     LEVEL_NAME_SYSTEM,
-    LEVEL_NAME_SYSTEM_CLIENT,
     LEVEL_NAME_LOCAL,
     OUTPUT_PATH_BASE,
     OUTPUT_SUBPATH_REALTIME,
@@ -19,14 +18,13 @@ from brokkr.constants import (
     PACKAGE_NAME,
     SYSTEM_SUBPATH_CONFIG,
     )
-from brokkr.config.system import SYSTEM_CONFIG
 
 
 CONFIG_PATH_SYSTEM = SYSTEM_CONFIG["system_path"] / SYSTEM_SUBPATH_CONFIG
 
 CONFIG_HANDLER_FACTORY = brokkr.config.base.ConfigHandlerFactory(
     level_presets=brokkr.config.base.CONFIG_LEVEL_PRESETS,
-    main_config_path=CONFIG_PATH_MAIN,
+    local_config_path=CONFIG_PATH_LOCAL,
     preset_config_path=CONFIG_PATH_SYSTEM,
     config_version=CONFIG_VERSION,
     )
@@ -37,25 +35,25 @@ DEFAULT_CONFIG_MODE = {
     "default": {},
     "production": {},
     "realtime": {
-        CONFIG_NAME_BOOTSTRAP: {
-            "output_path_client":
-                (OUTPUT_PATH_BASE / OUTPUT_SUBPATH_REALTIME).as_posix(),
-            },
-        CONFIG_NAME_DYNAMIC: {
+        CONFIG_NAME_MAIN: {
+            "general": {
+                "output_path_client":
+                    (OUTPUT_PATH_BASE / OUTPUT_SUBPATH_REALTIME).as_posix(),
+                },
             "monitor": {
                 "hs_timeout_s": 1,
-                "monitor_interval_s": 1,
+                "interval_s": 1,
                 },
             },
         },
     "test": {
-        CONFIG_NAME_BOOTSTRAP: {
-            "output_path_client":
-                (OUTPUT_PATH_BASE / OUTPUT_SUBPATH_TEST).as_posix(),
-            },
-        CONFIG_NAME_DYNAMIC: {
+        CONFIG_NAME_MAIN: {
+            "general": {
+                "output_path_client":
+                    (OUTPUT_PATH_BASE / OUTPUT_SUBPATH_TEST).as_posix(),
+                },
             "monitor": {
-                "monitor_interval_s": 5,
+                "interval_s": 5,
                 },
             },
         },
@@ -68,7 +66,6 @@ CONFIG_HANDLER_MODE = CONFIG_HANDLER_FACTORY.create_config_handler(
     name=CONFIG_NAME_MODE,
     config_levels=[
         LEVEL_NAME_SYSTEM,
-        LEVEL_NAME_SYSTEM_CLIENT,
         LEVEL_NAME_LOCAL,
         {brokkr.config.base.LEVEL_CLASS: brokkr.config.base.EnvVarsConfigLevel,
          brokkr.config.base.LEVEL_ARGS: {"mapping": ENV_VARIABLES_MODE}},
@@ -77,7 +74,7 @@ CONFIG_HANDLER_MODE = CONFIG_HANDLER_FACTORY.create_config_handler(
         ],
     defaults=DEFAULT_CONFIG_MODE,
     path_variables=[
-        ("test", CONFIG_NAME_BOOTSTRAP, "output_path_client"),
-        ("realtime", CONFIG_NAME_BOOTSTRAP, "output_path_client"),
+        ("test", CONFIG_NAME_MAIN, "general", "output_path_client"),
+        ("realtime", CONFIG_NAME_MAIN, "general", "output_path_client"),
         ],
     )

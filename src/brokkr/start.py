@@ -61,11 +61,9 @@ def warn_on_startup_issues():
 
 def log_config_info(log_config=None, logger=None):
     # pylint: disable=too-many-locals, useless-suppression
-    from brokkr.config.bootstrap import BOOTSTRAP_CONFIG, BOOTSTRAP_CONFIGS
-    from brokkr.config.dynamic import DYNAMIC_CONFIG, DYNAMIC_CONFIGS
     from brokkr.config.log import LOG_CONFIG, LOG_CONFIGS
-    from brokkr.config.metadata import METADATA_CONFIG, METADATA_CONFIGS
-    from brokkr.config.static import CONFIG, CONFIGS
+    from brokkr.config.main import CONFIG, CONFIGS
+    from brokkr.config.metadata import METADATA, METADATA_CONFIGS
     from brokkr.config.system import SYSTEM_CONFIG, SYSTEM_CONFIGS
     from brokkr.config.unit import UNIT_CONFIG, UNIT_CONFIGS
 
@@ -77,12 +75,10 @@ def log_config_info(log_config=None, logger=None):
     # Print config information
     for config_name, config_data in {
             "System path": (SYSTEM_CONFIG, SYSTEM_CONFIGS),
-            "Metadata": (METADATA_CONFIG, METADATA_CONFIGS),
-            "Bootstrap": (BOOTSTRAP_CONFIG, BOOTSTRAP_CONFIGS),
+            "Metadata": (METADATA, METADATA_CONFIGS),
             "Unit": (UNIT_CONFIG, UNIT_CONFIGS),
             "Log": (log_config, LOG_CONFIGS),
-            "Static": (CONFIG, CONFIGS),
-            "Dynamic": (DYNAMIC_CONFIG, DYNAMIC_CONFIGS),
+            "Main": (CONFIG, CONFIGS),
             }.items():  # pylint: disable=bad-continuation
         logger.info("%s config: %s", config_name, config_data[0])
         logger.debug("%s config hierarchy: %s", config_name, config_data[1])
@@ -160,37 +156,31 @@ def start_monitoring(verbose=None, quiet=None, **monitor_args):
 
 
 def start_brokkr(log_level_file=None, log_level_console=None):
-    from brokkr.config.bootstrap import BOOTSTRAP_CONFIG
     from brokkr.config.log import LOG_CONFIG
-    from brokkr.config.metadata import METADATA_CONFIG
+    from brokkr.config.main import CONFIG
+    from brokkr.config.metadata import METADATA
     from brokkr.config.unit import UNIT_CONFIG
     import brokkr.utils.log
     import brokkr.multiprocess.handler
     import brokkr.monitoring.monitor
 
     # Setup logging config
+    system_prefix = CONFIG["general"]["system_prefix"]
+    if not system_prefix:
+        system_prefix = METADATA["name"]
+
     log_config = brokkr.utils.log.render_full_log_config(
         LOG_CONFIG,
         log_level_file=log_level_file,
         log_level_console=log_level_console,
-        output_path=BOOTSTRAP_CONFIG["output_path_client"],
-        system_name=METADATA_CONFIG["name"],
-        system_prefix=BOOTSTRAP_CONFIG["system_prefix"],
+        output_path=CONFIG["general"]["output_path_client"],
+        system_name=METADATA["name"],
+        system_prefix=system_prefix,
         unit_number=UNIT_CONFIG["number"],
         )
 
-    # Setup worker configs
-    worker_configs = [
-        brokkr.multiprocess.handler.WorkerConfig(
-            target=brokkr.monitoring.monitor.start_monitoring,
-            name="MonitorProcess",
-            )
-        ]
-
     # Create multiprocess handler and start logging process
     mp_handler = brokkr.multiprocess.handler.MultiprocessHandler(
-        worker_configs=worker_configs,
-        worker_shutdown_wait_s=BOOTSTRAP_CONFIG["worker_shutdown_wait_s"],
         log_config=log_config,
         )
     mp_handler.start_logger()
@@ -199,6 +189,17 @@ def start_brokkr(log_level_file=None, log_level_console=None):
     logger = logging.getLogger(__name__)
     log_startup_messages(log_config=log_config, log_level_file=log_level_file,
                          log_level_console=log_level_console, logger=logger)
+
+    # Setup worker configs for multiprocess handler
+    worker_configs = [
+        brokkr.multiprocess.handler.WorkerConfig(
+            target=brokkr.monitoring.monitor.start_monitoring,
+            name="MonitorProcess",
+            )
+        ]
+    mp_handler.worker_configs = worker_configs
+    mp_handler.worker_shutdown_wait_s = (
+        CONFIG["general"]["worker_shutdown_wait_s"])
 
     # Start multiprocess manager mainloop
     logger.debug("Starting multiprocess manager mainloop: %r", mp_handler)

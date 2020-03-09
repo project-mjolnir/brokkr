@@ -41,11 +41,9 @@ SYSTEM_SUBPATH_CONFIG = Path("config")
 CONFIG_NAME_SYSTEM = "system"
 CONFIG_NAME_MODE = "mode"
 CONFIG_NAME_METADATA = "metadata"
-CONFIG_NAME_BOOTSTRAP = "bootstrap"
 CONFIG_NAME_UNIT = "unit"
 CONFIG_NAME_LOG = "log"
-CONFIG_NAME_STATIC = "static"
-CONFIG_NAME_DYNAMIC = "dynamic"
+CONFIG_NAME_MAIN = "main"
 
 # Config level names
 LEVEL_NAME_SYSTEM = "system"
@@ -56,5 +54,5 @@ LEVEL_NAME_LOCAL = "local"
 # Config variables
 CONFIG_PATH_XDG = Path(
     f"~{os.environ.get('SUDO_USER', '')}/.config").expanduser()
-CONFIG_PATH_MAIN = CONFIG_PATH_XDG / PACKAGE_NAME
+CONFIG_PATH_LOCAL = CONFIG_PATH_XDG / PACKAGE_NAME
 CONFIG_VERSION = 1

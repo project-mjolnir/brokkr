@@ -11,9 +11,8 @@ import os
 from pathlib import Path
 
 # Local imports
-from brokkr.config.bootstrap import BOOTSTRAP_CONFIG
-from brokkr.config.metadata import METADATA_CONFIG
-from brokkr.config.static import CONFIG
+from brokkr.config.main import CONFIG
+from brokkr.config.metadata import METADATA
 from brokkr.config.unit import UNIT_CONFIG
 import brokkr.utils.misc
 
@@ -35,14 +34,18 @@ def render_output_filename(
         **filename_args,
         ):
     # Add master output path to output path if is relative
-    output_path = brokkr.utils.misc.convert_path(output_path)
     if (not output_path.is_absolute()
-            and BOOTSTRAP_CONFIG["output_path_client"]):
-        output_path = BOOTSTRAP_CONFIG["output_path_client"] / output_path
+            and CONFIG["general"]["output_path_client"]):
+        output_path = CONFIG["general"]["output_path_client"] / output_path
+    output_path = brokkr.utils.misc.convert_path(output_path)
+
+    system_prefix = CONFIG["general"]["system_prefix"]
+    if not system_prefix:
+        system_prefix = METADATA["name"]
 
     filename_args_default = {
-        "system_name": METADATA_CONFIG["name"],
-        "system_prefix": BOOTSTRAP_CONFIG["system_prefix"],
+        "system_name": METADATA["name"],
+        "system_prefix": system_prefix,
         "unit_number": UNIT_CONFIG["number"],
         "utc_date": datetime.datetime.utcnow().date(),
         }

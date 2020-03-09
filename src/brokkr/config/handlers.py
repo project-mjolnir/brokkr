@@ -5,18 +5,15 @@ Config handler setup for Brokkr's main managed configs.
 # Local imports
 import brokkr.config.base
 from brokkr.constants import (
-    CONFIG_NAME_BOOTSTRAP,
-    CONFIG_NAME_DYNAMIC,
     CONFIG_NAME_LOG,
     CONFIG_NAME_METADATA,
     CONFIG_NAME_MODE,
-    CONFIG_NAME_STATIC,
+    CONFIG_NAME_MAIN,
     CONFIG_NAME_SYSTEM,
     CONFIG_NAME_UNIT,
-    CONFIG_PATH_MAIN,
+    CONFIG_PATH_LOCAL,
     CONFIG_VERSION,
     LEVEL_NAME_LOCAL,
-    LEVEL_NAME_REMOTE,
     LEVEL_NAME_SYSTEM,
     LEVEL_NAME_SYSTEM_CLIENT,
     OUTPUT_PATH_DEFAULT,
@@ -37,27 +34,9 @@ MODE_OVERLAYS = MODE_CONFIG[MODE_CONFIG["mode"]]
 CONFIG_HANDLER_FACTORY = brokkr.config.base.ConfigHandlerFactory(
     level_presets=brokkr.config.base.CONFIG_LEVEL_PRESETS,
     overlays=MODE_OVERLAYS,
-    main_config_path=CONFIG_PATH_MAIN,
+    local_config_path=CONFIG_PATH_LOCAL,
     preset_config_path=CONFIG_PATH_SYSTEM,
     config_version=CONFIG_VERSION,
-    )
-
-
-DEFAULT_CONFIG_BOOTSTRAP = {
-    "output_path_client": OUTPUT_PATH_DEFAULT.as_posix(),
-    "system_prefix": "mjolnir",
-    "worker_shutdown_wait_s": 10,
-    }
-
-CONFIG_HANDLER_BOOTSTRAP = CONFIG_HANDLER_FACTORY.create_config_handler(
-    name=CONFIG_NAME_BOOTSTRAP,
-    config_levels=[
-        LEVEL_NAME_SYSTEM,
-        LEVEL_NAME_SYSTEM_CLIENT,
-        LEVEL_NAME_LOCAL,
-        ],
-    defaults=DEFAULT_CONFIG_BOOTSTRAP,
-    path_variables=[("output_path_client", )],
     )
 
 
@@ -92,7 +71,6 @@ CONFIG_HANDLER_METADATA = CONFIG_HANDLER_FACTORY.create_config_handler(
     name=CONFIG_NAME_METADATA,
     config_levels=[
         LEVEL_NAME_SYSTEM,
-        LEVEL_NAME_LOCAL,
         ],
     defaults=DEFAULT_CONFIG_METADATA,
     preset_config_path=SYSTEM_CONFIG["system_path"],
@@ -141,7 +119,6 @@ DEFAULT_CONFIG_LOG = {
 CONFIG_HANDLER_LOG = CONFIG_HANDLER_FACTORY.create_config_handler(
     name=CONFIG_NAME_LOG,
     config_levels=[
-        LEVEL_NAME_SYSTEM,
         LEVEL_NAME_SYSTEM_CLIENT,
         LEVEL_NAME_LOCAL,
         ],
@@ -149,13 +126,16 @@ CONFIG_HANDLER_LOG = CONFIG_HANDLER_FACTORY.create_config_handler(
     )
 
 
-DEFAULT_CONFIG_STATIC = {
+DEFAULT_CONFIG_MAIN = {
     "general": {
         "ip_local": "",
         "ip_sensor": "",
         "na_marker": "NA",
         "output_filename_client":
             "{output_type}_{system_name}_{unit_number:0>2}_{utc_date!s}.csv",
+        "output_path_client": OUTPUT_PATH_DEFAULT.as_posix(),
+        "system_prefix": "",
+        "worker_shutdown_wait_s": 10,
         },
     "link": {
         "local_port": 22,
@@ -167,7 +147,10 @@ DEFAULT_CONFIG_STATIC = {
     "monitor": {
         "filename_args": {"output_type": "telemetry"},
         "hs_port": 8084,
+        "hs_timeout_s": 2,
+        "interval_s": 60,
         "output_path_client": OUTPUT_SUBPATH_MONITOR.as_posix(),
+        "ping_timeout_s": 1,
         "sunsaver_pid_list": [],
         "sunsaver_port": "",
         "sunsaver_start_offset": 0,
@@ -175,45 +158,23 @@ DEFAULT_CONFIG_STATIC = {
         },
     }
 
-CONFIG_HANDLER_STATIC = CONFIG_HANDLER_FACTORY.create_config_handler(
-    name=CONFIG_NAME_STATIC,
+CONFIG_HANDLER_MAIN = CONFIG_HANDLER_FACTORY.create_config_handler(
+    name=CONFIG_NAME_MAIN,
     config_levels=[
         LEVEL_NAME_SYSTEM,
-        LEVEL_NAME_SYSTEM_CLIENT,
         LEVEL_NAME_LOCAL,
         ],
-    defaults=DEFAULT_CONFIG_STATIC,
-    path_variables=[("monitor", "output_path_client")],
-    )
-
-
-DEFAULT_CONFIG_DYNAMIC = {
-    "monitor": {
-        "monitor_interval_s": 60,
-        "hs_timeout_s": 2,
-        "ping_timeout_s": 1,
-        },
-    }
-
-CONFIG_HANDLER_DYNAMIC = CONFIG_HANDLER_FACTORY.create_config_handler(
-    name=CONFIG_NAME_DYNAMIC,
-    config_levels=[
-        LEVEL_NAME_SYSTEM,
-        LEVEL_NAME_SYSTEM_CLIENT,
-        LEVEL_NAME_REMOTE,
-        LEVEL_NAME_LOCAL,
-        ],
-    defaults=DEFAULT_CONFIG_DYNAMIC,
+    defaults=DEFAULT_CONFIG_MAIN,
+    path_variables=[("general", "output_path_client"),
+                    ("monitor", "output_path_client")],
     )
 
 
 CONFIG_HANDLERS = {
     CONFIG_NAME_METADATA: CONFIG_HANDLER_METADATA,
-    CONFIG_NAME_BOOTSTRAP: CONFIG_HANDLER_BOOTSTRAP,
     CONFIG_NAME_UNIT: CONFIG_HANDLER_UNIT,
     CONFIG_NAME_LOG: CONFIG_HANDLER_LOG,
-    CONFIG_NAME_STATIC: CONFIG_HANDLER_STATIC,
-    CONFIG_NAME_DYNAMIC: CONFIG_HANDLER_DYNAMIC,
+    CONFIG_NAME_MAIN: CONFIG_HANDLER_MAIN,
     }
 CONFIG_LEVEL_NAMES = {
     config_level.name for handler in CONFIG_HANDLERS.values()

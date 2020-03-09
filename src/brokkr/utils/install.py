@@ -12,13 +12,13 @@ import sys
 # Third party imports
 try:
     import serviceinstaller
-except ModuleNotFoundError:
+except ModuleNotFoundError:  # If its not installed, eg. on non-Linux platforms
     # pylint: disable=invalid-name
     serviceinstaller = None
 
 # Local imports
 import brokkr.config.base
-from brokkr.constants import CONFIG_PATH_MAIN
+from brokkr.constants import CONFIG_PATH_LOCAL
 import brokkr.config.handlers
 import brokkr.utils.log
 import brokkr.utils.misc
@@ -99,7 +99,7 @@ def _write_os_config_file(file_contents, filename, output_path):
 @brokkr.utils.log.basic_logging
 def install_autossh(skip_package_install=False, platform=None):
     # pylint: disable=import-outside-toplevel
-    from brokkr.config.static import CONFIG
+    from brokkr.config.main import CONFIG
     if serviceinstaller is None:
         raise ModuleNotFoundError("Serviceinstaller must be installed.")
     if not CONFIG["link"]["server_hostname"]:
@@ -107,7 +107,7 @@ def install_autossh(skip_package_install=False, platform=None):
             "Cannot install autossh: Hostname not provided in config. "
             "Run 'brokkr configure-system' to set the system config path, "
             "and ensure a value is preset for at least the "
-            "'server_hostname' key in the static config's 'link' section.")
+            "'server_hostname' key in the main config's 'link' section.")
 
     if not skip_package_install:
         install_succeeded = _install_distro_package("autossh")
@@ -133,7 +133,7 @@ def install_config():
     for config_name, handler in config_handlers.items():
         logging.debug("Installing %s config...", config_name)
         handler.read_configs()
-    logging.info("Config files installed to %r", CONFIG_PATH_MAIN.as_posix())
+    logging.info("Config files installed to %r", CONFIG_PATH_LOCAL.as_posix())
 
 
 @brokkr.utils.log.basic_logging

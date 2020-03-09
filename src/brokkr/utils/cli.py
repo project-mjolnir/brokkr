@@ -16,7 +16,7 @@ SUBCOMMAND_PARAM = "subcommand_name"
 SYSTEM_PATH_PARAM = "system_path"
 MODE_PARAM = "mode"
 
-MONITOR_INTERVAL_S_DEFAULT = 1
+INTERVAL_S_DEFAULT = 1
 
 ARGS_TODELETE = {
     VERSION_PARAM, SUBCOMMAND_PARAM, SYSTEM_PATH_PARAM, MODE_PARAM}
@@ -72,8 +72,8 @@ def generate_argparser_main():
               "if passed without an argument, writes to the default data dir; "
               "if passed a path to a custom data dir, writes data there"))
     parser_monitor.add_argument(
-        "--interval", type=int, default=MONITOR_INTERVAL_S_DEFAULT,
-        dest="monitor_interval_s", help="Interval between status checks, in s")
+        "--interval-s", type=int, default=INTERVAL_S_DEFAULT,
+        help="Interval between status checks, in s")
     parser_monitor.add_argument(
         "--raw", action="store_false", default=True, dest="pretty",
         help="Don't pretty-print the status output, use repr instead")

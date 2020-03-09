@@ -15,7 +15,7 @@ import pymodbus.pdu
 import serial.tools.list_ports
 
 # Local imports
-from brokkr.config.static import CONFIG
+from brokkr.config.main import CONFIG
 import brokkr.utils.decode
 from brokkr.utils.log import log_details
 

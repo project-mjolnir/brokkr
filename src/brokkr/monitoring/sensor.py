@@ -9,8 +9,7 @@ import socket
 import subprocess
 
 # Local imports
-from brokkr.config.dynamic import DYNAMIC_CONFIG
-from brokkr.config.static import CONFIG
+from brokkr.config.main import CONFIG
 import brokkr.utils.decode
 
 
@@ -34,7 +33,7 @@ LOGGER = logging.getLogger(__name__)
 
 def ping(host=CONFIG["general"]["ip_sensor"], timeout=None):
     if timeout is None:
-        timeout = DYNAMIC_CONFIG["monitor"]["ping_timeout_s"]
+        timeout = CONFIG["monitor"]["ping_timeout_s"]
 
     # Set the correct option for the number of packets based on platform.
     if platform.system().lower() == "windows":
@@ -84,7 +83,7 @@ def read_hs_packet(
         buffer_size=BUFFER_SIZE_HS,
         ):
     if timeout is None:
-        timeout = DYNAMIC_CONFIG["monitor"]["hs_timeout_s"]
+        timeout = CONFIG["monitor"]["hs_timeout_s"]
     if packet_size is None:
         packet_size = brokkr.utils.decode.DataDecoder(
             VARIABLE_PARAMS_HS).packet_size

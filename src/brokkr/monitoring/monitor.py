@@ -9,9 +9,8 @@ from pathlib import Path
 import sys
 
 # Local imports
-from brokkr.config.dynamic import DYNAMIC_CONFIG
+from brokkr.config.main import CONFIG
 import brokkr.config.monitoring
-from brokkr.config.static import CONFIG
 import brokkr.utils.misc
 import brokkr.utils.output
 
@@ -86,13 +85,13 @@ def run_monitoring_pass(
 
 
 def start_monitoring(
-        monitor_interval_s=None, exit_event=None, **monitor_kwargs):
-    if monitor_interval_s is None:
-        monitor_interval_s = DYNAMIC_CONFIG["monitor"]["monitor_interval_s"]
+        interval_s=None, exit_event=None, **monitor_kwargs):
+    if interval_s is None:
+        interval_s = CONFIG["monitor"]["interval_s"]
     LOGGER.debug("Starting monitoring mainloop")
     run_monitoring_pass(**monitor_kwargs)
     brokkr.utils.misc.run_periodic(
-        run_monitoring_pass, period_s=monitor_interval_s,
+        run_monitoring_pass, period_s=interval_s,
         exit_event=exit_event, logger=LOGGER)(
             **monitor_kwargs, delete_previous=True)
 

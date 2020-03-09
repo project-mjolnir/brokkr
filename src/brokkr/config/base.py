@@ -66,7 +66,7 @@ class ConfigType(brokkr.utils.misc.AutoReprMixin):
             name,
             defaults=None,
             overlay=None,
-            main_config_path=None,
+            local_config_path=None,
             preset_config_path=None,
             path_variables=None,
             config_version=CONFIG_VERSION_DEFAULT,
@@ -74,8 +74,8 @@ class ConfigType(brokkr.utils.misc.AutoReprMixin):
         self.name = name
         self.defaults = defaults if defaults is not None else {}
         self.overlay = overlay
-        self.main_config_path = (
-            Path(main_config_path) if main_config_path is not None else None)
+        self.local_config_path = (
+            Path(local_config_path) if local_config_path is not None else None)
         self.preset_config_path = (
             Path(preset_config_path)
             if preset_config_path is not None else None)
@@ -156,7 +156,7 @@ class FileConfigLevel(WritableConfigLevel):
         elif self.preset:
             self.path = self.config_type.preset_config_path
         else:
-            self.path = self.config_type.main_config_path
+            self.path = self.config_type.local_config_path
 
         # Generate filename and add to path if needed
         if self.path.suffix != self.extension:
