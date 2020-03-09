@@ -168,12 +168,14 @@ def start_brokkr(log_level_file=None, log_level_console=None):
     system_prefix = CONFIG["general"]["system_prefix"]
     if not system_prefix:
         system_prefix = METADATA["name"]
+    output_path = Path(CONFIG["general"]["output_path_client"].as_posix()
+                       .format(system_name=METADATA["name"]))
 
     log_config = brokkr.utils.log.render_full_log_config(
         LOG_CONFIG,
         log_level_file=log_level_file,
         log_level_console=log_level_console,
-        output_path=CONFIG["general"]["output_path_client"],
+        output_path=output_path,
         system_name=METADATA["name"],
         system_prefix=system_prefix,
         unit_number=UNIT_CONFIG["number"],

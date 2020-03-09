@@ -7,12 +7,17 @@ import sys
 
 # Local imports
 from brokkr.config.main import CONFIG
+from brokkr.config.metadata import METADATA
 from brokkr.config.unit import UNIT_CONFIG
 from brokkr.constants import PACKAGE_NAME
 
 
 AUTOSSH_REMOTE_PORT = (
     CONFIG["link"]["tunnel_port_offset"] + UNIT_CONFIG["number"])
+
+AUTOSSH_SERVICE_NAME = "autossh-{}.service".format(METADATA["name"])
+BROKKR_SERVICE_NAME = "{package_name}-{system_name}.service".format(
+    package_name=PACKAGE_NAME, system_name=METADATA["name"])
 
 
 BROKKR_SERVICE_DEFAULTS = {
@@ -21,12 +26,11 @@ BROKKR_SERVICE_DEFAULTS = {
         "Wants": (
             "network-online.target systemd-time-wait-sync.service "
             "systemd-timesyncd.service sshd.service "
-            "autossh-brokkr.service"
             ),
         "After": (
             "time-sync.target network-online.target multi-user.target "
             "sshd.service systemd-time-wait-sync.service "
-            "systemd-timesyncd.service autossh-brokkr.service"
+            f"systemd-timesyncd.service {AUTOSSH_SERVICE_NAME}"
             ),
         },
     "Service": {
@@ -40,7 +44,7 @@ BROKKR_SERVICE_DEFAULTS = {
     }
 
 BROKKR_SERVICE_KWARGS = {
-    "service_filename": f"{PACKAGE_NAME}.service",
+    "service_filename": BROKKR_SERVICE_NAME,
     "service_settings": BROKKR_SERVICE_DEFAULTS,
     "services_enable": ["systemd-timesyncd.service"],
     "services_disable": ["chronyd.service", "ntpd.service"],
@@ -52,7 +56,7 @@ AUTOSSH_SERVICE_DEFAULTS = {
         "Description": "AutoSSH tunnel for Brokkr client",
         "Wants": "network-online.target sshd.service",
         "After": "network-online.target multi-user.target sshd.service",
-        "Before": f"{PACKAGE_NAME}.service",
+        "Before": f"{BROKKR_SERVICE_NAME}",
         },
     "Service": {
         "Type": "simple",
@@ -77,6 +81,6 @@ AUTOSSH_SERVICE_DEFAULTS = {
     }
 
 AUTOSSH_SERVICE_KWARGS = {
-    "service_filename": f"autossh-{PACKAGE_NAME}.service",
+    "service_filename": AUTOSSH_SERVICE_NAME,
     "service_settings": AUTOSSH_SERVICE_DEFAULTS,
     }

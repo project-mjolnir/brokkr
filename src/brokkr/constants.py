@@ -23,7 +23,7 @@ OUTPUT_SUBPATH_LOG = Path("log")
 OUTPUT_SUBPATH_MONITOR = Path("telemetry")
 
 # Mode preset subpaths
-OUTPUT_SUBPATH_DEFAULT = Path("data")
+OUTPUT_SUBPATH_DEFAULT = Path("{system_name}")
 OUTPUT_SUBPATH_REALTIME = Path("realtime")
 OUTPUT_SUBPATH_TEST = Path("test")
 

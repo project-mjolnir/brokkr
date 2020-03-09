@@ -34,9 +34,10 @@ def render_output_filename(
         **filename_args,
         ):
     # Add master output path to output path if is relative
-    if (not output_path.is_absolute()
-            and CONFIG["general"]["output_path_client"]):
-        output_path = CONFIG["general"]["output_path_client"] / output_path
+    output_path_root = Path(CONFIG["general"]["output_path_client"].as_posix()
+                            .format(system_name=METADATA["name"]))
+    if not output_path.is_absolute() and output_path_root:
+        output_path = output_path_root / output_path
     output_path = brokkr.utils.misc.convert_path(output_path)
 
     system_prefix = CONFIG["general"]["system_prefix"]

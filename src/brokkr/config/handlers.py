@@ -97,7 +97,7 @@ DEFAULT_CONFIG_LOG = {
             "class": "logging.handlers.RotatingFileHandler",
             "filename":
                 (OUTPUT_SUBPATH_LOG
-                 / (PACKAGE_NAME + "_{system_name}_{unit_number:0>2}.log"))
+                 / (PACKAGE_NAME + "_{system_name}_{unit_number:0>4}.log"))
                 .as_posix(),
             "formatter": "detailed",
             "level": DEFAULT_LOG_LEVEL,
@@ -132,7 +132,7 @@ DEFAULT_CONFIG_MAIN = {
         "ip_sensor": "",
         "na_marker": "NA",
         "output_filename_client":
-            "{output_type}_{system_name}_{unit_number:0>2}_{utc_date!s}.csv",
+            "{output_type}_{system_name}_{unit_number:0>4}_{utc_date!s}.csv",
         "output_path_client": OUTPUT_PATH_DEFAULT.as_posix(),
         "system_prefix": "",
         "worker_shutdown_wait_s": 10,
