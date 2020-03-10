@@ -87,12 +87,13 @@ AUTOSSH_SERVICE_DEFAULTS = {
             '-o "CheckHostIP no" -o "UserKnownHostsFile /dev/null" '
             '-o "ExitOnForwardFailure yes" -o "TCPKeepAlive yes" '
             '-o "ServerAliveInterval 60" -o "ServerAliveCountMax 3" '
+            f'-p {CONFIG["link"]["server_port"]} '
             f'-R {AUTOSSH_REMOTE_PORT}:localhost:'
             f'{CONFIG["link"]["local_port"]} '
             f'{CONFIG["link"]["server_username"]}'
             f'{"@" if CONFIG["link"]["server_username"] else ""}'
             f'{CONFIG["link"]["server_hostname"]}'
-            f':{CONFIG["link"]["server_port"]}'
+
             ),
         "Restart": "always",
         "RestartSec": str(60),

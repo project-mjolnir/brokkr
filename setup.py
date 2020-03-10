@@ -3,8 +3,10 @@
 Setup script for Brokkr, a scientific IoT sensor client.
 """
 
+# Standard library imports
 from pathlib import Path
 
+# Third party imports
 import setuptools
 
 
@@ -12,14 +14,14 @@ PROJECT_NAME = "brokkr"
 
 
 with open(Path(__file__).resolve().parent / "README.md",
-          "r", encoding="utf-8") as readme_file:
+          mode="r", encoding="utf-8") as readme_file:
     LONG_DESCRIPTION = readme_file.read()
 
 # Single source the version; based on a PyPA pattern and exec is nessesary
 VERSION = {}
 with open(Path(__file__).resolve().parent
           / "src" / PROJECT_NAME / "_version.py",
-          "r", encoding="utf-8") as version_file:
+          mode="r", encoding="utf-8") as version_file:
     exec(version_file.read(), VERSION)  # pylint: disable=exec-used
 
 
@@ -41,6 +43,7 @@ setuptools.setup(
     install_requires=[
         "pymodbus",
         "pyserial",
+        "serviceinstaller >= 0.1.2 ; sys_platform=='linux'",
         "toml",
         ],
     entry_points={
