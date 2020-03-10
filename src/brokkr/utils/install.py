@@ -18,7 +18,6 @@ except ModuleNotFoundError:  # If its not installed, eg. on non-Linux platforms
 
 # Local imports
 import brokkr.config.base
-from brokkr.constants import CONFIG_PATH_LOCAL
 import brokkr.config.handlers
 import brokkr.utils.log
 import brokkr.utils.misc
@@ -128,15 +127,6 @@ def install_service(platform=None):
 
 
 @brokkr.utils.log.basic_logging
-def install_config():
-    config_handlers = brokkr.config.handlers.ALL_CONFIG_HANDLERS
-    for config_name, handler in config_handlers.items():
-        logging.debug("Installing %s config...", config_name)
-        handler.read_configs()
-    logging.info("Config files installed to %r", CONFIG_PATH_LOCAL.as_posix())
-
-
-@brokkr.utils.log.basic_logging
 def install_dialout():
     logging.debug("Enabling serial port access for user %s...",
                   brokkr.utils.misc.get_actual_username())
@@ -209,8 +199,6 @@ def install_udev(
 @brokkr.utils.log.basic_logging
 def install_all(no_install_services=False):
     logging.debug("Installing all Brokkr external componenets...")
-
-    install_config()
 
     if sys.platform.startswith("linux") or sys.platform.startswith("win"):
         install_firewall()

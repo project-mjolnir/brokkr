@@ -10,6 +10,7 @@ from pathlib import Path
 from brokkr.constants import (
     CONFIG_NAME_SYSTEMPATH,
     CONFIG_NAME_UNIT,
+    CONFIG_PATH_LOCAL,
     LEVEL_NAME_DEFAULTS,
     LEVEL_NAME_LOCAL,
     )
@@ -31,6 +32,15 @@ def _write_config_file_wrapper(config_name, config_data,
     config_source.write_config(config_data)
     logging.info("%s config file updated in %r", config_name.title(),
                  config_source.path.as_posix())
+
+
+@brokkr.utils.log.basic_logging
+def configure_init():
+    config_handlers = brokkr.config.handlers.ALL_CONFIG_HANDLERS
+    for config_name, handler in config_handlers.items():
+        logging.debug("Initializing %s config...", config_name)
+        handler.read_configs()
+    logging.info("Config files installed to %r", CONFIG_PATH_LOCAL.as_posix())
 
 
 @brokkr.utils.log.basic_logging

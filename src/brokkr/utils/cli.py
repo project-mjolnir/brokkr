@@ -115,12 +115,6 @@ def generate_argparser_main():
         help="Manually override automatic platform detection")
     verbose_parsers.append(parser_install_autossh)
 
-    # Parser for the install-config subcommand
-    parser_install_config = subparsers.add_parser(
-        "install-config", help="Install Brokkr's config files for the system",
-        argument_default=argparse.SUPPRESS)
-    verbose_parsers.append(parser_install_config)
-
     # Parser for the install-dialout subcommand
     parser_install_dialout = subparsers.add_parser(
         "install-dialout", help="Enable serial port access for the user",
@@ -147,6 +141,12 @@ def generate_argparser_main():
         "install-udev", help="Enable full access to USB ports via udev rules",
         argument_default=argparse.SUPPRESS)
     verbose_parsers.append(parser_install_udev)
+
+    # Parser for the configure-init subcommand
+    parser_configure_init = subparsers.add_parser(
+        "configure-init", help="Install and initialize Brokkr's config files",
+        argument_default=argparse.SUPPRESS)
+    verbose_parsers.append(parser_configure_init)
 
     # Parser for the configure-reset subcommand
     parser_configure_reset = subparsers.add_parser(
