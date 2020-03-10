@@ -85,45 +85,59 @@ def configure_unit(number, network_interface, site_description=""):
     return unit_config_data
 
 
-def _delete_systempath(system_alias, systempath_config, skip_verify=False):
+def _deregister_systempath(system_alias, systempath_config, skip_verify=False):
     if systempath_config["default_system"] == system_alias:
         systempath_config["default_system"] = ""
         logging.warning(
-            "Deleted default system %s; ensure you set another as default",
+            "Deregistering default system %s; ensure you set another",
             system_alias)
     try:
         del systempath_config["system_paths"][system_alias]
+        logging.info("System %s deregistered", system_alias)
     except KeyError:
         if not skip_verify:
             logging.error("System %s not registered in system list %r",
                           system_alias,
                           set(systempath_config["system_paths"].keys()))
+            return systempath_config
+        logging.info("System %s not registered in system list %r",
+                     system_alias,
+                     set(systempath_config["system_paths"].keys()))
+
     return systempath_config
 
 
 def _configure_system(
         system_alias, system_path=None,
         set_default=None, reset=False, skip_verify=False):
-    # pylint: disable=import-outside-toplevel
+    # pylint: disable=import-outside-toplevel, too-many-branches
     from brokkr.config.systempath import SYSTEMPATH_CONFIGS
     config_handler_systempath = (
         brokkr.config.systempathhandler.CONFIG_HANDLER_SYSTEMPATH)
-    config_levels = {LEVEL_NAME_DEFAULTS}
-    if not reset:
-        config_levels = config_levels | {LEVEL_NAME_LOCAL}
-    systempath_config = config_handler_systempath.render_config(
-        {key: value for key, value in SYSTEMPATH_CONFIGS.items()
-         if key in config_levels})
+    config_levels_current = {LEVEL_NAME_DEFAULTS, LEVEL_NAME_LOCAL}
+    if reset:
+        config_levels_new = {LEVEL_NAME_DEFAULTS}
+        logging.info("Reset systempath configuration")
+    else:
+        config_levels_new = config_levels_current
+    current_config, systempath_config = tuple(
+        (config_handler_systempath.render_config(
+            {key: value for key, value in SYSTEMPATH_CONFIGS.items()
+             if key in config_levels})
+         for config_levels in (config_levels_current, config_levels_new)))
 
     # Delete system path entry if a falsy value is passed for it
     if system_path in {"", " ", False}:
-        systempath_config = _delete_systempath(
+        logging.debug("Deregistering system %s", system_alias)
+        systempath_config = _deregister_systempath(
             system_alias, systempath_config, skip_verify=skip_verify)
     else:
         if set_default is None and system_alias:
             set_default = not systempath_config["default_system"]
+            logging.debug("Set default not passed, assuming %s", set_default)
         if system_path is not None:
             if not skip_verify:
+                logging.debug("Verifying system path %r", system_path)
                 config_handler_metadata = (
                     brokkr.config.handlers.CONFIG_HANDLER_METADATA)
                 system_path_valid = brokkr.utils.misc.validate_system_path(
@@ -135,22 +149,39 @@ def _configure_system(
                                   "Use --skip-verify to skip this check.",
                                   system_path)
                     return systempath_config
+                logging.debug("System path valid")
+            else:
+                logging.debug("Skipping verification of system path %s",
+                              system_path)
+            logging.info("Setting system path for system %s", system_alias)
             systempath_config["system_paths"][system_alias] = (
                 Path(system_path).as_posix())
         if set_default:
-            if not skip_verify:
-                try:
-                    systempath_config["system_paths"][system_alias]
-                except KeyError:
+            logging.debug("Checking that system is registered")
+            try:
+                # pylint: disable=pointless-statement
+                systempath_config["system_paths"][system_alias]
+                logging.debug("System is registered")
+            except KeyError:
+                if not skip_verify:
                     logging.error(
                         "System %s not registered in system list %r",
                         system_alias,
                         set(systempath_config["system_paths"].keys()))
                     return systempath_config
+                logging.info(
+                    "System %s not registered in system list %r",
+                    system_alias,
+                    set(systempath_config["system_paths"].keys()))
             systempath_config["default_system"] = system_alias
+            logging.info("Set default to system %s", system_alias)
 
-    _write_config_file_wrapper(
-        CONFIG_NAME_SYSTEMPATH, systempath_config)
+    if systempath_config != current_config:
+        logging.debug("Changes detected in config, writing output")
+        _write_config_file_wrapper(
+            CONFIG_NAME_SYSTEMPATH, systempath_config)
+    else:
+        logging.debug("No changes to write")
     return systempath_config
 
 
@@ -161,20 +192,24 @@ def configure_system(
     # pylint: disable=import-outside-toplevel
     if reset or (system_name is not None and (system_config_path is not None
                                               or default)):
-        _configure_system(
+        logging.debug("Setting system data")
+        systempath_config = _configure_system(
             system_name, system_config_path, set_default=default,
             reset=reset, skip_verify=skip_verify)
-        return
+        return systempath_config
 
+    logging.debug("Printing system data")
     from brokkr.config.systempath import SYSTEMPATH_CONFIGS
     if len(SYSTEMPATH_CONFIGS[LEVEL_NAME_LOCAL]) <= 1:
         print("No system paths configured.")
-        return
+        logging.debug("Full configs: %r", SYSTEMPATH_CONFIGS)
+        return SYSTEMPATH_CONFIGS[LEVEL_NAME_LOCAL]
     config_handler_systempath = (
         brokkr.config.systempathhandler.CONFIG_HANDLER_SYSTEMPATH)
     systempath_config = config_handler_systempath.render_config(
         {key: value for key, value in SYSTEMPATH_CONFIGS.items()
          if key in {LEVEL_NAME_DEFAULTS, LEVEL_NAME_LOCAL}})
+    logging.debug("Got systempath config %r", systempath_config)
 
     default_system = systempath_config["default_system"]
     if system_name is None:
@@ -196,3 +231,5 @@ def configure_system(
                   f"(Default: {system_name == default_system})")
         except KeyError:
             print(f"System path {system_name} not found")
+
+    return systempath_config

@@ -193,7 +193,7 @@ def generate_argparser_main():
         "system_config_path", nargs="?",
         help=("The path to the sensor system config directory to set."
               "If not passed, will print the current path of 'system_name'. "
-              "If '' or ' ' is passed, will unregister 'system_name'."))
+              "If '' or ' ' is passed, will deregister 'system_name'."))
     parser_configure_system.add_argument(
         "--default", action="store_true",
         help=("Set the passed system as the default one. "
