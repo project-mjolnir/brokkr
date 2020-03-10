@@ -18,14 +18,16 @@ from brokkr.constants import (
     PACKAGE_NAME,
     SYSTEM_SUBPATH_CONFIG,
     )
+import brokkr.utils.misc
 
 
-CONFIG_PATH_SYSTEM = SYSTEMPATH_CONFIG["system_path"] / SYSTEM_SUBPATH_CONFIG
+SYSTEM_PATH = brokkr.utils.misc.get_system_path(SYSTEMPATH_CONFIG)
+SYSTEM_CONFIG_PATH = SYSTEM_PATH / SYSTEM_SUBPATH_CONFIG
 
 CONFIG_HANDLER_FACTORY = brokkr.config.base.ConfigHandlerFactory(
     level_presets=brokkr.config.base.CONFIG_LEVEL_PRESETS,
     local_config_path=CONFIG_PATH_LOCAL,
-    preset_config_path=CONFIG_PATH_SYSTEM,
+    preset_config_path=SYSTEM_CONFIG_PATH,
     config_version=CONFIG_VERSION,
     )
 

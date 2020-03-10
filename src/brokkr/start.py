@@ -22,34 +22,35 @@ CONFIG_REQUIRE = ["systempath", "unit"]
 # --- Startup helper functions --- #
 
 def warn_on_startup_issues():
-    from brokkr.config.systempathhandler import CONFIG_HANDLER_SYSTEMPATH
     from brokkr.config.systempath import SYSTEMPATH_CONFIG
     from brokkr.config.handlers import (CONFIG_HANDLER_UNIT,
                                         CONFIG_HANDLER_METADATA)
     from brokkr.config.unit import UNIT_CONFIGS
+    import brokkr.utils.misc
 
     logger = logging.getLogger(__name__)
 
-    # Avoid users trying to start Brokkr without setting up the basic config
     issues_found = False
-    system_path = SYSTEMPATH_CONFIG["system_path"]
-    if not system_path:
-        logger.warning(
-            "No system path config found at %r, falling back to defaults",
-            CONFIG_HANDLER_SYSTEMPATH.config_levels["local"].path.as_posix())
+
+    # Avoid users trying to start Brokkr without setting up the basic config
+    try:
+        system_path = brokkr.utils.misc.get_system_path(
+            SYSTEMPATH_CONFIG, errors="raise")
+    except RuntimeError as e:
+        logger.warning("%s getting system path: %s", type(e).__name__, e)
+        logger.debug("Error details:", exc_info=True)
         issues_found = True
-    if not Path(system_path).exists():
-        logger.error(
-            "No system config directory found at system path %r",
-            SYSTEMPATH_CONFIG["system_path"].as_posix())
+    except KeyError as e:
+        logger.error("System path %s not found in %r", type(e).__name__, e)
+        logger.info("Error details:", exc_info=True)
         issues_found = True
     else:
-        if not (CONFIG_HANDLER_METADATA.config_levels[LEVEL_NAME_SYSTEM]
-                .path.exists()):
-            logger.warning(
-                "No system config directory found at system path %r",
-                SYSTEMPATH_CONFIG["system_path"].as_posix())
-            issues_found = True
+        issues_found = not brokkr.utils.misc.validate_system_path(
+            system_path=system_path,
+            metadata_handler=CONFIG_HANDLER_METADATA,
+            logger=logger,
+            )
+
     if UNIT_CONFIGS["local"].get("number", None) is None:
         logger.warning(
             "No local unit config found at %r, falling back to defaults",

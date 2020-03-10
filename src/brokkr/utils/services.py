@@ -8,6 +8,7 @@ import sys
 # Local imports
 from brokkr.config.main import CONFIG
 from brokkr.config.metadata import METADATA
+from brokkr.config.systempath import SYSTEMPATH_CONFIG
 from brokkr.config.unit import UNIT_CONFIG
 from brokkr.constants import PACKAGE_NAME
 
@@ -19,10 +20,30 @@ AUTOSSH_SERVICE_NAME = "autossh-{}.service".format(METADATA["name"])
 BROKKR_SERVICE_NAME = "{package_name}-{system_name}.service".format(
     package_name=PACKAGE_NAME, system_name=METADATA["name"])
 
+# Get system fullname
+if METADATA["name_full"]:
+    SYSTEM_FULLNAME = METADATA["name_full"]
+elif METADATA["name_full"]:
+    SYSTEM_FULLNAME = METADATA["name"]
+else:
+    SYSTEM_FULLNAME = "Unknown System"
+
+
+# Set the system path based on the current system settings
+CURRENT_SYSTEM_ALIAS = SYSTEMPATH_CONFIG["default_system"]
+SYSTEM_OVERRIDE_PATH = SYSTEMPATH_CONFIG["system_path_override"]
+
+if SYSTEM_OVERRIDE_PATH:
+    SYSTEM_PARAMETER = f" --system-path {SYSTEM_OVERRIDE_PATH}"
+elif CURRENT_SYSTEM_ALIAS:
+    SYSTEM_PARAMETER = f" --system {CURRENT_SYSTEM_ALIAS}"
+else:
+    SYSTEM_PARAMETER = ""
+
 
 BROKKR_SERVICE_DEFAULTS = {
     "Unit": {
-        "Description": f"Brokkr IoT Monitoring, Logging and Control Client",
+        "Description": f"Brokkr IoT Sensor Client for {SYSTEM_FULLNAME}",
         "Wants": (
             "network-online.target systemd-time-wait-sync.service "
             "systemd-timesyncd.service sshd.service "
@@ -35,7 +56,7 @@ BROKKR_SERVICE_DEFAULTS = {
         },
     "Service": {
         "Type": "simple",
-        "ExecStart": f"{sys.executable} -m brokkr start",
+        "ExecStart": f"{sys.executable} -m brokkr{SYSTEM_PARAMETER} start",
         "Restart": "on-failure",
         "RestartSec": str(15),
         "TimeoutStartSec": str(30),
@@ -53,7 +74,7 @@ BROKKR_SERVICE_KWARGS = {
 
 AUTOSSH_SERVICE_DEFAULTS = {
     "Unit": {
-        "Description": "AutoSSH tunnel for Brokkr client",
+        "Description": "Brokkr AutoSSH tunnel for {SYSTEM_FULLNAME}",
         "Wants": "network-online.target sshd.service",
         "After": "network-online.target multi-user.target sshd.service",
         "Before": f"{BROKKR_SERVICE_NAME}",

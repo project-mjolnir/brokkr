@@ -14,7 +14,7 @@ import threading
 import time
 
 # Local imports
-from brokkr.constants import SLEEP_TICK_S
+from brokkr.constants import SLEEP_TICK_S, LEVEL_NAME_SYSTEM
 
 
 # Constants for run periodic
@@ -76,6 +76,66 @@ def convert_path(path):
     path = Path(
         str(path).replace("~", "~" + os.getenv("SUDO_USER", ""))).expanduser()
     return path
+
+
+# --- System path utilities --- #
+
+def get_system_path(systempath_config, errors="ignore"):
+    # Replace errors with enum
+    error_modes = {"raise", "ignore"}
+    if errors not in error_modes:
+        raise ValueError(f"Errors must be one of {error_modes}, not {errors}")
+    default_system = systempath_config["default_system"]
+    system_paths = systempath_config["system_paths"]
+    system_path_override = systempath_config["system_path_override"]
+
+    if system_path_override:
+        return system_path_override
+
+    if not system_paths:
+        if errors == "raise":
+            raise RuntimeError("No system paths configured; no override set")
+        return Path()
+
+    if not default_system:
+        if errors == "raise":
+            raise RuntimeError("No system name configured; no override set")
+        return Path()
+
+    try:
+        system_path = system_paths[default_system]
+    except KeyError:
+        if errors == "raise":
+            raise KeyError(f"System {default_system} not in {system_paths!r}")
+        return Path()
+
+    return convert_path(system_path)
+
+
+def validate_system_path(system_path, metadata_handler, logger=None):
+    if logger is None:
+        logger = logging.getLogger()
+    if not system_path or system_path == Path():
+        logger.error(
+            "System path %r is empty", system_path)
+        return False
+
+    system_path = convert_path(system_path)
+    if not Path(system_path).exists():
+        logger.error(
+            "No system config directory found at system path %r",
+            system_path.as_posix())
+        return False
+
+    metadata_path = system_path / (
+        metadata_handler.config_levels[LEVEL_NAME_SYSTEM].path.name)
+    if not convert_path(metadata_path).exists():
+        logger.error(
+            "No system metadata found at system path %r",
+            system_path.as_posix())
+        return False
+
+    return True
 
 
 # --- Common utility mixins and decorators --- #

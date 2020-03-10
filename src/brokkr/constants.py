@@ -46,6 +46,7 @@ CONFIG_NAME_LOG = "log"
 CONFIG_NAME_MAIN = "main"
 
 # Config level names
+LEVEL_NAME_DEFAULTS = "defaults"
 LEVEL_NAME_SYSTEM = "system"
 LEVEL_NAME_SYSTEM_CLIENT = "client"
 LEVEL_NAME_REMOTE = "remote"

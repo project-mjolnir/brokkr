@@ -21,11 +21,18 @@ CONFIG_HANDLER_FACTORY = brokkr.config.base.ConfigHandlerFactory(
 
 
 DEFAULT_CONFIG_SYSTEMPATH = {
-    "system_path": "",
+    "default_system": "",
+    "system_path_override": "",
+    "system_paths": {},
     }
 ENV_VARIABLES_SYSTEMPATH = {
-    (PACKAGE_NAME.upper() + "_SYSTEM_PATH"): ("system_path",)}
-CLI_ARGUMENTS_SYSTEMPATH = {"system_path": ("system_path",)}
+    (PACKAGE_NAME.upper() + "_SYSTEM"): ("default_system",),
+    (PACKAGE_NAME.upper() + "_SYSTEM_PATH"): ("system_path_override",),
+    }
+CLI_ARGUMENTS_SYSTEMPATH = {
+    "system": ("default_system_path",),
+    "system_path": ("system_path_override",),
+    }
 
 CONFIG_HANDLER_SYSTEMPATH = CONFIG_HANDLER_FACTORY.create_config_handler(
     name=CONFIG_NAME_SYSTEMPATH,

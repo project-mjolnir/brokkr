@@ -13,13 +13,15 @@ import brokkr.config.handlers
 
 VERSION_PARAM = "version"
 SUBCOMMAND_PARAM = "subcommand_name"
+SYSTEM_PARAM = "system"
 SYSTEM_PATH_PARAM = "system_path"
 MODE_PARAM = "mode"
 
 INTERVAL_S_DEFAULT = 1
 
 ARGS_TODELETE = {
-    VERSION_PARAM, SUBCOMMAND_PARAM, SYSTEM_PATH_PARAM, MODE_PARAM}
+    VERSION_PARAM, SUBCOMMAND_PARAM,
+    SYSTEM_PARAM, SYSTEM_PATH_PARAM, MODE_PARAM}
 
 
 def generate_argparser_main():
@@ -31,9 +33,13 @@ def generate_argparser_main():
         "--version", action="store_true", dest=VERSION_PARAM,
         help="If passed, will print the version and exit")
     parser_main.add_argument(
+        "--system", dest=SYSTEM_PARAM,
+        help=("Use the system path registered in the systempath.toml file "
+              "that matches the passed system name, overriding the default."))
+    parser_main.add_argument(
         "--system-path", dest=SYSTEM_PATH_PARAM,
         help=("Sets the directory to use to load system config data. "
-              "Overrides the settings in the config file and the env var."))
+              "Overrides the settings in the config, env var and --system."))
     parser_main.add_argument(
         "--mode", dest=MODE_PARAM,
         help=("Sets the mode config preset to use"))
@@ -179,8 +185,25 @@ def generate_argparser_main():
         "configure-system", help="Set up sensor system configuration",
         argument_default=argparse.SUPPRESS)
     parser_configure_system.add_argument(
-        "system_config_path",
-        help="The path to the sensor system config directory")
+        "system_name", nargs="?",
+        help=("The system name to act on (show, add, update, remove). "
+              "If --default is passed, will set it as the default. "
+              "If not passed, will print all system paths (or the default)."))
+    parser_configure_system.add_argument(
+        "system_config_path", nargs="?",
+        help=("The path to the sensor system config directory to set."
+              "If not passed, will print the current path of 'system_name'. "
+              "If '' or ' ' is passed, will unregister 'system_name'."))
+    parser_configure_system.add_argument(
+        "--default", action="store_true",
+        help=("Set the passed system as the default one. "
+              "Will be done automatically if it is the first system set."))
+    parser_configure_system.add_argument(
+        "--reset", action="store_true",
+        help="Reset the system path config before adding a new path")
+    parser_configure_system.add_argument(
+        "--skip-verify", action="store_true",
+        help="Skip various verification steps that validate the name and path")
     verbose_parsers.append(parser_configure_system)
 
     # Add common parameters to subcommand groups
