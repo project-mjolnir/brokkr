@@ -155,8 +155,8 @@ def generate_argparser_main():
         choices={"all", *brokkr.config.handlers.ALL_CONFIG_LEVEL_NAMES},
         help="Which config levels to reset; by default, resets all of them")
     parser_configure_reset.add_argument(
-        "--include-system", action="store_true",
-        help="Don't attempt to install distro package, just service unit")
+        "--include-systempath", action="store_true",
+        help="Reset the registered system paths along with the other config")
     verbose_parsers.append(parser_configure_reset)
 
     # Parser for the configure-unit subcommand

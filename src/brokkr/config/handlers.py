@@ -9,7 +9,7 @@ from brokkr.constants import (
     CONFIG_NAME_METADATA,
     CONFIG_NAME_MODE,
     CONFIG_NAME_MAIN,
-    CONFIG_NAME_SYSTEM,
+    CONFIG_NAME_SYSTEMPATH,
     CONFIG_NAME_UNIT,
     CONFIG_PATH_LOCAL,
     CONFIG_VERSION,
@@ -23,11 +23,11 @@ from brokkr.constants import (
     SYSTEM_SUBPATH_CONFIG,
     )
 from brokkr.config.mode import MODE_CONFIG
-from brokkr.config.system import SYSTEM_CONFIG
-import brokkr.config.systemhandler
+from brokkr.config.systempath import SYSTEMPATH_CONFIG
+import brokkr.config.systempathhandler
 
 
-CONFIG_PATH_SYSTEM = SYSTEM_CONFIG["system_path"] / SYSTEM_SUBPATH_CONFIG
+CONFIG_PATH_SYSTEM = SYSTEMPATH_CONFIG["system_path"] / SYSTEM_SUBPATH_CONFIG
 MODE_OVERLAYS = MODE_CONFIG[MODE_CONFIG["mode"]]
 
 
@@ -73,7 +73,7 @@ CONFIG_HANDLER_METADATA = CONFIG_HANDLER_FACTORY.create_config_handler(
         LEVEL_NAME_SYSTEM,
         ],
     defaults=DEFAULT_CONFIG_METADATA,
-    preset_config_path=SYSTEM_CONFIG["system_path"],
+    preset_config_path=SYSTEMPATH_CONFIG["system_path"],
     )
 
 
@@ -181,8 +181,8 @@ CONFIG_LEVEL_NAMES = {
     for config_level in handler.config_levels.values()}
 
 ALL_CONFIG_HANDLERS = {
-    **{CONFIG_NAME_SYSTEM:
-       brokkr.config.systemhandler.CONFIG_HANDLER_SYSTEM},
+    **{CONFIG_NAME_SYSTEMPATH:
+       brokkr.config.systempathhandler.CONFIG_HANDLER_SYSTEMPATH},
     **{CONFIG_NAME_MODE:
        brokkr.config.modehandler.CONFIG_HANDLER_MODE},
     **CONFIG_HANDLERS,

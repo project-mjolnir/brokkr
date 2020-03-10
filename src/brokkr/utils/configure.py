@@ -8,7 +8,7 @@ from pathlib import Path
 
 # Local imports
 from brokkr.constants import (
-    CONFIG_NAME_SYSTEM,
+    CONFIG_NAME_SYSTEMPATH,
     CONFIG_NAME_UNIT,
     )
 import brokkr.config.handlers
@@ -32,13 +32,13 @@ def _write_config_file_wrapper(config_name, config_data,
 
 @brokkr.utils.log.basic_logging
 def configure_reset(reset_names=ALL_RESET, reset_levels=ALL_RESET,
-                    include_system=None):
-    # Include system config in configs to reset only if explictly specified
-    if include_system is None:
-        include_system = (
+                    include_systempath=None):
+    # Include systempath config in configs to reset only if explictly specified
+    if include_systempath is None:
+        include_systempath = (
             reset_names != ALL_RESET
-            and CONFIG_NAME_SYSTEM in reset_names)
-    if include_system:
+            and CONFIG_NAME_SYSTEMPATH in reset_names)
+    if include_systempath:
         config_handlers = brokkr.config.handlers.ALL_CONFIG_HANDLERS
     else:
         config_handlers = brokkr.config.handlers.CONFIG_HANDLERS
@@ -74,9 +74,9 @@ def configure_unit(number, network_interface, site_description=""):
 
 @brokkr.utils.log.basic_logging
 def configure_system(system_config_path):
-    system_config_data = {
+    systempath_config_data = {
         "system_path": Path(system_config_path).as_posix(),
         }
     _write_config_file_wrapper(
-        CONFIG_NAME_SYSTEM, system_config_data)
-    return system_config_data
+        CONFIG_NAME_SYSTEMPATH, systempath_config_data)
+    return systempath_config_data

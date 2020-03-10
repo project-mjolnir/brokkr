@@ -16,14 +16,14 @@ from brokkr.constants import LEVEL_NAME_SYSTEM, PACKAGE_NAME
 import brokkr.utils.log
 
 
-CONFIG_REQUIRE = ["system", "unit"]
+CONFIG_REQUIRE = ["systempath", "unit"]
 
 
 # --- Startup helper functions --- #
 
 def warn_on_startup_issues():
-    from brokkr.config.systemhandler import CONFIG_HANDLER_SYSTEM
-    from brokkr.config.system import SYSTEM_CONFIG
+    from brokkr.config.systempathhandler import CONFIG_HANDLER_SYSTEMPATH
+    from brokkr.config.systempath import SYSTEMPATH_CONFIG
     from brokkr.config.handlers import (CONFIG_HANDLER_UNIT,
                                         CONFIG_HANDLER_METADATA)
     from brokkr.config.unit import UNIT_CONFIGS
@@ -32,23 +32,23 @@ def warn_on_startup_issues():
 
     # Avoid users trying to start Brokkr without setting up the basic config
     issues_found = False
-    system_path = SYSTEM_CONFIG["system_path"]
+    system_path = SYSTEMPATH_CONFIG["system_path"]
     if not system_path:
         logger.warning(
             "No system path config found at %r, falling back to defaults",
-            CONFIG_HANDLER_SYSTEM.config_levels["local"].path.as_posix())
+            CONFIG_HANDLER_SYSTEMPATH.config_levels["local"].path.as_posix())
         issues_found = True
     if not Path(system_path).exists():
         logger.error(
             "No system config directory found at system path %r",
-            SYSTEM_CONFIG["system_path"].as_posix())
+            SYSTEMPATH_CONFIG["system_path"].as_posix())
         issues_found = True
     else:
         if not (CONFIG_HANDLER_METADATA.config_levels[LEVEL_NAME_SYSTEM]
                 .path.exists()):
             logger.warning(
                 "No system config directory found at system path %r",
-                SYSTEM_CONFIG["system_path"].as_posix())
+                SYSTEMPATH_CONFIG["system_path"].as_posix())
             issues_found = True
     if UNIT_CONFIGS["local"].get("number", None) is None:
         logger.warning(
@@ -64,7 +64,7 @@ def log_config_info(log_config=None, logger=None):
     from brokkr.config.log import LOG_CONFIG, LOG_CONFIGS
     from brokkr.config.main import CONFIG, CONFIGS
     from brokkr.config.metadata import METADATA, METADATA_CONFIGS
-    from brokkr.config.system import SYSTEM_CONFIG, SYSTEM_CONFIGS
+    from brokkr.config.systempath import SYSTEMPATH_CONFIG, SYSTEMPATH_CONFIGS
     from brokkr.config.unit import UNIT_CONFIG, UNIT_CONFIGS
 
     if logger is None:
@@ -74,7 +74,7 @@ def log_config_info(log_config=None, logger=None):
 
     # Print config information
     for config_name, config_data in {
-            "System path": (SYSTEM_CONFIG, SYSTEM_CONFIGS),
+            "Systempath": (SYSTEMPATH_CONFIG, SYSTEMPATH_CONFIGS),
             "Metadata": (METADATA, METADATA_CONFIGS),
             "Unit": (UNIT_CONFIG, UNIT_CONFIGS),
             "Log": (log_config, LOG_CONFIGS),

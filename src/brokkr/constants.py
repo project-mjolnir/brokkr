@@ -38,7 +38,7 @@ SYSTEM_SUBPATH_CONFIG = Path("config")
 # --- Config constants ---
 
 # Config type names
-CONFIG_NAME_SYSTEM = "system"
+CONFIG_NAME_SYSTEMPATH = "systempath"
 CONFIG_NAME_MODE = "mode"
 CONFIG_NAME_METADATA = "metadata"
 CONFIG_NAME_UNIT = "unit"

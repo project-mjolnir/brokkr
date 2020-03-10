@@ -1,10 +1,10 @@
 """
-The configuration handler for the config modes system, loaded after systempath.
+The configuration handler for the config mode system, loaded after systempath.
 """
 
 # Local imports
 import brokkr.config.base
-from brokkr.config.system import SYSTEM_CONFIG
+from brokkr.config.systempath import SYSTEMPATH_CONFIG
 from brokkr.constants import (
     CONFIG_NAME_MAIN,
     CONFIG_NAME_MODE,
@@ -20,7 +20,7 @@ from brokkr.constants import (
     )
 
 
-CONFIG_PATH_SYSTEM = SYSTEM_CONFIG["system_path"] / SYSTEM_SUBPATH_CONFIG
+CONFIG_PATH_SYSTEM = SYSTEMPATH_CONFIG["system_path"] / SYSTEM_SUBPATH_CONFIG
 
 CONFIG_HANDLER_FACTORY = brokkr.config.base.ConfigHandlerFactory(
     level_presets=brokkr.config.base.CONFIG_LEVEL_PRESETS,
