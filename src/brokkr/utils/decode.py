@@ -95,13 +95,13 @@ class DataDecoder(brokkr.utils.misc.AutoReprMixin):
                         "%s decoding data %r for variable %r to %s: %s",
                         type(e).__name__, val,
                         variable.name, variable.output_type, e)
-                    LOGGER.info("Error details:", exc_info=1)
+                    LOGGER.info("Error details:", exc_info=True)
                 else:
                     LOGGER.info(
                         "%s decoding data %r for variable %r to %s: %s",
                         type(e).__name__, val,
                         variable.name, variable.output_type, e)
-                    LOGGER.debug("Error details:", exc_info=1)
+                    LOGGER.debug("Error details:", exc_info=True)
 
                 output_data[variable.name] = self.na_marker
                 error_count += 1
@@ -120,7 +120,7 @@ class DataDecoder(brokkr.utils.misc.AutoReprMixin):
         except Exception as e:
             if data_packet is not None:
                 LOGGER.error("%s unpacking data: %s", type(e).__name__, e)
-                LOGGER.info("Error details:", exc_info=1)
+                LOGGER.info("Error details:", exc_info=True)
                 LOGGER.info("Expected format: %r", self.struct_format)
                 LOGGER.info("Packet data: %r", data_packet.hex())
             else:

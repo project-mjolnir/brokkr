@@ -83,7 +83,7 @@ def write_line_csv(data, out_file, **csv_params):
     except Exception as e:
         LOGGER.error("%s writing output data to local CSV at %r: %s",
                      type(e).__name__, out_file, e)
-        LOGGER.info("Error details:", exc_info=1)
+        LOGGER.info("Error details:", exc_info=True)
         LOGGER.info("Data details: %r", data)
         return False
     finally:
@@ -93,4 +93,4 @@ def write_line_csv(data, out_file, **csv_params):
             except Exception as e:
                 LOGGER.warning("%s attempting to close output CSV %r: %s",
                                type(e).__name__, out_file, e)
-                LOGGER.info("Error details:", exc_info=1)
+                LOGGER.info("Error details:", exc_info=True)

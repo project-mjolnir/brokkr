@@ -63,12 +63,12 @@ def ping(host=CONFIG["general"]["ip_sensor"], timeout=None):
     except subprocess.TimeoutExpired:
         LOGGER.warning("Timeout in %s s running ping command %s",
                        timeout, " ".join(command))
-        LOGGER.debug("Error details:", exc_info=1)
+        LOGGER.debug("Error details:", exc_info=True)
         return -1
     except Exception as e:
         LOGGER.error("%s running ping command %s: %s",
                      type(e).__name__, " ".join(command), e)
-        LOGGER.info("Error details:", exc_info=1)
+        LOGGER.info("Error details:", exc_info=True)
         return -9
 
     LOGGER.debug("Ping command output: %r", ping_output)
@@ -97,7 +97,7 @@ def read_hs_packet(
         except Exception as e:
             LOGGER.error("%s connecting to H&S port %r: %s",
                          type(e).__name__, port, e)
-            LOGGER.info("Error details:", exc_info=1)
+            LOGGER.info("Error details:", exc_info=True)
             LOGGER.info("Socket details: %r", sock)
             return None
         try:
@@ -111,7 +111,7 @@ def read_hs_packet(
         except Exception as e:
             LOGGER.error("%s recieving H&S data on port %r: %s",
                          type(e).__name__, port, e)
-            LOGGER.info("Error details:", exc_info=1)
+            LOGGER.info("Error details:", exc_info=True)
             LOGGER.info("Socket details: %r", sock)
             return None
     if packet:

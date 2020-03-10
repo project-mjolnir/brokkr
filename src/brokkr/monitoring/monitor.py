@@ -77,7 +77,7 @@ def run_monitoring_pass(
                 print(f"Status data: {status_data}")
     except Exception as e:  # Keep recording data if an error occurs
         LOGGER.critical("%s caught at main level: %s", type(e).__name__, e)
-        LOGGER.info("Details:", exc_info=1)
+        LOGGER.info("Details:", exc_info=True)
         status_data = None
     if pretty:
         logging.disable(level=logging.CRITICAL)

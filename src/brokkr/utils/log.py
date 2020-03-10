@@ -40,7 +40,7 @@ def log_details(logger, error=None, **objs_tolog):
         logger = logging.info
     if error is None:
         # Add stacklevel in Python 3.8
-        logger("Error details:", exc_info=1)
+        logger("Error details:", exc_info=True)
     elif error:
         logger("Error details: %r", error.__dict__)
     for obj_name, obj_value in objs_tolog.items():
