@@ -170,14 +170,18 @@ def generate_argparser_main():
         "configure-unit", help="Set up per-unit configuration",
         argument_default=argparse.SUPPRESS)
     parser_configure_unit.add_argument(
-        "number", type=int,
-        help="The unit number of this particular Brokkr client")
+        "number", type=int, nargs="?", default=None,
+        help=("The unit number of this particular Brokkr client."
+              "If not passed, prints the unit information from the config."))
     parser_configure_unit.add_argument(
-        "network_interface",
+        "--network-interface",
         help="The network interface for uplink on particular Brokkr client")
     parser_configure_unit.add_argument(
-        "--site-description", default="",
+        "--site-description",
         help="An optional description of this particular Brokkr site")
+    parser_configure_unit.add_argument(
+        "--reset", action="store_true",
+        help="Reset the unit rather than updating the existing values")
     verbose_parsers.append(parser_configure_unit)
 
     # Parser for the configure-system subcommand

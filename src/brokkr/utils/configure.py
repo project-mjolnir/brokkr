@@ -21,6 +21,18 @@ import brokkr.utils.log
 
 ALL_RESET = "all"
 DEFAULT_CONFIG_LEVEL = "local"
+DEFAULT_CONFIG_LEVELS = {LEVEL_NAME_DEFAULTS, LEVEL_NAME_LOCAL}
+
+
+def _render_filtered_config(config_name, config_levels=None):
+    if config_levels is None:
+        config_levels = DEFAULT_CONFIG_LEVELS
+    config_handler = brokkr.config.handlers.ALL_CONFIG_HANDLERS[config_name]
+    all_configs = config_handler.read_configs()
+    filtered_config = config_handler.render_config(
+        {key: value for key, value in all_configs.items()
+         if key in config_levels})
+    return filtered_config
 
 
 def _write_config_file_wrapper(config_name, config_data,
@@ -73,16 +85,36 @@ def configure_reset(reset_names=ALL_RESET, reset_levels=ALL_RESET,
     logging.info("Reset %s configuration for %s", reset_levels, reset_names)
 
 
+def _configure_unit(reset=False, **unit_kwargs):
+    # pylint: disable=import-outside-toplevel
+    logging.debug("Seting new unit configuration: %r", unit_kwargs)
+    from brokkr.config.unit import UNIT_CONFIGS
+    if reset:
+        unit_config = {}
+        logging.info("Reset unit configuration")
+    else:
+        unit_config = UNIT_CONFIGS[LEVEL_NAME_LOCAL]
+        logging.debug("Current unit configuration: %r", unit_config)
+    unit_config = {**unit_config, **unit_kwargs}
+    logging.info("Set unit configuration: %r", unit_config)
+    _write_config_file_wrapper(CONFIG_NAME_UNIT, unit_config)
+    return unit_config
+
+
 @brokkr.utils.log.basic_logging
-def configure_unit(number, network_interface, site_description=""):
-    unit_config_data = {
-        "number": number,
-        "network_interface": network_interface,
-        "site_description": site_description,
-        }
-    _write_config_file_wrapper(
-        CONFIG_NAME_UNIT, unit_config_data)
-    return unit_config_data
+def configure_unit(reset=False, number=None, **unit_kwargs):
+    # pylint: disable=import-outside-toplevel
+    if number is not None or reset:
+        logging.debug("Setting unit config")
+        unit_config = _configure_unit(
+            reset=reset, number=number, **unit_kwargs)
+        return unit_config
+    print("Current rendered unit config:")
+    from brokkr.config.unit import UNIT_CONFIG
+    logging.debug("Raw unit config %r", UNIT_CONFIG)
+    for key, value in UNIT_CONFIG.items():
+        print(f"{key}: {value!r}")
+    return UNIT_CONFIG
 
 
 def _deregister_systempath(system_alias, systempath_config, skip_verify=False):
@@ -110,21 +142,14 @@ def _deregister_systempath(system_alias, systempath_config, skip_verify=False):
 def _configure_system(
         system_alias, system_path=None,
         set_default=None, reset=False, skip_verify=False):
-    # pylint: disable=import-outside-toplevel, too-many-branches
-    from brokkr.config.systempath import SYSTEMPATH_CONFIGS
-    config_handler_systempath = (
-        brokkr.config.systempathhandler.CONFIG_HANDLER_SYSTEMPATH)
-    config_levels_current = {LEVEL_NAME_DEFAULTS, LEVEL_NAME_LOCAL}
+    # pylint: disable=too-many-branches
+    current_config = _render_filtered_config(CONFIG_NAME_SYSTEMPATH)
     if reset:
-        config_levels_new = {LEVEL_NAME_DEFAULTS}
+        systempath_config = _render_filtered_config(
+            CONFIG_NAME_SYSTEMPATH, {LEVEL_NAME_DEFAULTS})
         logging.info("Reset systempath configuration")
     else:
-        config_levels_new = config_levels_current
-    current_config, systempath_config = tuple(
-        (config_handler_systempath.render_config(
-            {key: value for key, value in SYSTEMPATH_CONFIGS.items()
-             if key in config_levels})
-         for config_levels in (config_levels_current, config_levels_new)))
+        systempath_config = _render_filtered_config(CONFIG_NAME_SYSTEMPATH)
 
     # Delete system path entry if a falsy value is passed for it
     if system_path in {"", " ", False}:
@@ -204,12 +229,8 @@ def configure_system(
         print("No system paths configured.")
         logging.debug("Full configs: %r", SYSTEMPATH_CONFIGS)
         return SYSTEMPATH_CONFIGS[LEVEL_NAME_LOCAL]
-    config_handler_systempath = (
-        brokkr.config.systempathhandler.CONFIG_HANDLER_SYSTEMPATH)
-    systempath_config = config_handler_systempath.render_config(
-        {key: value for key, value in SYSTEMPATH_CONFIGS.items()
-         if key in {LEVEL_NAME_DEFAULTS, LEVEL_NAME_LOCAL}})
-    logging.debug("Got systempath config %r", systempath_config)
+    systempath_config = _render_filtered_config(CONFIG_NAME_SYSTEMPATH)
+    logging.debug("Got filtered systempath config %r", systempath_config)
 
     default_system = systempath_config["default_system"]
     if system_name is None:
