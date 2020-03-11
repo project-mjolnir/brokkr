@@ -3,6 +3,7 @@ Functions to get status information from a HAMMA2 sensor over Ethernet.
 """
 
 # Standard library imports
+import errno
 import logging
 import platform
 import socket
@@ -11,9 +12,15 @@ import subprocess
 # Local imports
 from brokkr.config.main import CONFIG
 import brokkr.utils.decode
+from brokkr.utils.log import log_details
 
 
 BUFFER_SIZE_HS = 128
+
+ERROR_CODES_LINK_DOWN = {
+    getattr(errno, "EADDRNOTAVAIL", None),
+    getattr(errno, "WSAEADDRNOTAVAIL", None),
+    }
 
 VARIABLE_PARAMS_HS = [
     {"name": "marker_val", "raw_type": "8s", "output_type": None},
@@ -77,7 +84,7 @@ def ping(host=CONFIG["general"]["ip_sensor"], timeout=None):
 
 def read_hs_packet(
         timeout=None,
-        host_address=CONFIG["general"]["ip_local"],
+        host=CONFIG["general"]["ip_local"],
         port=CONFIG["monitor"]["hs_port"],
         packet_size=None,
         buffer_size=BUFFER_SIZE_HS,
@@ -87,18 +94,29 @@ def read_hs_packet(
     if packet_size is None:
         packet_size = brokkr.utils.decode.DataDecoder(
             VARIABLE_PARAMS_HS).packet_size
+    address_tuple = (host, port)
 
     LOGGER.debug("Reading H&S data...")
     with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
         try:
             sock.settimeout(timeout)
-            sock.bind((host_address, port))
+            sock.bind(address_tuple)
             LOGGER.debug("Listening on socket %r", sock)
+        except OSError as e:
+            if not e.errno or e.errno not in ERROR_CODES_LINK_DOWN:
+                LOGGER.error("%s connecting to H&S socket: %s",
+                             type(e).__name__, e)
+                log_details(LOGGER, socket=sock, address=address_tuple)
+            else:
+                LOGGER.debug("Suppressing address-related error "
+                             "%s connecting to H&S socket: %s",
+                             type(e).__name__, e)
+                log_details(LOGGER.debug, socket=sock, address=address_tuple)
+            return None
         except Exception as e:
-            LOGGER.error("%s connecting to H&S port %r: %s",
-                         type(e).__name__, port, e)
-            LOGGER.info("Error details:", exc_info=True)
-            LOGGER.info("Socket details: %r", sock)
+            LOGGER.error("%s connecting to H&S socket: %s",
+                         type(e).__name__, e)
+            log_details(LOGGER, socket=sock, address=address_tuple)
             return None
         try:
             packet = sock.recv(buffer_size)
@@ -106,13 +124,12 @@ def read_hs_packet(
         except socket.timeout:
             LOGGER.debug("Socket timed out in %s s while waiting for data",
                          timeout)
-            LOGGER.debug("Socket details: %r", sock)
+            log_details(LOGGER.debug, socket=sock, address=address_tuple)
             return None
         except Exception as e:
             LOGGER.error("%s recieving H&S data on port %r: %s",
                          type(e).__name__, port, e)
-            LOGGER.info("Error details:", exc_info=True)
-            LOGGER.info("Socket details: %r", sock)
+            log_details(LOGGER, socket=sock, address=address_tuple)
             return None
     if packet:
         packet = packet[:packet_size]
