@@ -174,8 +174,8 @@ class MultiprocessHandler(brokkr.utils.misc.AutoReprMixin):
 
     def shutdown_workers(self):
         self.logger.info("Beginning worker shutdown...")
-        self.exit_event.set()
         shutdown_start_time = time.monotonic()
+        self.exit_event.set()
 
         # Join workers gracefully as they end, up to the timeout
         shutdown_wait_time = shutdown_start_time + self.worker_shutdown_wait_s
@@ -225,8 +225,9 @@ class MultiprocessHandler(brokkr.utils.misc.AutoReprMixin):
         self.exit_event.clear()
         self.workers = None
         self.logger.info(
-            "Worker shutdown finished in %s s with %s terminated, %s failed",
-            time.monotonic() - shutdown_start_time, n_terminated, n_failed)
+            "Worker shutdown finished in %s ms with %s terminated, %s failed",
+            round((time.monotonic() - shutdown_start_time) * int(1e3), 1),
+            n_terminated, n_failed)
         return n_terminated, n_failed
 
     def shutdown_logger(self):
