@@ -3,10 +3,9 @@ Metadata configuration for Brokkr; loaded early before primary initialization.
 """
 
 # Local imports
-import brokkr.config.handlers
+from brokkr.config.metadatahandler import CONFIG_HANDLER_METADATA
 
 
 # Metadata config dict
-METADATA_CONFIG_HANDLER = brokkr.config.handlers.CONFIG_HANDLER_METADATA
-METADATA_CONFIGS = METADATA_CONFIG_HANDLER.read_configs()
-METADATA = METADATA_CONFIG_HANDLER.render_config(METADATA_CONFIGS)
+METADATA_CONFIGS = CONFIG_HANDLER_METADATA.read_configs()
+METADATA = CONFIG_HANDLER_METADATA.render_config(METADATA_CONFIGS)

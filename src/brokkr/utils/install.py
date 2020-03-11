@@ -18,7 +18,6 @@ except ModuleNotFoundError:  # If its not installed, eg. on non-Linux platforms
 
 # Local imports
 import brokkr.config.base
-import brokkr.config.handlers
 import brokkr.utils.log
 import brokkr.utils.misc
 import brokkr.utils.services

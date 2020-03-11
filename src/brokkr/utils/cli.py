@@ -7,9 +7,6 @@ Main-level command handling routine for running brokkr on the command line.
 import argparse
 import multiprocessing
 
-# Local imports
-import brokkr.config.handlers
-
 
 VERSION_PARAM = "version"
 SUBCOMMAND_PARAM = "subcommand_name"
@@ -154,11 +151,9 @@ def generate_argparser_main():
         argument_default=argparse.SUPPRESS)
     parser_configure_reset.add_argument(
         "--reset-names", nargs="+",
-        choices={"all", *brokkr.config.handlers.ALL_CONFIG_HANDLERS.keys()},
         help="Which config names to reset; by default, resets all of them")
     parser_configure_reset.add_argument(
         "--reset-levels", nargs="+",
-        choices={"all", *brokkr.config.handlers.ALL_CONFIG_LEVEL_NAMES},
         help="Which config levels to reset; by default, resets all of them")
     parser_configure_reset.add_argument(
         "--include-systempath", action="store_true",
@@ -171,7 +166,7 @@ def generate_argparser_main():
         argument_default=argparse.SUPPRESS)
     parser_configure_unit.add_argument(
         "number", type=int, nargs="?", default=None,
-        help=("The unit number of this particular Brokkr client."
+        help=("The unit number of this particular Brokkr client. "
               "If not passed, prints the unit information from the config."))
     parser_configure_unit.add_argument(
         "--network-interface",
@@ -195,7 +190,7 @@ def generate_argparser_main():
               "If not passed, will print all system paths (or the default)."))
     parser_configure_system.add_argument(
         "system_config_path", nargs="?",
-        help=("The path to the sensor system config directory to set."
+        help=("The path to the sensor system config directory to set. "
               "If not passed, will print the current path of 'system_name'. "
               "If '' or ' ' is passed, will deregister 'system_name'."))
     parser_configure_system.add_argument(
@@ -253,7 +248,7 @@ def parse_args(sys_argv=None):
 
 
 def dispatch_command(subcommand, parsed_args):
-    # pylint: disable=import-outside-toplevel, redefined-outer-name
+    # pylint: disable=import-outside-toplevel
     if subcommand == VERSION_PARAM:
         import brokkr.start
         print(brokkr.start.generate_version_message())

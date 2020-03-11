@@ -4,11 +4,17 @@ Config handler setup for Brokkr's main managed configs.
 
 # Local imports
 import brokkr.config.base
+import brokkr.config.metadatahandler
+from brokkr.config.metadata import METADATA
+import brokkr.config.modehandler
+from brokkr.config.mode import MODE_CONFIG
+import brokkr.config.systempathhandler
+from brokkr.config.systempath import SYSTEMPATH_CONFIG
 from brokkr.constants import (
     CONFIG_NAME_LOG,
+    CONFIG_NAME_MAIN,
     CONFIG_NAME_METADATA,
     CONFIG_NAME_MODE,
-    CONFIG_NAME_MAIN,
     CONFIG_NAME_SYSTEMPATH,
     CONFIG_NAME_UNIT,
     CONFIG_PATH_LOCAL,
@@ -22,26 +28,16 @@ from brokkr.constants import (
     PACKAGE_NAME,
     SYSTEM_SUBPATH_CONFIG,
     )
-from brokkr.config.mode import MODE_CONFIG
-from brokkr.config.systempath import SYSTEMPATH_CONFIG
-import brokkr.config.systempathhandler
 import brokkr.utils.misc
 
 
-SYSTEM_PATH = brokkr.utils.misc.get_system_path(SYSTEMPATH_CONFIG)
-SYSTEM_CONFIG_PATH = SYSTEM_PATH / SYSTEM_SUBPATH_CONFIG
-
-MODE_OVERLAYS = MODE_CONFIG[MODE_CONFIG["mode"]]
-
-
 CONFIG_HANDLER_FACTORY = brokkr.config.base.ConfigHandlerFactory(
-    level_presets=brokkr.config.base.CONFIG_LEVEL_PRESETS,
-    overlays=MODE_OVERLAYS,
-    local_config_path=CONFIG_PATH_LOCAL,
-    preset_config_path=SYSTEM_CONFIG_PATH,
+    overlays=MODE_CONFIG[MODE_CONFIG["mode"]],
+    local_config_path=CONFIG_PATH_LOCAL / METADATA["name"],
+    preset_config_path=(brokkr.utils.misc.get_system_path(SYSTEMPATH_CONFIG)
+                        / SYSTEM_SUBPATH_CONFIG),
     config_version=CONFIG_VERSION,
     )
-
 
 DEFAULT_CONFIG_UNIT = {
     "number": 0,
@@ -56,27 +52,6 @@ CONFIG_HANDLER_UNIT = CONFIG_HANDLER_FACTORY.create_config_handler(
         LEVEL_NAME_LOCAL,
         ],
     defaults=DEFAULT_CONFIG_UNIT,
-    )
-
-
-EMPTY_VARS_METADATA = [
-    "name_full", "author", "description", "homepage", "repo", "version"]
-EMPTY_VARS_METADATA_DICT = {key: "" for key in EMPTY_VARS_METADATA}
-
-DEFAULT_CONFIG_METADATA = {
-    "name": "mjolnir",
-    **EMPTY_VARS_METADATA_DICT,
-    "brokkr_version_min": "0.3.0",
-    "sindri_version_min": "0.3.0",
-    }
-
-CONFIG_HANDLER_METADATA = CONFIG_HANDLER_FACTORY.create_config_handler(
-    name=CONFIG_NAME_METADATA,
-    config_levels=[
-        LEVEL_NAME_SYSTEM,
-        ],
-    defaults=DEFAULT_CONFIG_METADATA,
-    preset_config_path=SYSTEM_PATH,
     )
 
 
@@ -173,23 +148,18 @@ CONFIG_HANDLER_MAIN = CONFIG_HANDLER_FACTORY.create_config_handler(
     )
 
 
-CONFIG_HANDLERS = {
-    CONFIG_NAME_METADATA: CONFIG_HANDLER_METADATA,
+ALL_CONFIG_HANDLERS = {
+    CONFIG_NAME_SYSTEMPATH:
+        brokkr.config.systempathhandler.CONFIG_HANDLER_SYSTEMPATH,
+    CONFIG_NAME_MODE:
+        brokkr.config.modehandler.CONFIG_HANDLER_MODE,
+    CONFIG_NAME_METADATA:
+        brokkr.config.metadatahandler.CONFIG_HANDLER_METADATA,
     CONFIG_NAME_UNIT: CONFIG_HANDLER_UNIT,
     CONFIG_NAME_LOG: CONFIG_HANDLER_LOG,
     CONFIG_NAME_MAIN: CONFIG_HANDLER_MAIN,
     }
-CONFIG_LEVEL_NAMES = {
-    config_level.name for handler in CONFIG_HANDLERS.values()
-    for config_level in handler.config_levels.values()}
 
-ALL_CONFIG_HANDLERS = {
-    **{CONFIG_NAME_SYSTEMPATH:
-       brokkr.config.systempathhandler.CONFIG_HANDLER_SYSTEMPATH},
-    **{CONFIG_NAME_MODE:
-       brokkr.config.modehandler.CONFIG_HANDLER_MODE},
-    **CONFIG_HANDLERS,
-    }
 ALL_CONFIG_LEVEL_NAMES = {
     config_level.name for handler in ALL_CONFIG_HANDLERS.values()
     for config_level in handler.config_levels.values()}

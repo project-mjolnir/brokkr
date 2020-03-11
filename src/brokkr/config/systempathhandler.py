@@ -14,7 +14,6 @@ from brokkr.constants import (
 
 
 CONFIG_HANDLER_FACTORY = brokkr.config.base.ConfigHandlerFactory(
-    level_presets=brokkr.config.base.CONFIG_LEVEL_PRESETS,
     local_config_path=CONFIG_PATH_LOCAL,
     config_version=CONFIG_VERSION,
     )

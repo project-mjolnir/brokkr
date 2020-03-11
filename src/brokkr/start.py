@@ -22,9 +22,9 @@ CONFIG_REQUIRE = ["systempath", "unit"]
 # --- Startup helper functions --- #
 
 def warn_on_startup_issues():
+    from brokkr.config.confighandlers import CONFIG_HANDLER_UNIT
+    from brokkr.config.metadatahandler import CONFIG_HANDLER_METADATA
     from brokkr.config.systempath import SYSTEMPATH_CONFIG
-    from brokkr.config.handlers import (CONFIG_HANDLER_UNIT,
-                                        CONFIG_HANDLER_METADATA)
     from brokkr.config.unit import UNIT_CONFIGS
     import brokkr.utils.misc
 

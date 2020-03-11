@@ -14,8 +14,9 @@ from brokkr.constants import (
     LEVEL_NAME_DEFAULTS,
     LEVEL_NAME_LOCAL,
     )
+from brokkr.config.confighandlers import ALL_CONFIG_HANDLERS
+import brokkr.config.metadatahandler
 import brokkr.config.systempathhandler
-import brokkr.config.handlers
 import brokkr.utils.log
 
 
@@ -27,9 +28,8 @@ DEFAULT_CONFIG_LEVELS = {LEVEL_NAME_DEFAULTS, LEVEL_NAME_LOCAL}
 def _render_filtered_config(config_name, config_levels=None):
     if config_levels is None:
         config_levels = DEFAULT_CONFIG_LEVELS
-    config_handler = brokkr.config.handlers.ALL_CONFIG_HANDLERS[config_name]
-    all_configs = config_handler.read_configs()
-    filtered_config = config_handler.render_config(
+    all_configs = ALL_CONFIG_HANDLERS[config_name].read_configs()
+    filtered_config = ALL_CONFIG_HANDLERS[config_name].render_config(
         {key: value for key, value in all_configs.items()
          if key in config_levels})
     return filtered_config
@@ -39,17 +39,15 @@ def _write_config_file_wrapper(config_name, config_data,
                                config_level=DEFAULT_CONFIG_LEVEL):
     logging.debug("Setting up %s config with data: %r",
                   config_name, config_data)
-    config_handler = brokkr.config.handlers.ALL_CONFIG_HANDLERS[config_name]
-    config_source = config_handler.config_levels[config_level]
-    config_source.write_config(config_data)
+    config_obj = ALL_CONFIG_HANDLERS[config_name].config_levels[config_level]
+    config_obj.write_config(config_data)
     logging.info("%s config file updated in %r", config_name.title(),
-                 config_source.path.as_posix())
+                 config_obj.path.as_posix())
 
 
 @brokkr.utils.log.basic_logging
 def configure_init():
-    config_handlers = brokkr.config.handlers.ALL_CONFIG_HANDLERS
-    for config_name, handler in config_handlers.items():
+    for config_name, handler in ALL_CONFIG_HANDLERS.items():
         logging.debug("Initializing %s config...", config_name)
         handler.read_configs()
     logging.info("Config files installed to %r", CONFIG_PATH_LOCAL.as_posix())
@@ -63,10 +61,10 @@ def configure_reset(reset_names=ALL_RESET, reset_levels=ALL_RESET,
         include_systempath = (
             reset_names != ALL_RESET
             and CONFIG_NAME_SYSTEMPATH in reset_names)
-    if include_systempath:
-        config_handlers = brokkr.config.handlers.ALL_CONFIG_HANDLERS
-    else:
-        config_handlers = brokkr.config.handlers.CONFIG_HANDLERS
+    config_handlers = ALL_CONFIG_HANDLERS
+    if not include_systempath:
+        config_handlers = {key: value for key, value in config_handlers.items()
+                           if key not in {CONFIG_NAME_SYSTEMPATH}}
 
     # Ensure value of all is handled properly
     reset_names = ALL_RESET if reset_names[0] == ALL_RESET else reset_names
@@ -164,7 +162,7 @@ def _configure_system(
             if not skip_verify:
                 logging.debug("Verifying system path %r", system_path)
                 config_handler_metadata = (
-                    brokkr.config.handlers.CONFIG_HANDLER_METADATA)
+                    brokkr.config.metadatahandler.CONFIG_HANDLER_METADATA)
                 system_path_valid = brokkr.utils.misc.validate_system_path(
                     system_path=system_path,
                     metadata_handler=config_handler_metadata,

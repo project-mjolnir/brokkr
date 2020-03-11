@@ -283,17 +283,6 @@ class CLIArgsConfigLevel(MappingConfigLevel):
         return config_data
 
 
-CONFIG_LEVEL_PRESETS = {
-    LEVEL_NAME_SYSTEM: {LEVEL_ARGS: {
-        "preset": True}},
-    LEVEL_NAME_SYSTEM_CLIENT: {LEVEL_ARGS: {
-        "preset": True, "append_level": True}},
-    LEVEL_NAME_REMOTE: {LEVEL_ARGS: {
-        "extension": EXTENSION_JSON, "append_level": True}},
-    LEVEL_NAME_LOCAL: {},
-    }
-
-
 class ConfigHandler(brokkr.utils.misc.AutoReprMixin):
     def __init__(self, config_type=None, config_levels=None):
         self.config_type = (
@@ -337,6 +326,17 @@ class ConfigHandler(brokkr.utils.misc.AutoReprMixin):
         return rendered_config
 
 
+CONFIG_LEVEL_PRESETS = {
+    LEVEL_NAME_SYSTEM: {LEVEL_ARGS: {
+        "preset": True}},
+    LEVEL_NAME_SYSTEM_CLIENT: {LEVEL_ARGS: {
+        "preset": True, "append_level": True}},
+    LEVEL_NAME_REMOTE: {LEVEL_ARGS: {
+        "extension": EXTENSION_JSON, "append_level": True}},
+    LEVEL_NAME_LOCAL: {},
+    }
+
+
 class ConfigHandlerFactory(brokkr.utils.misc.AutoReprMixin):
     def __init__(
             self,
@@ -344,7 +344,8 @@ class ConfigHandlerFactory(brokkr.utils.misc.AutoReprMixin):
             overlays=None,
             **default_type_kwargs,
                 ):
-        self.level_presets = {} if level_presets is None else level_presets
+        self.level_presets = (CONFIG_LEVEL_PRESETS if level_presets is None
+                              else level_presets)
         self.overlays = overlays
         self.default_type_kwargs = default_type_kwargs
 

@@ -3,10 +3,9 @@ Unit configuration for Brokkr; loaded early before primary initialization.
 """
 
 # Local imports
-import brokkr.config.handlers
+from brokkr.config.confighandlers import CONFIG_HANDLER_UNIT
 
 
 # Unit config dict
-UNIT_CONFIG_HANDLER = brokkr.config.handlers.CONFIG_HANDLER_UNIT
-UNIT_CONFIGS = UNIT_CONFIG_HANDLER.read_configs()
-UNIT_CONFIG = UNIT_CONFIG_HANDLER.render_config(UNIT_CONFIGS)
+UNIT_CONFIGS = CONFIG_HANDLER_UNIT.read_configs()
+UNIT_CONFIG = CONFIG_HANDLER_UNIT.render_config(UNIT_CONFIGS)
