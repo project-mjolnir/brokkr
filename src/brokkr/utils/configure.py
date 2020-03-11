@@ -9,14 +9,12 @@ from pathlib import Path
 # Local imports
 from brokkr.constants import (
     CONFIG_NAME_SYSTEMPATH,
-    CONFIG_NAME_UNIT,
     CONFIG_PATH_LOCAL,
     LEVEL_NAME_DEFAULTS,
     LEVEL_NAME_LOCAL,
     )
-from brokkr.config.confighandlers import ALL_CONFIG_HANDLERS
 import brokkr.config.metadatahandler
-import brokkr.config.systempathhandler
+from brokkr.config.systempathhandler import CONFIG_HANDLER_SYSTEMPATH
 import brokkr.utils.log
 
 
@@ -25,28 +23,31 @@ DEFAULT_CONFIG_LEVEL = "local"
 DEFAULT_CONFIG_LEVELS = {LEVEL_NAME_DEFAULTS, LEVEL_NAME_LOCAL}
 
 
-def _render_filtered_config(config_name, config_levels=None):
+def _render_filtered_config(config_handler, config_levels=None):
     if config_levels is None:
         config_levels = DEFAULT_CONFIG_LEVELS
-    all_configs = ALL_CONFIG_HANDLERS[config_name].read_configs()
-    filtered_config = ALL_CONFIG_HANDLERS[config_name].render_config(
+    all_configs = config_handler.read_configs()
+    filtered_config = config_handler.render_config(
         {key: value for key, value in all_configs.items()
          if key in config_levels})
     return filtered_config
 
 
-def _write_config_file_wrapper(config_name, config_data,
-                               config_level=DEFAULT_CONFIG_LEVEL):
+def _write_config_file(config_handler, config_data,
+                       config_level=DEFAULT_CONFIG_LEVEL):
     logging.debug("Setting up %s config with data: %r",
-                  config_name, config_data)
-    config_obj = ALL_CONFIG_HANDLERS[config_name].config_levels[config_level]
+                  config_handler.config_type.name, config_data)
+    config_obj = config_handler.config_levels[config_level]
     config_obj.write_config(config_data)
-    logging.info("%s config file updated in %r", config_name.title(),
+    logging.info("%s config file updated in %r",
+                 config_handler.config_type.name.title(),
                  config_obj.path.as_posix())
 
 
 @brokkr.utils.log.basic_logging
 def configure_init():
+    # pylint: disable=import-outside-toplevel
+    from brokkr.config.confighandlers import ALL_CONFIG_HANDLERS
     for config_name, handler in ALL_CONFIG_HANDLERS.items():
         logging.debug("Initializing %s config...", config_name)
         handler.read_configs()
@@ -56,6 +57,8 @@ def configure_init():
 @brokkr.utils.log.basic_logging
 def configure_reset(reset_names=ALL_RESET, reset_levels=ALL_RESET,
                     include_systempath=None):
+    # pylint: disable=import-outside-toplevel
+    from brokkr.config.confighandlers import ALL_CONFIG_HANDLERS
     # Include systempath config in configs to reset only if explictly specified
     if include_systempath is None:
         include_systempath = (
@@ -86,6 +89,7 @@ def configure_reset(reset_names=ALL_RESET, reset_levels=ALL_RESET,
 def _configure_unit(reset=False, **unit_kwargs):
     # pylint: disable=import-outside-toplevel
     logging.debug("Seting new unit configuration: %r", unit_kwargs)
+    from brokkr.config.confighandlers import CONFIG_HANDLER_UNIT
     from brokkr.config.unit import UNIT_CONFIGS
     if reset:
         unit_config = {}
@@ -95,7 +99,7 @@ def _configure_unit(reset=False, **unit_kwargs):
         logging.debug("Current unit configuration: %r", unit_config)
     unit_config = {**unit_config, **unit_kwargs}
     logging.info("Set unit configuration: %r", unit_config)
-    _write_config_file_wrapper(CONFIG_NAME_UNIT, unit_config)
+    _write_config_file(CONFIG_HANDLER_UNIT, unit_config)
     return unit_config
 
 
@@ -141,13 +145,13 @@ def _configure_system(
         system_alias, system_path=None,
         set_default=None, reset=False, skip_verify=False):
     # pylint: disable=too-many-branches
-    current_config = _render_filtered_config(CONFIG_NAME_SYSTEMPATH)
+    current_config = _render_filtered_config(CONFIG_HANDLER_SYSTEMPATH)
     if reset:
         systempath_config = _render_filtered_config(
-            CONFIG_NAME_SYSTEMPATH, {LEVEL_NAME_DEFAULTS})
+            CONFIG_HANDLER_SYSTEMPATH, {LEVEL_NAME_DEFAULTS})
         logging.info("Reset systempath configuration")
     else:
-        systempath_config = _render_filtered_config(CONFIG_NAME_SYSTEMPATH)
+        systempath_config = _render_filtered_config(CONFIG_HANDLER_SYSTEMPATH)
 
     # Delete system path entry if a falsy value is passed for it
     if system_path in {"", " ", False}:
@@ -201,8 +205,7 @@ def _configure_system(
 
     if systempath_config != current_config:
         logging.debug("Changes detected in config, writing output")
-        _write_config_file_wrapper(
-            CONFIG_NAME_SYSTEMPATH, systempath_config)
+        _write_config_file(CONFIG_HANDLER_SYSTEMPATH, systempath_config)
     else:
         logging.debug("No changes to write")
     return systempath_config
@@ -227,7 +230,7 @@ def configure_system(
         print("No system paths configured.")
         logging.debug("Full configs: %r", SYSTEMPATH_CONFIGS)
         return SYSTEMPATH_CONFIGS[LEVEL_NAME_LOCAL]
-    systempath_config = _render_filtered_config(CONFIG_NAME_SYSTEMPATH)
+    systempath_config = _render_filtered_config(CONFIG_HANDLER_SYSTEMPATH)
     logging.debug("Got filtered systempath config %r", systempath_config)
 
     default_system = systempath_config["default_system"]
