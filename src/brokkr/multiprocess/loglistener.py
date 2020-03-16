@@ -6,8 +6,8 @@ Log handling for a real-time system in a multiprocess environment.
 import logging
 import logging.config
 import logging.handlers
+import multiprocessing
 import queue
-import threading
 import time
 
 # Local imports
@@ -104,7 +104,7 @@ def run_log_listener(log_queue, log_configurator,
     log_configurator(**configurator_kwargs)
     logger = logging.getLogger(__name__)
     logger.info("Starting logging system")
-    outer_exit_event = threading.Event()
+    outer_exit_event = multiprocessing.Event()
 
     brokkr.utils.misc.run_periodic(
         handle_queued_log_record, exit_event=exit_event,

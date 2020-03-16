@@ -10,7 +10,7 @@ import logging
 import os
 from pathlib import Path
 import signal
-import threading
+import multiprocessing
 import time
 
 # Local imports
@@ -49,6 +49,13 @@ def start_time_offset(n_digits=3):
 
 # --- General utility functions --- #
 
+def get_full_class_name(obj):
+    try:
+        return ".".join([type(obj).__module__, type(obj).__qualname__])
+    except AttributeError:
+        return type(obj)
+
+
 def update_dict_recursive(base, update):
     for update_key, update_value in update.items():
         base_value = base.get(update_key, {})
@@ -60,6 +67,13 @@ def update_dict_recursive(base, update):
         else:
             base[update_key] = update_value
     return base
+
+
+def get_nested_attr(obj, attrs):
+    attrs = attrs.split(".")
+    for attr in attrs:
+        obj = getattr(obj, attr)
+    return obj
 
 
 def get_actual_username():
@@ -185,7 +199,7 @@ def run_periodic(
     if func is None:
         func = _pass_func
     if exit_event is None:
-        exit_event = threading.Event()
+        exit_event = multiprocessing.Event()
     if outer_exit_event is None:
         outer_exit_event = exit_event
     if logger is None:

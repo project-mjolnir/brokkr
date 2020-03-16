@@ -35,22 +35,6 @@ LOG_FORMAT_BASIC = "{message}"
 LOG_FORMAT_FANCY = "{levelname} | {name} | {message}"
 
 
-def log_details(logger, error=None, **objs_tolog):
-    if isinstance(logger, logging.Logger):
-        logger = logger.info
-    if error is None:
-        # Add stacklevel in Python 3.8
-        logger("Error details:", exc_info=True)
-    elif error:
-        logger("Error details: %r", error.__dict__)
-    for obj_name, obj_value in objs_tolog.items():
-        try:
-            obj_dict = obj_value.__dict__
-        except AttributeError:
-            obj_dict = obj_value
-        logger("%s details: %r", obj_name.capitalize(), obj_dict)
-
-
 def determine_log_level(verbose=0):
     verbose = round(verbose)
     if verbose > MAX_VERBOSE:
@@ -115,12 +99,12 @@ def setup_log_levels(log_config, file_level=None, console_level=None):
 def setup_log_handler_paths(
         log_config,
         output_path=OUTPUT_PATH_DEFAULT,
-        **filename_args,
+        **filename_kwargs,
         ):
     for log_handler in log_config["handlers"].values():
         if log_handler.get("filename", None):
             log_filename = brokkr.utils.misc.convert_path(
-                log_handler["filename"].format(**filename_args))
+                log_handler["filename"].format(**filename_kwargs))
             if not log_filename.is_absolute() and output_path:
                 log_filename = output_path / log_filename
             os.makedirs(log_filename.parent, exist_ok=True)
@@ -145,3 +129,38 @@ def render_full_log_config(
             log_config, log_level_file, log_level_console)
 
     return log_config
+
+
+class LogHelper(brokkr.utils.misc.AutoReprMixin):
+    def __init__(self, logger=None, default_level="info"):
+        self.logger = logging.getLogger(__name__) if logger is None else logger
+        self.default_level = default_level.lower()
+
+    def log(self, log_helper_log_level=None, error=None, **objs_tolog):
+        if log_helper_log_level is None:
+            level = self.default_level
+        else:
+            level = log_helper_log_level
+        try:
+            logging_function = getattr(self.logger, level)
+        except (AttributeError, TypeError) as e:
+            self.logger.critical("%s getting log level function %r: %s",
+                                 type(e).__name__, level, e)
+            self.logger.info("Error details:", exc_info=True)
+            self.logger.info("Logger details: %r", self.logger)
+            return
+        if error is None:
+            # Add stacklevel in Python 3.8
+            logging_function("Error details:", exc_info=True)
+        elif error:
+            try:
+                error_details = error.__dict__
+            except AttributeError:
+                error_details = error
+            logging_function("Error details: %r", error_details)
+        for obj_name, obj_value in objs_tolog.items():
+            try:
+                obj_dict = obj_value.__dict__
+            except AttributeError:
+                obj_dict = obj_value
+            logging_function("%s details: %r", obj_name.capitalize(), obj_dict)

@@ -70,25 +70,14 @@ def generate_argparser_main():
         "monitor", help="Start just the monitoring client",
         argument_default=argparse.SUPPRESS)
     parser_monitor.add_argument(
-        "--output-path", nargs="?", default=None, const=True,
-        help=("Doesn't write anything if not passed; "
-              "if passed without an argument, writes to the default data dir; "
-              "if passed a path to a custom data dir, writes data there"))
-    parser_monitor.add_argument(
         "--interval-s", type=int, default=INTERVAL_S_DEFAULT,
         help="Interval between status checks, in s")
-    parser_monitor.add_argument(
-        "--raw", action="store_false", default=True, dest="pretty",
-        help="Don't pretty-print the status output, use repr instead")
     verbose_parsers.append(parser_monitor)
 
     # Parser for the status subcommand
     parser_status = subparsers.add_parser(
         "status", help="Get and print the current monitoring data",
         argument_default=argparse.SUPPRESS)
-    parser_status.add_argument(
-        "--raw", action="store_false", default=True, dest="pretty",
-        help="Don't pretty-print the status output, use repr instead")
     verbose_parsers.append(parser_status)
 
     # Parser for the install-all subcommand

@@ -3,11 +3,8 @@ Functions to write out collected monitoring data to a CSV file.
 """
 
 # Standard library imports
-import csv
 import datetime
-import io
 import logging
-import os
 from pathlib import Path
 
 # Local imports
@@ -17,80 +14,62 @@ from brokkr.config.unit import UNIT_CONFIG
 import brokkr.utils.misc
 
 
-CSV_PARAMS = {
-    "extrasaction": "ignore",
-    "dialect": "unix",
-    "delimiter": ",",
-    "quoting": csv.QUOTE_MINIMAL,
-    "strict": False,
-    }
-
 LOGGER = logging.getLogger(__name__)
 
 
+def format_data(data=None, seperator="\n"):
+    data_list = [
+        "{key}: {value!s}".format(
+            key=key.replace("_", " ").title(), value=value)
+        for key, value in data.items()]
+    formatted_data = seperator.join(data_list) + "\n"
+    return formatted_data
+
+
 def render_output_filename(
-        output_path,
-        filename=CONFIG["general"]["output_filename_client"],
-        **filename_args,
+        output_path=Path(),
+        filename_template=None,
+        extension=None,
+        **filename_kwargs,
         ):
+    if extension:
+        extension.strip(".")
+    if filename_template is None:
+        filename_template = CONFIG["general"]["output_filename_client"]
+
     # Add master output path to output path if is relative
-    output_path_root = Path(CONFIG["general"]["output_path_client"].as_posix()
-                            .format(system_name=METADATA["name"]))
-    if not output_path.is_absolute() and output_path_root:
-        output_path = output_path_root / output_path
+    if not output_path.is_absolute():
+        output_path_root = Path(
+            CONFIG["general"]["output_path_client"].as_posix().format(
+                system_name=METADATA["name"]))
+        if output_path_root:
+            output_path = output_path_root / output_path
     output_path = brokkr.utils.misc.convert_path(output_path)
 
     system_prefix = CONFIG["general"]["system_prefix"]
     if not system_prefix:
         system_prefix = METADATA["name"]
 
-    filename_args_default = {
+    filename_kwargs_default = {
         "system_name": METADATA["name"],
         "system_prefix": system_prefix,
         "unit_number": UNIT_CONFIG["number"],
+        "utc_datetime": datetime.datetime.utcnow().date(),
         "utc_date": datetime.datetime.utcnow().date(),
+        "utc_time": datetime.datetime.utcnow().time(),
+        "local_datetime": datetime.datetime.now().date(),
+        "local_date": datetime.datetime.now().date(),
+        "local_time": datetime.datetime.now().time(),
         }
-    all_filename_args = {**filename_args_default, **filename_args}
-    LOGGER.debug("Args for output filename: %s", all_filename_args)
+    if extension:
+        filename_kwargs_default["extension"] = extension
+    all_filename_kwargs = {**filename_kwargs_default, **filename_kwargs}
+    LOGGER.debug("Kwargs for output filename: %s", all_filename_kwargs)
 
-    rendered_filename = filename.format(**all_filename_args)
+    rendered_filename = filename_template.format(**all_filename_kwargs)
     output_path = (Path(output_path) / rendered_filename)
+
+    # Add file extension if it has not yet been affixed and is passed
+    if extension is not None and not output_path.suffix:
+        output_path = output_path.with_suffix("." + extension)
     return output_path
-
-
-def write_line_csv(data, out_file, **csv_params):
-    csv_params = {**CSV_PARAMS, **csv_params}
-    try:
-        if isinstance(out_file, io.IOBase):
-            close_file = False
-            data_csv = out_file
-            out_file_path = out_file.name.replace(os.sep, "/")
-        else:
-            close_file = True
-            out_file = Path(out_file)
-            out_file_path = out_file.as_posix()
-            LOGGER.debug(
-                "Ensuring output directory at %r", out_file.parent.as_posix())
-            os.makedirs(out_file.parent, exist_ok=True)
-            data_csv = open(out_file, mode="a", encoding="utf-8", newline="")
-        csv_writer = csv.DictWriter(
-            data_csv, fieldnames=data.keys(), **csv_params)
-        if not data_csv.tell():
-            csv_writer.writeheader()
-        csv_writer.writerow(data)
-        LOGGER.debug("Data successfully written to CSV at %r", out_file_path)
-        return True
-    except Exception as e:
-        LOGGER.error("%s writing output data to local CSV at %r: %s",
-                     type(e).__name__, out_file, e)
-        LOGGER.info("Error details:", exc_info=True)
-        LOGGER.info("Data details: %r", data)
-        return False
-    finally:
-        if close_file:
-            try:
-                data_csv.close()
-            except Exception as e:
-                LOGGER.warning("%s attempting to close output CSV %r: %s",
-                               type(e).__name__, out_file, e)
-                LOGGER.info("Error details:", exc_info=True)

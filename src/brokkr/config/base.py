@@ -72,15 +72,13 @@ class ConfigType(brokkr.utils.misc.AutoReprMixin):
             config_version=CONFIG_VERSION_DEFAULT,
                 ):
         self.name = name
-        self.defaults = defaults if defaults is not None else {}
+        self.defaults = {} if defaults is None else defaults
         self.overlay = overlay
         self.local_config_path = (
-            Path(local_config_path) if local_config_path is not None else None)
+            None if local_config_path is None else Path(local_config_path))
         self.preset_config_path = (
-            Path(preset_config_path)
-            if preset_config_path is not None else None)
-        self.path_variables = (
-            path_variables if path_variables is not None else [])
+            None if preset_config_path is None else Path(preset_config_path))
+        self.path_variables = [] if path_variables is None else path_variables
         self.config_version = config_version
 
 
@@ -91,9 +89,8 @@ class ConfigLevel(brokkr.utils.misc.AutoReprMixin, metaclass=abc.ABCMeta):
             config_type=None,
                 ):
         self.name = name
-        self.config_type = (
-            config_type if config_type is not None
-            else ConfigType(DEFAULT_CONFIG_TYPE_NAME))
+        self.config_type = (ConfigType(DEFAULT_CONFIG_TYPE_NAME)
+                            if config_type is None else config_type)
 
     def generate_config(self):
         if self.config_type.config_version is not None:
@@ -285,11 +282,10 @@ class CLIArgsConfigLevel(MappingConfigLevel):
 
 class ConfigHandler(brokkr.utils.misc.AutoReprMixin):
     def __init__(self, config_type=None, config_levels=None):
-        self.config_type = (
-            config_type if config_type is not None
-            else ConfigType(DEFAULT_CONFIG_TYPE_NAME))
+        self.config_type = (ConfigType(DEFAULT_CONFIG_TYPE_NAME)
+                            if config_type is None else config_type)
 
-        config_levels = config_levels if config_levels is not None else []
+        config_levels = [] if config_levels is None else config_levels
         self.config_levels = {}
         if (self.config_type.defaults is not None
                 and not any([isinstance(config_level, DefaultsConfigLevel)

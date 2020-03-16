@@ -126,34 +126,32 @@ def log_startup_messages(log_config=None, log_level_file=None,
 # --- Primary commands --- #
 
 @brokkr.utils.log.basic_logging
-def print_status(pretty=True):
+def print_status():
+    import brokkr.pipeline.builder
+    import brokkr.system
+
     logger = logging.getLogger(__name__)
-    logger.debug("Getting oneshot status data...")
-    import brokkr.monitoring.monitor
-    if pretty:
-        print(brokkr.monitoring.monitor.format_status_data())
-    else:
-        print(brokkr.monitoring.monitor.get_status_data())
+    logger.debug("Getting oneshot status data")
+
+    brokkr.pipeline.builder.MonitorBuilder(
+        brokkr.system.MONITOR_INPUT_STEPS, interval_s=0.1,
+        ).build(exit_event=multiprocessing.Event()).execute()
 
 
-def start_monitoring(verbose=None, quiet=None, **monitor_args):
+@brokkr.utils.log.basic_logging
+def start_monitoring(interval_s=1):
+    import brokkr.pipeline.builder
+    import brokkr.system
     import brokkr.utils.log
-    # Drop output_path arg if true to use default path in function signature
-    if monitor_args.get("output_path_client", None) is True:
-        monitor_args.pop("output_path_client", None)
-
-    # Setup logging if not already configured
-    if verbose is not None or quiet is not None:
-        brokkr.utils.log.setup_basic_logging(
-            verbose=verbose, quiet=quiet, script_mode=False)
-    logger = logging.getLogger(__name__)
 
     # Print logging information
-    logger.info("Monitor arguments: %s", monitor_args)
+    logger = logging.getLogger(__name__)
+    logger.debug("Printing monitoring data")
 
     # Start the mainloop
-    import brokkr.monitoring.monitor
-    brokkr.monitoring.monitor.start_monitoring(**monitor_args)
+    brokkr.pipeline.builder.MonitorBuilder(
+        brokkr.system.MONITOR_INPUT_STEPS, interval_s=interval_s,
+        ).build(exit_event=multiprocessing.Event()).execute_forever()
 
 
 def start_brokkr(log_level_file=None, log_level_console=None):
@@ -161,9 +159,10 @@ def start_brokkr(log_level_file=None, log_level_console=None):
     from brokkr.config.main import CONFIG
     from brokkr.config.metadata import METADATA
     from brokkr.config.unit import UNIT_CONFIG
-    import brokkr.utils.log
     import brokkr.multiprocess.handler
-    import brokkr.monitoring.monitor
+    import brokkr.pipeline.builder
+    import brokkr.system
+    import brokkr.utils.log
 
     # Setup logging config
     system_prefix = CONFIG["general"]["system_prefix"]
@@ -183,8 +182,10 @@ def start_brokkr(log_level_file=None, log_level_console=None):
         )
 
     # Create multiprocess handler and start logging process
+    exit_event = multiprocessing.Event()
     mp_handler = brokkr.multiprocess.handler.MultiprocessHandler(
         log_config=log_config,
+        exit_event=exit_event,
         )
     mp_handler.start_logger()
 
@@ -193,12 +194,20 @@ def start_brokkr(log_level_file=None, log_level_console=None):
     log_startup_messages(log_config=log_config, log_level_file=log_level_file,
                          log_level_console=log_level_console, logger=logger)
 
+    # Import and set up system pipeline config
+    pipeline_builder = brokkr.pipeline.builder.MonitorBuilder(
+        monitor_input_steps=brokkr.system.MONITOR_INPUT_STEPS,
+        monitor_output_steps=brokkr.system.MONITOR_OUTPUT_STEPS,
+        interval_s=CONFIG["monitor"]["interval_s"],
+        )
+
     # Setup worker configs for multiprocess handler
     worker_configs = [
         brokkr.multiprocess.handler.WorkerConfig(
-            target=brokkr.monitoring.monitor.start_monitoring,
-            name="MonitorProcess",
-            )
+            executor=pipeline_builder,
+            name=pipeline_builder.name + " Process",
+            call_methods=["build", "execute_forever"],
+            ),
         ]
     mp_handler.worker_configs = worker_configs
     mp_handler.worker_shutdown_wait_s = (

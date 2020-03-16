@@ -20,7 +20,7 @@ SLEEP_TICK_S = 0.5
 
 # Subpaths of output dir
 OUTPUT_SUBPATH_LOG = Path("log")
-OUTPUT_SUBPATH_MONITOR = Path("telemetry")
+OUTPUT_SUBPATH_MONITOR = Path("monitor")
 
 # Mode preset subpaths
 OUTPUT_SUBPATH_DEFAULT = Path("{system_name}")

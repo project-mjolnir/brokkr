@@ -22,38 +22,52 @@ WORKER_SHUTDOWN_WAIT_S = 10
 # --- General helper functions --- #
 
 def start_worker_process(
-        target,
-        name="unnamed",
+        worker_config,
         log_configurator=None,
         configurator_kwargs=None,
         exit_event=None,
-        process_args=None,
-        process_kwargs=None,
         ):
-    if process_args is None:
-        process_args = ()
-    if process_kwargs is None:
-        process_kwargs = {}
-
     if log_configurator is not None:
         if configurator_kwargs is None:
             configurator_kwargs = {}
         log_configurator(**configurator_kwargs)
 
     logger = logging.getLogger(__name__)
-    logger.info("Started worker process %s", name)
-    target(*process_args, exit_event=exit_event, **process_kwargs)
+    logger.info("Started worker process %s", worker_config.name)
+    if worker_config.call_methods:
+        executor = worker_config.executor
+        for method_tocall in worker_config.call_methods:
+            executor_new = getattr(executor, method_tocall)(
+                *worker_config.process_args,
+                exit_event=exit_event,
+                **worker_config.process_kwargs,
+                )
+            if executor_new:
+                executor = executor_new
+    else:
+        worker_config.executor(
+            *worker_config.process_args,
+            exit_event=exit_event,
+            **worker_config.process_kwargs,
+            )
 
 
 # --- Helper classes --- #
 
 class WorkerConfig(brokkr.utils.misc.AutoReprMixin):
     def __init__(
-            self, target, name=None, process_args=None, process_kwargs=None):
-        self.target = target
+            self,
+            executor,
+            name=None,
+            process_args=None,
+            process_kwargs=None,
+            call_methods=None,
+                ):
+        self.executor = executor
         self.name = name
-        self.process_args = process_args
-        self.process_kwargs = process_kwargs
+        self.process_args = () if process_args is None else process_args
+        self.process_kwargs = {} if process_kwargs is None else process_kwargs
+        self.call_methods = call_methods
 
 
 # --- Core process handler class --- #
@@ -136,8 +150,7 @@ class MultiprocessHandler(brokkr.utils.misc.AutoReprMixin):
                 target=start_worker_process,
                 name=worker_config.name,
                 kwargs={
-                    "target": worker_config.target,
-                    "name": worker_config.name,
+                    "worker_config": worker_config,
                     "log_configurator":
                         brokkr.multiprocess.loglistener.setup_worker_logger,
                     "configurator_kwargs": {
@@ -145,8 +158,6 @@ class MultiprocessHandler(brokkr.utils.misc.AutoReprMixin):
                         "filter_level": self.log_filter_level,
                         },
                     "exit_event": self.exit_event,
-                    "process_args": worker_config.process_args,
-                    "process_kwargs": worker_config.process_kwargs,
                     },
                 )
             self.workers.append(worker)
