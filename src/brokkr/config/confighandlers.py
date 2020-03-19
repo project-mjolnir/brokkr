@@ -15,6 +15,7 @@ from brokkr.constants import (
     CONFIG_NAME_MAIN,
     CONFIG_NAME_METADATA,
     CONFIG_NAME_MODE,
+    CONFIG_NAME_PRESETS,
     CONFIG_NAME_SYSTEMPATH,
     CONFIG_NAME_UNIT,
     CONFIG_PATH_LOCAL,
@@ -22,20 +23,23 @@ from brokkr.constants import (
     LEVEL_NAME_LOCAL,
     LEVEL_NAME_SYSTEM,
     LEVEL_NAME_SYSTEM_CLIENT,
+    METADATA_VARS,
     OUTPUT_PATH_DEFAULT,
     OUTPUT_SUBPATH_LOG,
-    OUTPUT_SUBPATH_MONITOR,
     PACKAGE_NAME,
     SYSTEM_SUBPATH_CONFIG,
+    SYSTEM_SUBPATH_PRESETS,
     )
 import brokkr.utils.misc
+
+
+SYSTEM_BASE_PATH = brokkr.utils.misc.get_system_path(SYSTEMPATH_CONFIG)
 
 
 CONFIG_HANDLER_FACTORY = brokkr.config.base.ConfigHandlerFactory(
     overlays=MODE_CONFIG[MODE_CONFIG["mode"]],
     local_config_path=CONFIG_PATH_LOCAL / METADATA["name"],
-    preset_config_path=(brokkr.utils.misc.get_system_path(SYSTEMPATH_CONFIG)
-                        / SYSTEM_SUBPATH_CONFIG),
+    preset_config_path=SYSTEM_BASE_PATH / SYSTEM_SUBPATH_CONFIG,
     config_version=CONFIG_VERSION,
     )
 
@@ -106,8 +110,7 @@ CONFIG_HANDLER_LOG = CONFIG_HANDLER_FACTORY.create_config_handler(
 
 DEFAULT_CONFIG_MAIN = {
     "general": {
-        "ip_local": "",
-        "ip_sensor": "",
+        "monitoring_pipeline_default": "",
         "na_marker": "NA",
         "output_filename_client":
             "{output_type}_{system_name}_{unit_number:0>4}_{utc_date!s}.csv",
@@ -115,25 +118,15 @@ DEFAULT_CONFIG_MAIN = {
         "system_prefix": "",
         "worker_shutdown_wait_s": 10,
         },
-    "link": {
+    "autossh": {
         "local_port": 22,
         "server_hostname": "",
         "server_port": 22,
         "server_username": "",
         "tunnel_port_offset": 10000,
         },
-    "monitor": {
-        "filename_kwargs": {"output_type": "telemetry"},
-        "hs_port": 8084,
-        "hs_timeout_s": 2,
-        "interval_s": 60,
-        "output_path_client": OUTPUT_SUBPATH_MONITOR.as_posix(),
-        "ping_timeout_s": 2,
-        "sunsaver_pid_list": [],
-        "sunsaver_port": "",
-        "sunsaver_start_offset": 0,
-        "sunsaver_unit": 1,
-        },
+    "steps": {},
+    "pipelines": {},
     }
 
 CONFIG_HANDLER_MAIN = CONFIG_HANDLER_FACTORY.create_config_handler(
@@ -143,8 +136,71 @@ CONFIG_HANDLER_MAIN = CONFIG_HANDLER_FACTORY.create_config_handler(
         LEVEL_NAME_LOCAL,
         ],
     defaults=DEFAULT_CONFIG_MAIN,
-    path_variables=[("general", "output_path_client"),
-                    ("monitor", "output_path_client")],
+    path_variables=[("general", "output_path_client")],
+    )
+
+
+DEFAULT_CONFIG_PRESETS = {
+    "builtins": {
+        "config_version": CONFIG_VERSION,
+        "name": "builtins",
+        "type": "builtin",
+        "inputs": {
+            "current_time": {
+                "_module_path": "brokkr.inputs.currenttime",
+                "_class_name": "CurrentTimeInput",
+                },
+            "run_time": {
+                "_module_path": "brokkr.inputs.runtime",
+                "_class_name": "RunTimeInput",
+                },
+            },
+        "outputs": {
+            "csv_file": {
+                "_module_path": "brokkr.outputs.csvfile",
+                "_class_name": "CSVFileOutput",
+                "output_path": "data",
+                },
+            "pretty_print": {
+                "_module_path": "brokkr.outputs.print",
+                "_class_name": "PrettyPrintOutput",
+                },
+            "print": {
+                "_module_path": "brokkr.outputs.print",
+                "_class_name": "PrintOutput",
+                },
+            },
+        },
+    }
+
+CONFIG_PRESET_TEMPLATE = {
+    "config_version": CONFIG_VERSION,
+    "type": "device",
+    "metadata": {**{key: "" for key in METADATA_VARS},
+                 "brokkr_version_min": "0.3.0"},
+    "custom_types": {},
+    "variables": {},
+    "inputs": {},
+    "outputs": {},
+    "commands": {},
+    }
+
+
+CONFIG_HANDLER_PRESETS = CONFIG_HANDLER_FACTORY.create_config_handler(
+    name=CONFIG_NAME_PRESETS,
+    config_levels=[
+        {brokkr.config.base.LEVEL_CLASS: brokkr.config.base.PresetsConfigLevel,
+         brokkr.config.base.LEVEL_ARGS: {
+             "filename_glob": "**/*.preset.toml",
+             "key_name": "name",
+             "path": (SYSTEM_BASE_PATH / SYSTEM_SUBPATH_PRESETS).as_posix(),
+             "template": CONFIG_PRESET_TEMPLATE,
+             "insert_items": [("inputs", "custom_types"),
+                              ("inputs", "variables")],
+             }},
+        ],
+    defaults=DEFAULT_CONFIG_PRESETS,
+
     )
 
 
@@ -158,6 +214,7 @@ ALL_CONFIG_HANDLERS = {
     CONFIG_NAME_UNIT: CONFIG_HANDLER_UNIT,
     CONFIG_NAME_LOG: CONFIG_HANDLER_LOG,
     CONFIG_NAME_MAIN: CONFIG_HANDLER_MAIN,
+    CONFIG_NAME_PRESETS: CONFIG_HANDLER_PRESETS,
     }
 
 ALL_CONFIG_LEVEL_NAMES = {

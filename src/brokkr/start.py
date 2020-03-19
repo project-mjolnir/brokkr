@@ -18,6 +18,14 @@ import brokkr.utils.log
 
 CONFIG_REQUIRE = ["systempath", "unit"]
 
+DEFAULT_PIPELINE = {
+    "_builder": "monitor",
+    "name": "Default Pipeline",
+    "monitor_input_steps": [
+        "builtins.inputs.current_time", "builtins.inputs.run_time"],
+    "monitor_output_steps": ["builtins.outputs.csv_file"],
+    }
+
 
 # --- Startup helper functions --- #
 
@@ -65,6 +73,7 @@ def log_config_info(log_config=None, logger=None):
     from brokkr.config.log import LOG_CONFIG, LOG_CONFIGS
     from brokkr.config.main import CONFIG, CONFIGS
     from brokkr.config.metadata import METADATA, METADATA_CONFIGS
+    from brokkr.config.presets import PRESETS, PRESET_CONFIGS
     from brokkr.config.systempath import SYSTEMPATH_CONFIG, SYSTEMPATH_CONFIGS
     from brokkr.config.unit import UNIT_CONFIG, UNIT_CONFIGS
 
@@ -80,9 +89,12 @@ def log_config_info(log_config=None, logger=None):
             "Unit": (UNIT_CONFIG, UNIT_CONFIGS),
             "Log": (log_config, LOG_CONFIGS),
             "Main": (CONFIG, CONFIGS),
+            "Presets": (list(PRESETS.keys()), PRESET_CONFIGS),
             }.items():  # pylint: disable=bad-continuation
-        logger.info("%s config: %s", config_name, config_data[0])
-        logger.debug("%s config hierarchy: %s", config_name, config_data[1])
+        if config_data[0] is not None:
+            logger.info("%s config: %s", config_name, config_data[0])
+        if config_data[1] is not None:
+            logger.debug("%s hierarchy: %s", config_name, config_data[1])
 
 
 def generate_version_message():
@@ -123,45 +135,82 @@ def log_startup_messages(log_config=None, log_level_file=None,
     log_config_info(log_config=log_config, logger=logger)
 
 
+def get_monitoring_pipeline(interval_s=1, exit_event=None):
+    from brokkr.config.main import CONFIG
+    from brokkr.config.presets import PRESETS
+    import brokkr.pipeline.builder
+
+    if exit_event is None:
+        exit_event = multiprocessing.Event()
+
+    pipelines = CONFIG["pipelines"]
+    if not pipelines:
+        pipelines = [DEFAULT_PIPELINE]
+
+    pipeline_key = CONFIG["general"]["monitoring_pipeline_default"]
+    if not pipeline_key:
+        pipeline_key = list(pipelines.keys())[0]
+
+    monitoring_pipeline_kwargs = pipelines[pipeline_key]
+
+    builder = brokkr.pipeline.builder.BUILDERS[
+        monitoring_pipeline_kwargs.get("_builder", "")]
+    if issubclass(builder, brokkr.pipeline.builder.MonitorBuilder):
+        builder_kwargs = {
+            "monitor_input_steps": monitoring_pipeline_kwargs[
+                "monitor_input_steps"],
+            "monitor_interval_s": interval_s,
+            }
+    else:
+        monitoring_pipeline_kwargs.pop("_builder")
+        builder_kwargs = monitoring_pipeline_kwargs
+
+    built_pipeline = builder(
+        exit_event=exit_event,
+        subobject_lookup=CONFIG["steps"],
+        subobject_presets=PRESETS,
+        **builder_kwargs).build(
+            exit_event=exit_event,
+            subobject_lookup=CONFIG["steps"],
+            subobject_presets=PRESETS,
+        )
+
+    return pipeline_key, built_pipeline
+
+
 # --- Primary commands --- #
 
 @brokkr.utils.log.basic_logging
 def print_status():
-    import brokkr.pipeline.builder
-    import brokkr.system
-
     logger = logging.getLogger(__name__)
     logger.debug("Getting oneshot status data")
 
-    brokkr.pipeline.builder.MonitorBuilder(
-        brokkr.system.MONITOR_INPUT_STEPS, interval_s=0.1,
-        ).build(exit_event=multiprocessing.Event()).execute()
+    pipeline_name, monitoring_pipeline = get_monitoring_pipeline()
+    logger.debug("Running monitoring pipeline %s", pipeline_name)
+
+    monitoring_pipeline.execute()
 
 
 @brokkr.utils.log.basic_logging
 def start_monitoring(interval_s=1):
-    import brokkr.pipeline.builder
-    import brokkr.system
-    import brokkr.utils.log
-
-    # Print logging information
     logger = logging.getLogger(__name__)
     logger.debug("Printing monitoring data")
 
-    # Start the mainloop
-    brokkr.pipeline.builder.MonitorBuilder(
-        brokkr.system.MONITOR_INPUT_STEPS, interval_s=interval_s,
-        ).build(exit_event=multiprocessing.Event()).execute_forever()
+    pipeline_name, monitoring_pipeline = get_monitoring_pipeline(
+        interval_s=interval_s)
+    logger.debug("Running monitoring pipeline %s", pipeline_name)
+
+    monitoring_pipeline.execute_forever()
 
 
 def start_brokkr(log_level_file=None, log_level_console=None):
     from brokkr.config.log import LOG_CONFIG
     from brokkr.config.main import CONFIG
     from brokkr.config.metadata import METADATA
+    from brokkr.config.presets import PRESETS
     from brokkr.config.unit import UNIT_CONFIG
     import brokkr.multiprocess.handler
     import brokkr.pipeline.builder
-    import brokkr.system
     import brokkr.utils.log
 
     # Setup logging config
@@ -195,11 +244,16 @@ def start_brokkr(log_level_file=None, log_level_console=None):
                          log_level_console=log_level_console, logger=logger)
 
     # Import and set up system pipeline config
-    pipeline_builder = brokkr.pipeline.builder.MonitorBuilder(
-        monitor_input_steps=brokkr.system.MONITOR_INPUT_STEPS,
-        monitor_output_steps=brokkr.system.MONITOR_OUTPUT_STEPS,
-        interval_s=CONFIG["monitor"]["interval_s"],
+    pipelines = CONFIG["pipelines"]
+    if not pipelines:
+        pipelines = [DEFAULT_PIPELINE]
+    top_level_builder = brokkr.pipeline.builder.TopLevelBuilder(
+        pipelines,
+        exit_event=exit_event,
+        subobject_lookup=CONFIG["steps"],
+        subobject_presets=PRESETS,
         )
+    pipeline_builders = top_level_builder.build(exit_event=exit_event)
 
     # Setup worker configs for multiprocess handler
     worker_configs = [
@@ -207,7 +261,8 @@ def start_brokkr(log_level_file=None, log_level_console=None):
             executor=pipeline_builder,
             name=pipeline_builder.name + " Process",
             call_methods=["build", "execute_forever"],
-            ),
+            )
+        for pipeline_builder in pipeline_builders
         ]
     mp_handler.worker_configs = worker_configs
     mp_handler.worker_shutdown_wait_s = (

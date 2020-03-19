@@ -71,7 +71,7 @@ def generate_argparser_main():
         argument_default=argparse.SUPPRESS)
     parser_monitor.add_argument(
         "--interval-s", type=int, default=INTERVAL_S_DEFAULT,
-        help="Interval between status checks, in s")
+        help="Interval between updates, in s")
     verbose_parsers.append(parser_monitor)
 
     # Parser for the status subcommand

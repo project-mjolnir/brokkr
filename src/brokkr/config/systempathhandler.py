@@ -38,11 +38,9 @@ CONFIG_HANDLER_SYSTEMPATH = CONFIG_HANDLER_FACTORY.create_config_handler(
     config_levels=[
         LEVEL_NAME_LOCAL,
         {brokkr.config.base.LEVEL_CLASS: brokkr.config.base.EnvVarsConfigLevel,
-         brokkr.config.base.LEVEL_ARGS:
-             {"mapping": ENV_VARIABLES_SYSTEMPATH}},
+         brokkr.config.base.LEVEL_ARGS: {"mapping": ENV_VARIABLES_SYSTEMPATH}},
         {brokkr.config.base.LEVEL_CLASS: brokkr.config.base.CLIArgsConfigLevel,
-         brokkr.config.base.LEVEL_ARGS:
-             {"mapping": CLI_ARGUMENTS_SYSTEMPATH}},
+         brokkr.config.base.LEVEL_ARGS: {"mapping": CLI_ARGUMENTS_SYSTEMPATH}},
         ],
     defaults=DEFAULT_CONFIG_SYSTEMPATH,
     path_variables=[("system_path", )],

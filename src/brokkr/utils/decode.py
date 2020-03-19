@@ -141,7 +141,14 @@ class DataDecoder(brokkr.utils.misc.AutoReprMixin):
         for variable in variables:
             try:
                 variable.name
-            except AttributeError:
+            except AttributeError:  # If variables isn't already an object
+                try:
+                    variable["name"]  # If variables a dict instead of a list
+                except TypeError:
+                    variable_dict = variables[variable]
+                    variable_dict["name"] = variable
+                    variable = variable_dict
+
                 type_kwargs = custom_types.get(
                     variable.get("output_type", None), {})
                 if type_kwargs:

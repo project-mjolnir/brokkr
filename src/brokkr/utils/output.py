@@ -38,7 +38,7 @@ def render_output_filename(
         filename_template = CONFIG["general"]["output_filename_client"]
 
     # Add master output path to output path if is relative
-    if not output_path.is_absolute():
+    if not Path(output_path).is_absolute():
         output_path_root = Path(
             CONFIG["general"]["output_path_client"].as_posix().format(
                 system_name=METADATA["name"]))
@@ -60,6 +60,7 @@ def render_output_filename(
         "local_datetime": datetime.datetime.now().date(),
         "local_date": datetime.datetime.now().date(),
         "local_time": datetime.datetime.now().time(),
+        "output_type": "data",
         }
     if extension:
         filename_kwargs_default["extension"] = extension

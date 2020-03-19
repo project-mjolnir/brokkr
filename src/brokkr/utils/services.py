@@ -14,7 +14,7 @@ from brokkr.constants import PACKAGE_NAME
 
 
 AUTOSSH_REMOTE_PORT = (
-    CONFIG["link"]["tunnel_port_offset"] + UNIT_CONFIG["number"])
+    CONFIG["autossh"]["tunnel_port_offset"] + UNIT_CONFIG["number"])
 
 AUTOSSH_SERVICE_NAME = "autossh-{}.service".format(METADATA["name"])
 BROKKR_SERVICE_NAME = "{package_name}-{system_name}.service".format(
@@ -87,12 +87,12 @@ AUTOSSH_SERVICE_DEFAULTS = {
             '-o "CheckHostIP no" -o "UserKnownHostsFile /dev/null" '
             '-o "ExitOnForwardFailure yes" -o "TCPKeepAlive yes" '
             '-o "ServerAliveInterval 60" -o "ServerAliveCountMax 3" '
-            f'-p {CONFIG["link"]["server_port"]} '
+            f'-p {CONFIG["autossh"]["server_port"]} '
             f'-R {AUTOSSH_REMOTE_PORT}:localhost:'
-            f'{CONFIG["link"]["local_port"]} '
-            f'{CONFIG["link"]["server_username"]}'
-            f'{"@" if CONFIG["link"]["server_username"] else ""}'
-            f'{CONFIG["link"]["server_hostname"]}'
+            f'{CONFIG["autossh"]["local_port"]} '
+            f'{CONFIG["autossh"]["server_username"]}'
+            f'{"@" if CONFIG["autossh"]["server_username"] else ""}'
+            f'{CONFIG["autossh"]["server_hostname"]}'
 
             ),
         "Restart": "always",

@@ -9,6 +9,7 @@ from brokkr.constants import (
     CONFIG_NAME_METADATA,
     CONFIG_VERSION,
     LEVEL_NAME_SYSTEM,
+    METADATA_VARS,
     )
 import brokkr.utils.misc
 
@@ -21,13 +22,9 @@ CONFIG_HANDLER_FACTORY = brokkr.config.base.ConfigHandlerFactory(
     )
 
 
-EMPTY_VARS_METADATA = [
-    "name_full", "author", "description", "homepage", "repo", "version"]
-EMPTY_VARS_METADATA_DICT = {key: "" for key in EMPTY_VARS_METADATA}
-
 DEFAULT_CONFIG_METADATA = {
     "name": "mjolnir",
-    **EMPTY_VARS_METADATA_DICT,
+    **{key: "" for key in METADATA_VARS},
     "brokkr_version_min": "0.3.0",
     "sindri_version_min": "0.3.0",
     }

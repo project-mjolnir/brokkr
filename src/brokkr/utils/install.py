@@ -100,12 +100,12 @@ def install_autossh(skip_package_install=False, platform=None):
     from brokkr.config.main import CONFIG
     if serviceinstaller is None:
         raise ModuleNotFoundError("Serviceinstaller must be installed.")
-    if not CONFIG["link"]["server_hostname"]:
+    if not CONFIG["autossh"]["server_hostname"]:
         raise RuntimeError(
             "Cannot install autossh: Hostname not provided in config. "
             "Run 'brokkr configure-system' to set the system config path, "
             "and ensure a value is preset for at least the "
-            "'server_hostname' key in the main config's 'link' section.")
+            "'server_hostname' key in the main config's 'autossh' section.")
 
     if not skip_package_install:
         install_succeeded = _install_distro_package("autossh")

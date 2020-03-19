@@ -41,11 +41,19 @@ setuptools.setup(
     package_dir={"": "src"},
     python_requires=">=3.6",
     install_requires=[
-        "pymodbus",
-        "pyserial",
         "serviceinstaller >= 0.1.2 ; sys_platform=='linux'",
         "toml",
         ],
+    extras_require={
+        "all": [
+            "pymodbus",
+            "pyserial",
+            ],
+        "modbus": [
+            "pymodbus",
+            "pyserial",
+            ],
+        },
     entry_points={
         "console_scripts": [
             f"{PROJECT_NAME}={PROJECT_NAME}.__main__:main"]

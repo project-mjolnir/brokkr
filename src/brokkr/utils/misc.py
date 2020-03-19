@@ -76,6 +76,13 @@ def get_nested_attr(obj, attrs):
     return obj
 
 
+def get_inner_dict(obj, keys):
+    inner_dict = obj
+    for key in keys:
+        inner_dict = inner_dict[key]
+    return inner_dict
+
+
 def get_actual_username():
     try:
         username = os.environ["SUDO_USER"]

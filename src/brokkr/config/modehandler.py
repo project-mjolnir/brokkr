@@ -40,10 +40,6 @@ DEFAULT_CONFIG_MODE = {
                 "output_path_client":
                     (OUTPUT_PATH_BASE / OUTPUT_SUBPATH_REALTIME).as_posix(),
                 },
-            "monitor": {
-                "hs_timeout_s": 1,
-                "interval_s": 1,
-                },
             },
         },
     "test": {
@@ -51,9 +47,6 @@ DEFAULT_CONFIG_MODE = {
             "general": {
                 "output_path_client":
                     (OUTPUT_PATH_BASE / OUTPUT_SUBPATH_TEST).as_posix(),
-                },
-            "monitor": {
-                "interval_s": 5,
                 },
             },
         },

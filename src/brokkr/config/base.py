@@ -26,15 +26,17 @@ import brokkr.utils.misc
 
 # General static constants
 DEFAULT_CONFIG_TYPE_NAME = "config"
-LEVEL_NAME_DEFAULTS = "defaults"
-LEVEL_NAME_FILE = "local"
-LEVEL_NAME_ENV_VARS = "env_vars"
 LEVEL_NAME_CLI_ARGS = "cli_args"
+LEVEL_NAME_DEFAULTS = "defaults"
+LEVEL_NAME_ENV_VARS = "env_vars"
+LEVEL_NAME_FILE = "local"
 LEVEL_NAME_OVERLAY = "overlay"
+LEVEL_NAME_PRESETS = "presets"
 
 EXTENSION_TOML = "toml"
 EXTENSION_JSON = "json"
-SUPPORTED_EXTENSIONS = [EXTENSION_TOML, EXTENSION_JSON]
+EXTENSION_DEFAULT = EXTENSION_TOML
+EXTENSIONS_SUPPORTED = [EXTENSION_TOML, EXTENSION_JSON]
 
 VERSION_KEY = "config_version"
 EMPTY_CONFIG = ("config_is_empty", True)
@@ -45,13 +47,21 @@ LEVEL_CLASS = "level_class"
 LEVEL_ARGS = "level_args"
 
 
+# --- Utility functions --- #
+
+def check_extension_supported(extension):
+    if extension not in EXTENSIONS_SUPPORTED:
+        raise ValueError("Extension must be one of "
+                         f"{EXTENSIONS_SUPPORTED}, not {extension}")
+
+
 def convert_paths(config_data, path_variables):
     # Format string paths as pathlib paths with username expanded
     for key_name in path_variables:
         inner_dict = config_data
         try:
-            for key in key_name[:-1]:
-                inner_dict = inner_dict[key]
+            inner_dict = brokkr.utils.misc.get_inner_dict(
+                obj=config_data, keys=key_name[:-1])
             inner_dict[key_name[-1]] = brokkr.utils.misc.convert_path(
                 inner_dict[key_name[-1]])
         # Ignore missing keys
@@ -59,6 +69,34 @@ def convert_paths(config_data, path_variables):
             continue
     return config_data
 
+
+def read_config_file(path, extension=None):
+    if extension is None:
+        extension = Path(path).suffix.strip(".")
+    check_extension_supported(extension)
+    if extension == EXTENSION_TOML:
+        config_data = toml.load(path)
+    elif extension == EXTENSION_JSON:
+        with open(path, "r", encoding="utf-8") as config_file:
+            config_data = json.load(config_file)
+    return config_data
+
+
+def write_config_file(config_data, path, extension=None):
+    path = Path(path)
+    if extension is None:
+        extension = Path(path).suffix.strip(".")
+    check_extension_supported(extension)
+    os.makedirs(path.parent, exist_ok=True)
+    with open(path, mode="w", encoding="utf-8", newline="\n") as config_file:
+        if extension == EXTENSION_TOML:
+            toml.dump(config_data, config_file)
+        elif extension == EXTENSION_JSON:
+            json.dump(config_data, config_file,
+                      allow_nan=False, separators=JSON_SEPERATORS)
+
+
+# --- Config type --- #
 
 class ConfigType(brokkr.utils.misc.AutoReprMixin):
     def __init__(
@@ -81,6 +119,8 @@ class ConfigType(brokkr.utils.misc.AutoReprMixin):
         self.path_variables = [] if path_variables is None else path_variables
         self.config_version = config_version
 
+
+# --- Config level classes #
 
 class ConfigLevel(brokkr.utils.misc.AutoReprMixin, metaclass=abc.ABCMeta):
     def __init__(
@@ -133,16 +173,13 @@ class FileConfigLevel(WritableConfigLevel):
     def __init__(
             self,
             name=LEVEL_NAME_FILE,
-            extension=EXTENSION_TOML,
-            preset=False,
             path=None,
+            extension=EXTENSION_DEFAULT,
+            preset=False,
             append_level=False,
             **kwargs,
                 ):
-        if extension not in SUPPORTED_EXTENSIONS:
-            raise ValueError("Extension must be one of "
-                             f"{SUPPORTED_EXTENSIONS}, not {extension}")
-
+        check_extension_supported(extension)
         super().__init__(name=name, **kwargs)
         self.extension = extension
         self.preset = preset
@@ -166,12 +203,8 @@ class FileConfigLevel(WritableConfigLevel):
     def read_config(self, input_data=None):
         if input_data is None:
             try:
-                if self.extension == EXTENSION_TOML:
-                    config_data = toml.load(self.path)
-                elif self.extension == EXTENSION_JSON:
-                    with open(self.path, "r", encoding="utf-8") as config_file:
-                        config_data = json.load(config_file)
-
+                config_data = read_config_file(
+                    path=self.path, extension=self.extension)
             # Generate or ignore config_name file if it does not yet exist
             except FileNotFoundError:
                 if not self.preset:
@@ -201,14 +234,66 @@ class FileConfigLevel(WritableConfigLevel):
         else:
             config_data = {**self.generate_config(), **config_data}
 
-        os.makedirs(self.path.parent, exist_ok=True)
-        with open(self.path, mode="w",
-                  encoding="utf-8", newline="\n") as config_file:
-            if self.extension == EXTENSION_TOML:
-                toml.dump(config_data, config_file)
-            elif self.extension == EXTENSION_JSON:
-                json.dump(config_data, config_file,
-                          allow_nan=False, separators=JSON_SEPERATORS)
+        write_config_file(config_data, self.path)
+        return config_data
+
+
+class PresetsConfigLevel(ConfigLevel):
+    def __init__(
+            self,
+            name=LEVEL_NAME_PRESETS,
+            path=None,
+            filename_glob=f"*.preset.{EXTENSION_DEFAULT}",
+            key_name="name",
+            template=None,
+            insert_items=None,
+            **kwargs,
+                ):
+        super().__init__(name=name, **kwargs)
+        self.filename_glob = filename_glob
+        self.key_name = key_name
+        self.template = {} if template is None else template
+        self.insert_items = {} if insert_items is None else insert_items
+
+        if path is not None:
+            self.path = Path(path)
+        else:
+            self.path = self.config_type.local_config_path
+
+    def read_config(self, input_data=None):
+        if input_data is None:
+            preset_paths = self.path.glob(self.filename_glob)
+            presets = {
+                path: brokkr.utils.misc.update_dict_recursive(
+                    copy.deepcopy(self.template), read_config_file(path=path))
+                for path in preset_paths}
+            config_data = {
+                preset.get(self.key_name, path.stem.split(".")[0]): preset
+                for path, preset in presets.items()}
+
+            # Insert the specified values into the given keys
+            for preset_data in config_data.values():
+                for table_name, target_key in self.insert_items:
+                    if preset_data.get(table_name, None) is None:
+                        continue
+                    if preset_data[table_name].get(
+                            target_key, None) is not None:
+                        target_tables = [preset_data[table_name]]
+                    else:
+                        target_tables = preset_data[table_name].values()
+                    for target_table in target_tables:
+                        if target_table.get(target_key, None) is None:
+                            continue
+                        if not target_table[target_key]:
+                            target_table[target_key] = preset_data[target_key]
+                        else:
+                            target_table[target_key] = {
+                                inner_key: preset_data[target_key][inner_key]
+                                for inner_key in target_table[target_key]}
+        else:
+            config_data = copy.deepcopy(input_data)
+
+        config_data = super().read_config(input_data=config_data)
         return config_data
 
 
@@ -279,6 +364,8 @@ class CLIArgsConfigLevel(MappingConfigLevel):
         config_data = super().read_config(cli_args)
         return config_data
 
+
+# --- Config handler classes #
 
 class ConfigHandler(brokkr.utils.misc.AutoReprMixin):
     def __init__(self, config_type=None, config_levels=None):
