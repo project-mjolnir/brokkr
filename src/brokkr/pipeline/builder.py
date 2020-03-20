@@ -62,27 +62,49 @@ class Builder(brokkr.utils.misc.AutoReprMixin):
                     subobject = {PRESET_KEY: subobject}
             # Lookup subobject names in the preset dictionary
             if subobject.get(PRESET_KEY, None) is not None:
-                preset = brokkr.utils.misc.get_inner_dict(
-                    obj=subobject_presets,
-                    keys=subobject[PRESET_KEY].split("."))
+                key_parts = subobject[PRESET_KEY].split(".")
+                try:
+                    preset = brokkr.utils.misc.get_inner_dict(
+                        obj=subobject_presets, keys=key_parts)
+                except KeyError as e:
+                    LOGGER.error(
+                        "%s finding object %s of preset %r in of pipeline %r",
+                        type(e).__name__, e, subobject[PRESET_KEY], self.name)
+                    LOGGER.info("Error details:", exc_info=True)
+                    sub_dict = subobject_presets
+                    LOGGER.info("Valid names for local lookup table: %r",
+                                list(subobject_lookup.keys()))
+                    for key_part, next_part in zip(["root", *key_parts[:-1]],
+                                                   key_parts):
+                        LOGGER.info("Valid names for preset level %r: %r",
+                                    key_part, list(sub_dict.keys()))
+                        sub_dict = sub_dict.get(next_part, None)
+                        if sub_dict is None:
+                            break
+                    raise SystemExit(1)
                 del subobject[PRESET_KEY]
                 subobject = {**preset, **subobject}
 
             if subobject.get("name", None) is None:
                 subobject["name"] = f"{self.name}{self.name_sep}{idx + 1}"
-            builder = BUILDERS[subobject.get("_builder", "")]
+            try:
+                builder = BUILDERS[subobject.get("_builder", "")]
+            except KeyError as e:
+                LOGGER.error(
+                    "%s finding builder %s for subobject %s of pipeline %s",
+                    type(e).__name__, e, subobject.get("name", "Unnamed"),
+                    self.name)
+                LOGGER.info("Error details:", exc_info=True)
+                LOGGER.info("Valid builders: %r", BUILDERS)
+                raise SystemExit(1)
+
             subobject.pop("_builder", None)
             subobject = builder(
                 exit_event=exit_event,
                 subobject_lookup=subobject_lookup,
                 subobject_presets=subobject_presets,
                 **subobject)
-        built_subobject = subobject.build(
-            exit_event=exit_event,
-            subobject_lookup=subobject_lookup,
-            subobject_presets=subobject_presets,
-            )
-        return built_subobject
+        return subobject
 
     def build_subobjects(self, **build_kwargs):
         # Recursively build the sub-objects comprising this object
@@ -130,6 +152,29 @@ class ObjectBuilder(Builder):
             subobject_lookup=subobject_lookup,
             subobject_presets=subobject_presets,
             )
+
+    def build_subobject(
+            self,
+            subobject,
+            idx=0,
+            exit_event=None,
+            subobject_lookup=None,
+            subobject_presets=None,
+                ):
+        subobject = super().build_subobject(
+            subobject,
+            idx=idx,
+            exit_event=exit_event,
+            subobject_lookup=subobject_lookup,
+            subobject_presets=subobject_presets,
+            )
+
+        built_subobject = subobject.build(
+            exit_event=exit_event,
+            subobject_lookup=subobject_lookup,
+            subobject_presets=subobject_presets,
+            )
+        return built_subobject
 
     def build(self, exit_event=None, **build_kwargs):
         LOGGER.debug(
@@ -197,33 +242,6 @@ class TopLevelBuilder(Builder):
             **builder_kwargs,
             )
         print(pipelines)
-
-    def build_subobject(
-            self,
-            subobject,
-            idx=0,
-            exit_event=None,
-            subobject_lookup=None,
-            subobject_presets=None,
-                ):
-        if exit_event is None:
-            exit_event = self.exit_event
-        if subobject_lookup is None:
-            subobject_lookup = self.subobject_lookup
-        if subobject_presets is None:
-            subobject_presets = self.subobject_presets
-
-        if not isinstance(subobject, Builder):
-            if subobject.get("name", None) is None:
-                subobject["name"] = f"{self.name}{self.name_sep}{idx + 1}"
-            builder = BUILDERS[subobject.get("_builder", "")]
-            subobject.pop("_builder", None)
-            subobject = builder(
-                exit_event=exit_event,
-                subobject_lookup=subobject_lookup,
-                subobject_presets=subobject_presets,
-                **subobject)
-        return subobject
 
 
 BUILDERS = {

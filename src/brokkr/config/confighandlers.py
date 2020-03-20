@@ -197,6 +197,7 @@ CONFIG_HANDLER_PRESETS = CONFIG_HANDLER_FACTORY.create_config_handler(
              "template": CONFIG_PRESET_TEMPLATE,
              "insert_items": [("inputs", "custom_types"),
                               ("inputs", "variables")],
+             "logger": True,
              }},
         ],
     defaults=DEFAULT_CONFIG_PRESETS,

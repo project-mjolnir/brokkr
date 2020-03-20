@@ -10,6 +10,7 @@ import logging
 import logging.config
 import multiprocessing
 from pathlib import Path
+import sys
 
 # Local imports
 from brokkr.constants import LEVEL_NAME_SYSTEM, PACKAGE_NAME
@@ -135,7 +136,23 @@ def log_startup_messages(log_config=None, log_level_file=None,
     log_config_info(log_config=log_config, logger=logger)
 
 
-def get_monitoring_pipeline(interval_s=1, exit_event=None):
+def handle_startup_error(e, mp_handler, exit_event, logger, message=""):
+    if message:
+        message = " " + message
+    if isinstance(e, SystemExit):
+        logger.critical("Error caught%s, exiting", message)
+        exit_event.set()
+        mp_handler.shutdown_logger()
+        sys.exit(e.code)
+    if isinstance(e, Exception):
+        logger.critical("%s%s: %s", type(e).__name__, message, e)
+        logger.info("Error details:", exc_info=True)
+        exit_event.set()
+        mp_handler.shutdown_logger()
+        sys.exit(1)
+
+
+def get_monitoring_pipeline(interval_s=1, exit_event=None, logger=None):
     from brokkr.config.main import CONFIG
     from brokkr.config.presets import PRESETS
     import brokkr.pipeline.builder
@@ -145,13 +162,23 @@ def get_monitoring_pipeline(interval_s=1, exit_event=None):
 
     pipelines = CONFIG["pipelines"]
     if not pipelines:
-        pipelines = [DEFAULT_PIPELINE]
+        pipelines = {"default": DEFAULT_PIPELINE}
 
     pipeline_key = CONFIG["general"]["monitoring_pipeline_default"]
     if not pipeline_key:
         pipeline_key = list(pipelines.keys())[0]
 
-    monitoring_pipeline_kwargs = pipelines[pipeline_key]
+    try:
+        monitoring_pipeline_kwargs = pipelines[pipeline_key]
+    except KeyError as e:
+        if logger:
+            logger.critical(
+                "%s finding default monitoring pipeline %s",
+                type(e).__name__, e)
+            logger.info("Error details:", exc_info=True)
+            logger.error("Valid pipelines: %r", list(pipelines.keys()))
+            sys.exit(1)
+        raise
 
     builder = brokkr.pipeline.builder.BUILDERS[
         monitoring_pipeline_kwargs.get("_builder", "")]
@@ -185,7 +212,7 @@ def print_status():
     logger = logging.getLogger(__name__)
     logger.debug("Getting oneshot status data")
 
-    pipeline_name, monitoring_pipeline = get_monitoring_pipeline()
+    pipeline_name, monitoring_pipeline = get_monitoring_pipeline(logger=logger)
     logger.debug("Running monitoring pipeline %s", pipeline_name)
 
     monitoring_pipeline.execute()
@@ -197,7 +224,7 @@ def start_monitoring(interval_s=1):
     logger.debug("Printing monitoring data")
 
     pipeline_name, monitoring_pipeline = get_monitoring_pipeline(
-        interval_s=interval_s)
+        interval_s=interval_s, logger=logger)
     logger.debug("Running monitoring pipeline %s", pipeline_name)
 
     monitoring_pipeline.execute_forever()
@@ -207,7 +234,6 @@ def start_brokkr(log_level_file=None, log_level_console=None):
     from brokkr.config.log import LOG_CONFIG
     from brokkr.config.main import CONFIG
     from brokkr.config.metadata import METADATA
-    from brokkr.config.presets import PRESETS
     from brokkr.config.unit import UNIT_CONFIG
     import brokkr.multiprocess.handler
     import brokkr.pipeline.builder
@@ -240,27 +266,54 @@ def start_brokkr(log_level_file=None, log_level_console=None):
 
     # Log startup messages
     logger = logging.getLogger(__name__)
-    log_startup_messages(log_config=log_config, log_level_file=log_level_file,
-                         log_level_console=log_level_console, logger=logger)
+    try:
+        from brokkr.config.presets import PRESETS
+    except BaseException as e:
+        handle_startup_error(
+            e, mp_handler, exit_event, logger, message="loading presets")
+        raise
+
+    try:
+        log_startup_messages(
+            log_config=log_config,
+            log_level_file=log_level_file,
+            log_level_console=log_level_console,
+            logger=logger,
+            )
+    except BaseException as e:
+        handle_startup_error(
+            e, mp_handler, exit_event, logger,
+            message="generating startup messages")
+        raise
 
     # Import and set up system pipeline config
     pipelines = CONFIG["pipelines"]
     if not pipelines:
-        pipelines = [DEFAULT_PIPELINE]
+        logger.info("No pipelines defined; falling back to default")
+        pipelines = {"default": DEFAULT_PIPELINE}
+    logger.debug("Building pipelines")
     top_level_builder = brokkr.pipeline.builder.TopLevelBuilder(
         pipelines,
         exit_event=exit_event,
         subobject_lookup=CONFIG["steps"],
         subobject_presets=PRESETS,
         )
-    pipeline_builders = top_level_builder.build(exit_event=exit_event)
+    try:
+        pipeline_builders = top_level_builder.build(exit_event=exit_event)
+    except BaseException as e:
+        handle_startup_error(
+            e, mp_handler, exit_event, logger,
+            message="building pipeline list")
+        raise
 
     # Setup worker configs for multiprocess handler
+    logger.debug("Setting up working configs")
     worker_configs = [
         brokkr.multiprocess.handler.WorkerConfig(
             executor=pipeline_builder,
-            name=pipeline_builder.name + " Process",
-            call_methods=["build", "execute_forever"],
+            name=getattr(pipeline_builder, "name", "Unnamed") + " Process",
+            build_method="build",
+            run_method="execute_forever",
             )
         for pipeline_builder in pipeline_builders
         ]

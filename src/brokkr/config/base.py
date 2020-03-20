@@ -1,4 +1,3 @@
-
 """
 Baseline hierarchical configuration setup functions for Brokkr.
 """
@@ -8,11 +7,13 @@ import abc
 import argparse
 import copy
 import json
+import logging
 import os
 from pathlib import Path
 
 # Third party imports
 import toml
+import toml.decoder
 
 # Local imports
 from brokkr.constants import (
@@ -70,15 +71,35 @@ def convert_paths(config_data, path_variables):
     return config_data
 
 
-def read_config_file(path, extension=None):
+def read_config_file(path, extension=None, logger=None):
+    if logger is True:
+        logger = logging.getLogger(__name__)
+    path = Path(path)
     if extension is None:
-        extension = Path(path).suffix.strip(".")
+        extension = path.suffix.strip(".")
     check_extension_supported(extension)
     if extension == EXTENSION_TOML:
-        config_data = toml.load(path)
+        try:
+            config_data = toml.load(path)
+        except toml.decoder.TomlDecodeError as e:
+            if logger is not None:
+                logger.error("%s reading TOML config file %r: %s",
+                             type(e).__name__, path.as_posix(), e)
+                logger.info("Error details:", exc_info=True)
+                raise SystemExit(1)
+            raise
     elif extension == EXTENSION_JSON:
         with open(path, "r", encoding="utf-8") as config_file:
-            config_data = json.load(config_file)
+            try:
+                config_data = json.load(config_file)
+            except Exception as e:
+                if logger is not None:
+                    logger.error("%s reading JSON config file %r: %s",
+                                 type(e).__name__, path.as_posix(), e)
+                    logger.info("Error details:", exc_info=True)
+                    raise SystemExit(1)
+                raise
+
     return config_data
 
 
@@ -94,6 +115,48 @@ def write_config_file(config_data, path, extension=None):
         elif extension == EXTENSION_JSON:
             json.dump(config_data, config_file,
                       allow_nan=False, separators=JSON_SEPERATORS)
+
+
+def insert_values(config_data, insert_items, logger=None):
+    if logger is True:
+        logger = logging.getLogger(__name__)
+
+    # Insert the specified values into the given keys
+    for preset_name, preset_data in config_data.items():
+        for table_name, target_key in insert_items:
+            if preset_data.get(table_name, None) is None:
+                continue  # Skip if table to insert into is not preset
+            if preset_data[table_name].get(
+                    target_key, None) is not None:
+                # If target key is preset at first level, use that
+                target_tables = {table_name: preset_data[table_name]}
+            else:
+                # Otherwise, check for the key in the table's subdicts
+                target_tables = preset_data[table_name]
+            for target_name, target_table in target_tables.items():
+                if target_table.get(target_key, None) is None:
+                    continue  # Skip tables that lack the key at all
+                if not target_table[target_key]:
+                    # If key is empty, fill it with the entire table
+                    target_table[target_key] = preset_data[target_key]
+                else:
+                    # Otherwise, look up and get the current values
+                    try:
+                        target_table[target_key] = {
+                            inner_key: preset_data[target_key][inner_key]
+                            for inner_key in target_table[target_key]}
+                    except KeyError as e:
+                        logger.error(
+                            "%s inserting value for preset %r: "
+                            "Can't find inner key %s in key %r to insert into "
+                            "table %r, subtable %r",
+                            type(e).__name__, preset_name, e, target_key,
+                            table_name, target_name)
+                        logger.info("Error details:", exc_info=True)
+                        logger.info("Possible keys: %r",
+                                    list(preset_data[target_key].keys()))
+                        raise SystemExit(1)
+    return config_data
 
 
 # --- Config type --- #
@@ -127,10 +190,12 @@ class ConfigLevel(brokkr.utils.misc.AutoReprMixin, metaclass=abc.ABCMeta):
             self,
             name,
             config_type=None,
+            logger=None,
                 ):
         self.name = name
         self.config_type = (ConfigType(DEFAULT_CONFIG_TYPE_NAME)
                             if config_type is None else config_type)
+        self.logger = logger
 
     def generate_config(self):
         if self.config_type.config_version is not None:
@@ -204,7 +269,10 @@ class FileConfigLevel(WritableConfigLevel):
         if input_data is None:
             try:
                 config_data = read_config_file(
-                    path=self.path, extension=self.extension)
+                    path=self.path,
+                    extension=self.extension,
+                    logger=self.logger,
+                    )
             # Generate or ignore config_name file if it does not yet exist
             except FileNotFoundError:
                 if not self.preset:
@@ -265,31 +333,15 @@ class PresetsConfigLevel(ConfigLevel):
             preset_paths = self.path.glob(self.filename_glob)
             presets = {
                 path: brokkr.utils.misc.update_dict_recursive(
-                    copy.deepcopy(self.template), read_config_file(path=path))
+                    copy.deepcopy(self.template), read_config_file(
+                        path=path, logger=self.logger))
                 for path in preset_paths}
             config_data = {
                 preset.get(self.key_name, path.stem.split(".")[0]): preset
                 for path, preset in presets.items()}
+            config_data = insert_values(
+                config_data, self.insert_items, logger=self.logger)
 
-            # Insert the specified values into the given keys
-            for preset_data in config_data.values():
-                for table_name, target_key in self.insert_items:
-                    if preset_data.get(table_name, None) is None:
-                        continue
-                    if preset_data[table_name].get(
-                            target_key, None) is not None:
-                        target_tables = [preset_data[table_name]]
-                    else:
-                        target_tables = preset_data[table_name].values()
-                    for target_table in target_tables:
-                        if target_table.get(target_key, None) is None:
-                            continue
-                        if not target_table[target_key]:
-                            target_table[target_key] = preset_data[target_key]
-                        else:
-                            target_table[target_key] = {
-                                inner_key: preset_data[target_key][inner_key]
-                                for inner_key in target_table[target_key]}
         else:
             config_data = copy.deepcopy(input_data)
 

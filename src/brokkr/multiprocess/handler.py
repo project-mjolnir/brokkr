@@ -5,6 +5,7 @@ Process handling for a real-time system in a multiprocess environment.
 # Standard library imports
 import logging
 import multiprocessing
+import sys
 import time
 
 # Local imports
@@ -34,22 +35,44 @@ def start_worker_process(
 
     logger = logging.getLogger(__name__)
     logger.info("Started worker process %s", worker_config.name)
-    if worker_config.call_methods:
-        executor = worker_config.executor
-        for method_tocall in worker_config.call_methods:
-            executor_new = getattr(executor, method_tocall)(
-                *worker_config.process_args,
+    executor = worker_config.executor
+    if worker_config.build_method:
+        try:
+            executor_new = getattr(executor, worker_config.build_method)(
+                *worker_config.build_args,
                 exit_event=exit_event,
-                **worker_config.process_kwargs,
+                **worker_config.build_kwargs,
                 )
-            if executor_new:
-                executor = executor_new
+        except SystemExit as e:
+            logger.critical(
+                "Error caught building pipeline for process %s, exiting",
+                worker_config.name)
+            logger.info("Build method: %s; Build args: %r; Build kwargs: %r",
+                        worker_config.build_method,
+                        worker_config.build_args, worker_config.build_kwargs)
+            exit_event.set()
+            sys.exit(e.code)
+        except Exception as e:
+            logger.critical("%s during executor build for process %s: %s",
+                            type(e).__name__, worker_config.name, e)
+            logger.info("Error details:", exc_info=True)
+            logger.info("Build method: %s; Build args: %r; Build kwargs: %r",
+                        worker_config.build_method,
+                        worker_config.build_args, worker_config.build_kwargs)
+            exit_event.set()
+            sys.exit(1)
+        if executor_new:
+            executor = executor_new
+    if worker_config.run_method:
+        run_callable = getattr(executor, worker_config.run_method)
     else:
-        worker_config.executor(
-            *worker_config.process_args,
-            exit_event=exit_event,
-            **worker_config.process_kwargs,
-            )
+        run_callable = executor
+
+    run_callable(
+        *worker_config.run_args,
+        exit_event=exit_event,
+        **worker_config.run_kwargs,
+        )
 
 
 # --- Helper classes --- #
@@ -58,16 +81,22 @@ class WorkerConfig(brokkr.utils.misc.AutoReprMixin):
     def __init__(
             self,
             executor,
-            name=None,
-            process_args=None,
-            process_kwargs=None,
-            call_methods=None,
+            name="Unnamed Process",
+            build_method=None,
+            build_args=(),
+            build_kwargs=None,
+            run_method=None,
+            run_args=(),
+            run_kwargs=None,
                 ):
         self.executor = executor
         self.name = name
-        self.process_args = () if process_args is None else process_args
-        self.process_kwargs = {} if process_kwargs is None else process_kwargs
-        self.call_methods = call_methods
+        self.build_method = build_method
+        self.build_args = build_args
+        self.build_kwargs = {} if build_kwargs is None else build_kwargs
+        self.run_method = run_method
+        self.run_args = run_args
+        self.run_kwargs = {} if run_kwargs is None else run_kwargs
 
 
 # --- Core process handler class --- #
