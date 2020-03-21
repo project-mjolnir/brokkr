@@ -77,6 +77,7 @@ DEFAULT_CONFIG_LOG = {
         "file": {
             "backupCount": 10,
             "class": "logging.handlers.RotatingFileHandler",
+            "encoding": "utf-8",
             "filename":
                 (OUTPUT_SUBPATH_LOG
                  / (PACKAGE_NAME + "_{system_name}_{unit_number:0>4}.log"))

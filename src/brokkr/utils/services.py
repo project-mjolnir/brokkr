@@ -45,11 +45,11 @@ BROKKR_SERVICE_DEFAULTS = {
     "Unit": {
         "Description": f"Brokkr IoT Sensor Client for {SYSTEM_FULLNAME}",
         "Wants": (
-            "network-online.target systemd-time-wait-sync.service "
-            "systemd-timesyncd.service sshd.service "
+            "systemd-time-wait-sync.service "
+            "systemd-timesyncd.service sshd.service"
             ),
         "After": (
-            "time-sync.target network-online.target multi-user.target "
+            "time-sync.target multi-user.target "
             "sshd.service systemd-time-wait-sync.service "
             f"systemd-timesyncd.service {AUTOSSH_SERVICE_NAME}"
             ),
@@ -75,8 +75,8 @@ BROKKR_SERVICE_KWARGS = {
 AUTOSSH_SERVICE_DEFAULTS = {
     "Unit": {
         "Description": "Brokkr AutoSSH tunnel for {SYSTEM_FULLNAME}",
-        "Wants": "network-online.target sshd.service",
-        "After": "network-online.target multi-user.target sshd.service",
+        "Wants": "sshd.service",
+        "After": "multi-user.target sshd.service",
         "Before": f"{BROKKR_SERVICE_NAME}",
         },
     "Service": {

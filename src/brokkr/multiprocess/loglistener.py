@@ -25,6 +25,7 @@ def setup_worker_logger(log_queue, filter_level=None):
     if filter_level is None:
         filter_level = logging.DEBUG
     root_logger = logging.getLogger()
+    root_logger.handlers = []
     root_logger.addHandler(logging.handlers.QueueHandler(log_queue))
     root_logger.setLevel(filter_level)
 

@@ -1,5 +1,5 @@
 """
-Common decode and conversion functionality functionality.
+Common decode and conversion functionality.
 """
 
 # Standard library imports

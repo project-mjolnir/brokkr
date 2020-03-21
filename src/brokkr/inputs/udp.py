@@ -4,7 +4,6 @@ Read and decode a binary UDP datagram.
 
 # Local imports
 import brokkr.pipeline.step
-import brokkr.utils.decode
 import brokkr.utils.network
 
 
