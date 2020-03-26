@@ -7,6 +7,7 @@ import abc
 import logging
 
 # Local imports
+import brokkr.utils.log
 import brokkr.utils.misc
 
 

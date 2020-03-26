@@ -9,9 +9,7 @@ from pathlib import Path
 
 # Local imports
 import brokkr.pipeline.base
-import brokkr.utils.decode
-import brokkr.utils.log
-import brokkr.utils.misc
+import brokkr.pipeline.decode
 import brokkr.utils.output
 
 
@@ -56,7 +54,7 @@ class DecodeInputStep(InputStep, metaclass=abc.ABCMeta):
         self.variables = variables
         if variable_default_kwargs is None:
             variable_default_kwargs = {}
-        self.decoder = brokkr.utils.decode.DataDecoder(
+        self.decoder = brokkr.pipeline.decode.DataDecoder(
             variables=self.variables,
             conversion_functions=conversion_functions,
             custom_types=custom_types,

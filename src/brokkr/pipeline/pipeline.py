@@ -8,7 +8,6 @@ import multiprocessing
 
 # Local imports
 import brokkr.pipeline.base
-import brokkr.utils.log
 import brokkr.utils.misc
 
 
