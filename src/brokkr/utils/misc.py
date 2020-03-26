@@ -49,6 +49,11 @@ def start_time_offset(n_digits=3):
 
 # --- General utility functions --- #
 
+def is_iterable(obj):
+    return (isinstance(obj, collections.abc.Iterable)
+            and not isinstance(obj, (str, bytes)))
+
+
 def get_full_class_name(obj):
     try:
         return ".".join([type(obj).__module__, type(obj).__qualname__])

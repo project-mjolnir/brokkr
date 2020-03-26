@@ -7,7 +7,7 @@ import brokkr.pipeline.step
 import brokkr.utils.network
 
 
-class UDPInput(brokkr.pipeline.step.DecodeInputStep):
+class UDPInput(brokkr.pipeline.step.ValueInputStep):
     def __init__(
             self,
             host,
@@ -15,8 +15,8 @@ class UDPInput(brokkr.pipeline.step.DecodeInputStep):
             packet_size=None,
             buffer_size=brokkr.utils.network.BUFFER_SIZE_DEFAULT,
             timeout_s=brokkr.utils.network.TIMEOUT_S_DEFAULT,
-            **decode_input_kwargs):
-        super().__init__(**decode_input_kwargs)
+            **value_input_kwargs):
+        super().__init__(binary_decoder=True, **value_input_kwargs)
         self._host = host
         self._port = port
         self._buffer_size = buffer_size
@@ -27,7 +27,7 @@ class UDPInput(brokkr.pipeline.step.DecodeInputStep):
         else:
             self._packet_size = packet_size
 
-    def read_raw_data(self):
+    def read_raw_data(self, input_data=None):
         self.logger.debug("Reading UDP data")
         raw_data = brokkr.utils.network.recieve_udp(
             host=self._host,

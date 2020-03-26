@@ -125,37 +125,50 @@ def insert_values(config_data, insert_items, logger=None):
     for preset_name, preset_data in config_data.items():
         for table_name, target_key in insert_items:
             if preset_data.get(table_name, None) is None:
-                continue  # Skip if table to insert into is not preset
+                continue  # Skip if target table is not preset
             if preset_data[table_name].get(
                     target_key, None) is not None:
-                # If target key is preset at first level, use that
+                # If target key is present at first level, use that
                 target_tables = {table_name: preset_data[table_name]}
             else:
                 # Otherwise, check for the key in the table's subdicts
                 target_tables = preset_data[table_name]
             for target_name, target_table in target_tables.items():
                 if target_table.get(target_key, None) is None:
-                    continue  # Skip tables that lack the key at all
+                    continue  # Skip target tables that lack the key at all
                 if not target_table[target_key]:
-                    # If key is empty, fill it with the entire table
+                    # If key is empty, fill it with the entire source table
                     target_table[target_key] = preset_data[target_key]
-                else:
-                    # Otherwise, look up and get the current values
-                    try:
+                    continue
+                # Otherwise, do a lookup in the source table
+                try:
+                    if brokkr.utils.misc.is_iterable(
+                            target_table[target_key]):
+                        # If the target's current value is an iterable,
+                        # look up each value in the source table
                         target_table[target_key] = {
                             inner_key: preset_data[target_key][inner_key]
                             for inner_key in target_table[target_key]}
-                    except KeyError as e:
-                        logger.error(
-                            "%s inserting value for preset %r: "
-                            "Can't find inner key %s in key %r to insert into "
-                            "table %r, subtable %r",
-                            type(e).__name__, preset_name, e, target_key,
-                            table_name, target_name)
-                        logger.info("Error details:", exc_info=True)
-                        logger.info("Possible keys: %r",
-                                    list(preset_data[target_key].keys()))
-                        raise SystemExit(1)
+                    else:
+                        # Otherwise, look up the value in the source table
+                        # and merge them, keeping values in the original
+                        target_table.update({
+                            **preset_data[target_key][
+                                target_table[target_key]],
+                            **target_table})
+                        # And remove the now-redundant item
+                        del target_table[target_key]
+                except KeyError as e:
+                    logger.error(
+                        "%s inserting value for preset %r: "
+                        "Can't find inner key %s in key %r to insert into "
+                        "table %r, subtable %r",
+                        type(e).__name__, preset_name, e, target_key,
+                        table_name, target_name)
+                    logger.info("Error details:", exc_info=True)
+                    logger.info("Possible keys: %r",
+                                list(preset_data[target_key].keys()))
+                    raise SystemExit(1)
     return config_data
 
 

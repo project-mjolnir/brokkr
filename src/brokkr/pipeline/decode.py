@@ -8,7 +8,7 @@ import logging
 import struct
 
 # Local imports
-from brokkr.config.main import CONFIG
+import brokkr.pipeline.datavalue
 import brokkr.utils.misc
 
 
@@ -53,8 +53,11 @@ def _convert_str(value):
 
 
 def _convert_time_posix(
-        value, multiplier_to_s=1, divisor_to_s=1, time_zone="utc"):
-    time_zone = getattr(datetime.timezone, time_zone)
+        value, multiplier_to_s=1, divisor_to_s=1, use_local=False):
+    if use_local:
+        time_zone = None
+    else:
+        time_zone = datetime.timezone.utc
     return datetime.datetime.fromtimestamp(
         value * multiplier_to_s / divisor_to_s, tz=time_zone)
 
@@ -73,8 +76,8 @@ def _convert_timestamp(value, time_format="%Y-%m-%d %H:%M:%S"):
 
 
 CONVERSION_FUNCTIONS = {
-    "": _convert_none,
-    "pass": _convert_pass,
+    False: _convert_none,
+    True: _convert_pass,
     "bitfield": _convert_bitfield,
     "byte": _convert_byte,
     "bytestr": _convert_bytestr,
@@ -105,68 +108,29 @@ CONVERSION_FUNCTIONS["custom"] = convert_custom
 LOGGER = logging.getLogger(__name__)
 
 
-class Variable(brokkr.utils.misc.AutoReprMixin):
-    def __init__(
-            self, name, conversion_functions, raw_type="i", output_type="pass",
-            **conversion_kwargs):
-        self.name = name
-        self.raw_type = raw_type
-        self.output_type = output_type
-        self.conversion_function = conversion_functions[self.output_type]
-        self.conversion_kwargs = conversion_kwargs
-
-
 class DataDecoder(brokkr.utils.misc.AutoReprMixin):
     conversion_functions = CONVERSION_FUNCTIONS
 
     def __init__(
             self,
-            variables,
+            data_types,
             conversion_functions=None,
-            custom_types=None,
-            struct_format=None,
-            na_marker=CONFIG["general"]["na_marker"],
-            **variable_default_kwargs,
                 ):
-        self.na_marker = na_marker
-
+        self.data_types = data_types
         if conversion_functions is None:
             conversion_functions = {}
         conversion_functions = {
             **self.conversion_functions, **conversion_functions}
 
-        custom_types = {} if custom_types is None else custom_types
-        self.variables = []
-        for variable in variables:
-            try:
-                variable.name
-            except AttributeError:  # If variables isn't already an object
-                try:
-                    variable["name"]  # If variables a dict instead of a list
-                except TypeError:
-                    variable_dict = variables[variable]
-                    variable_dict["name"] = variable
-                    variable = variable_dict
-
-                type_kwargs = custom_types.get(
-                    variable.get("output_type", None), {})
-                if type_kwargs:
-                    del variable["output_type"]
-                variable = Variable(
-                    conversion_functions=conversion_functions,
-                    **{**variable_default_kwargs, **type_kwargs, **variable})
-            self.variables.append(variable)
-
-        if struct_format is None:
-            struct_format = "!" + "".join(
-                [variable.raw_type for variable in self.variables])
-        self.struct_format = struct_format
-        self.packet_size = struct.calcsize(self.struct_format)
+    def __len__(self):
+        return len(self.data_types)
 
     def output_na_data(self):
-        output_data = {variable.name: self.na_marker
-                       for variable in self.variables
-                       if variable.output_type}
+        output_data = {
+            data_type.name: brokkr.pipeline.datavalue.DataValue(
+                data_type.na_marker, data_type=data_type, is_na=True)
+            for data_type in self.data_types
+            if data_type.conversion}
         return output_data
 
     def convert_data(self, raw_data):
@@ -178,54 +142,85 @@ class DataDecoder(brokkr.utils.misc.AutoReprMixin):
         error_count = 0
         output_data = {}
 
-        for variable, value in zip(self.variables, raw_data):
+        for data_type, value in zip(self.data_types, raw_data):
+            if not data_type.conversion:
+                continue  # If this data value should be dropped, ignore it
             try:
                 output_value = (
-                    self.conversion_functions[variable.output_type](
-                        value, **variable.conversion_kwargs))
-                if output_value is not None:
-                    output_data[variable.name] = output_value
+                    self.conversion_functions[data_type.conversion](
+                        value, **data_type.conversion_kwargs))
             # Handle errors decoding specific values
             except Exception as e:
                 if error_count < 1:
                     LOGGER.warning(
-                        "%s decoding data %r for variable %r to %s: %s",
+                        "%s decoding data %r for data_type %r to %s: %s",
                         type(e).__name__, value,
-                        variable.name, variable.output_type, e)
+                        data_type.name, data_type.conversion, e)
                     LOGGER.info("Error details:", exc_info=True)
                 else:
                     LOGGER.info(
-                        "%s decoding data %r for variable %r to %s: %s",
+                        "%s decoding data %r for data_type %r to %s: %s",
                         type(e).__name__, value,
-                        variable.name, variable.output_type, e)
+                        data_type.name, data_type.conversion, e)
                     LOGGER.debug("Error details:", exc_info=True)
 
-                output_data[variable.name] = self.na_marker
+                data_value = brokkr.pipeline.datavalue.DataValue(
+                    data_type.na_marker, data_type=data_type, is_na=True)
+                output_data[data_type.name] = data_value
                 error_count += 1
+            else:
+                data_value = brokkr.pipeline.datavalue.DataValue(
+                    output_value, data_type=data_type, raw_value=value)
+                output_data[data_type.name] = data_value
 
-            if error_count > 1:
-                LOGGER.warning("%s additioanl decode errors were suppressed.",
-                               error_count - 1)
+        if error_count > 1:
+            LOGGER.warning("%s additioanl decode errors were suppressed.",
+                           error_count - 1)
 
         LOGGER.debug("Converted data: %r", output_data)
         return output_data
 
-    def decode_data(self, data_packet):
+    def decode_data(self, data):
+        if data is None:
+            LOGGER.debug("No data to decode")
+            output_data = self.output_na_data()
+        else:
+            output_data = self.convert_data(data)
+        return output_data
+
+
+class BinaryDataDecoder(DataDecoder):
+    def __init__(
+            self,
+            struct_format=None,
+            **data_decoder_kwargs,
+                ):
+        super().__init__(**data_decoder_kwargs)
+        if struct_format is None:
+            struct_format = "!" + "".join(
+                [data_type.input_type for data_type in self.data_types])
+        self.struct_format = struct_format
+        self.packet_size = struct.calcsize(self.struct_format)
+
+    def decode_binary(self, binary_data):
         try:
-            decoded_vals = struct.unpack(self.struct_format, data_packet)
+            decoded_vals = struct.unpack(self.struct_format, binary_data)
         # Handle overall decoding errors
         except Exception as e:
-            if data_packet is not None:
+            if binary_data is not None:
                 LOGGER.error("%s unpacking data: %s", type(e).__name__, e)
                 LOGGER.info("Error details:", exc_info=True)
                 LOGGER.info("Expected format: %r", self.struct_format)
-                LOGGER.info("Packet data: %r", data_packet.hex())
+                LOGGER.info("Binary data: %r", binary_data.hex())
             else:
                 LOGGER.debug("No data to decode")
-            output_data = self.output_na_data()
-            LOGGER.debug("Returning empty data: %r", output_data)
+            decoded_vals = None
         else:
             LOGGER.debug("Decoded data values: %r", decoded_vals)
-            output_data = self.convert_data(decoded_vals)
 
+        return decoded_vals
+
+    def decode_data(self, data):
+        data = self.decode_binary(binary_data=data)
+        output_data = super().decode_data(data=data)
         return output_data

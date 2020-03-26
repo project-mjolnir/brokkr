@@ -10,6 +10,7 @@ from pathlib import Path
 # Local imports
 import brokkr.pipeline.base
 import brokkr.pipeline.decode
+import brokkr.pipeline.datavalue
 import brokkr.utils.output
 
 
@@ -42,27 +43,46 @@ class OutputStep(PipelineStep, metaclass=abc.ABCMeta):
 
 # --- Base input classes --- #
 
-class DecodeInputStep(InputStep, metaclass=abc.ABCMeta):
+class ValueInputStep(PipelineStep, metaclass=abc.ABCMeta):
     def __init__(
             self,
-            variables,
+            data_types,
+            binary_decoder=False,
+            datatype_default_kwargs=None,
             conversion_functions=None,
-            custom_types=None,
-            variable_default_kwargs=None,
             **pipeline_step_kwargs):
         super().__init__(**pipeline_step_kwargs)
-        self.variables = variables
-        if variable_default_kwargs is None:
-            variable_default_kwargs = {}
-        self.decoder = brokkr.pipeline.decode.DataDecoder(
-            variables=self.variables,
+        if datatype_default_kwargs is None:
+            datatype_default_kwargs = {}
+
+        self.data_types = []
+        for data_type in data_types:
+            try:
+                data_type.name
+            except AttributeError:  # If data_type isn't already an object
+                try:
+                    data_type["name"]
+                except TypeError:
+                    data_type_dict = data_types[data_type]
+                    data_type_dict["name"] = data_type
+                    data_type = data_type_dict
+
+                data_type = brokkr.pipeline.datavalue.DataType(
+                    **{**datatype_default_kwargs, **data_type})
+            self.data_types.append(data_type)
+
+        if binary_decoder:
+            decoder_class = brokkr.pipeline.decode.BinaryDataDecoder
+        else:
+            decoder_class = brokkr.pipeline.decode.DataDecoder
+
+        self.decoder = decoder_class(
+            data_types=self.data_types,
             conversion_functions=conversion_functions,
-            custom_types=custom_types,
-            **variable_default_kwargs,
             )
 
     @abc.abstractmethod
-    def read_raw_data(self):
+    def read_raw_data(self, input_data=None):
         pass
 
     def decode_data(self, raw_data):
@@ -72,7 +92,7 @@ class DecodeInputStep(InputStep, metaclass=abc.ABCMeta):
 
     def execute(self, input_data=None):
         input_data = super().execute(input_data=input_data)
-        raw_data = self.read_raw_data()
+        raw_data = self.read_raw_data(input_data=input_data)
         output_data = self.decode_data(raw_data)
         return output_data
 

@@ -6,22 +6,35 @@ Ping input class for Brokkr.
 import subprocess
 
 # Local imports
+import brokkr.pipeline.datavalue
 import brokkr.pipeline.step
 import brokkr.utils.misc
 import brokkr.utils.network
 
 
-class PingInput(brokkr.pipeline.step.InputStep):
+class PingInput(brokkr.pipeline.step.ValueInputStep):
     def __init__(
             self,
             host,
             timeout_s=brokkr.utils.network.TIMEOUT_S_DEFAULT,
-            **pipeline_step_kwargs):
-        super().__init__(**pipeline_step_kwargs)
+            data_name="ping",
+            full_name="Ping Retcode",
+            **value_step_kwargs):
+        ping_data_type = brokkr.pipeline.datavalue.DataType(
+            name=data_name,
+            conversion="int",
+            binary_type="i",
+            full_name=full_name,
+            unit=False,
+            uncertainty=False,
+            )
+        super().__init__(data_types=[ping_data_type], binary_decoder=False,
+                         **value_step_kwargs)
+
         self._host = host
         self._timeout_s = timeout_s
 
-    def execute(self, input_data=None):
+    def read_raw_data(self, input_data=None):
         try:
             ping_output = brokkr.utils.network.ping(
                 host=self._host, count=1, timeout_s=self._timeout_s)
@@ -38,5 +51,5 @@ class PingInput(brokkr.pipeline.step.InputStep):
             self.logger.info("Error details:", exc_info=True)
             output_value = -99
 
-        output_data = {"ping": output_value}
-        return output_data
+        raw_data = [output_value]
+        return raw_data

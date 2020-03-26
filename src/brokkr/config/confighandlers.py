@@ -196,8 +196,10 @@ CONFIG_HANDLER_PRESETS = CONFIG_HANDLER_FACTORY.create_config_handler(
              "key_name": "name",
              "path": (SYSTEM_BASE_PATH / SYSTEM_SUBPATH_PRESETS).as_posix(),
              "template": CONFIG_PRESET_TEMPLATE,
-             "insert_items": [("inputs", "custom_types"),
-                              ("inputs", "variables")],
+             "insert_items": [
+                 ("data_types", "type_presets"),
+                 ("inputs", "data_types"),
+                 ],
              "logger": True,
              }},
         ],

@@ -26,7 +26,7 @@ MODBUS_SERIAL_KWARGS_DEFAULT = {
     }
 
 
-class ModbusInput(brokkr.pipeline.step.DecodeInputStep):
+class ModbusInput(brokkr.pipeline.step.ValueInputStep):
     def __init__(
             self,
             start_address=0x0000,
@@ -34,8 +34,8 @@ class ModbusInput(brokkr.pipeline.step.DecodeInputStep):
             modbus_client="ModbusSerialClient",
             modbus_command="read_holding_registers",
             modbus_kwargs=None,
-            variable_default_kwargs=None,
-            **decode_input_kwargs):
+            datatype_default_kwargs=None,
+            **value_input_kwargs):
         """
         Class to read data from an attached Modbus device.
 
@@ -50,15 +50,16 @@ class ModbusInput(brokkr.pipeline.step.DecodeInputStep):
             If modbus_client is serial, will use sensible defaults.
 
         """
-        if variable_default_kwargs is None:
-            variable_default_kwargs = {}
+        if datatype_default_kwargs is None:
+            datatype_default_kwargs = {}
         self._raw_type = (
             MODBUS_REGISTER_TYPE if "register" in modbus_command
             else MODBUS_COIL_TYPE)
         super().__init__(
-            variable_default_kwargs={
-                **{"raw_type": self._raw_type}, **variable_default_kwargs},
-            **decode_input_kwargs)
+            binary_decoder=True,
+            datatype_default_kwargs={
+                **{"input_type": self._raw_type}, **datatype_default_kwargs},
+            **value_input_kwargs)
 
         self._start_address = start_address
         self._unit = unit
@@ -77,7 +78,7 @@ class ModbusInput(brokkr.pipeline.step.DecodeInputStep):
                 self.decoder.packet_size
                 // struct.calcsize("!" + MODBUS_REGISTER_TYPE))
         else:
-            responce_count = len(self.variables)
+            responce_count = len(self.data_types)
         try:
             responce_data = getattr(modbus_client, self._modbus_function)(
                 address=self._start_address,
@@ -166,7 +167,7 @@ class ModbusInput(brokkr.pipeline.step.DecodeInputStep):
 
         return modbus_data
 
-    def read_raw_data(self):
+    def read_raw_data(self, input_data=None):
         modbus_data = self._read_modbus_data()
 
         if modbus_data is not None:
@@ -185,7 +186,7 @@ class ModbusInput(brokkr.pipeline.step.DecodeInputStep):
                 # Convert uint16s or bools back to packed bytes
                 if self._raw_type == MODBUS_COIL_TYPE:
                     # Coil responce length is rounded up to the nearest byte
-                    raw_data = raw_data[:len(self.variables)]
+                    raw_data = raw_data[:len(self.data_types)]
 
                 struct_format = "!" + self._raw_type * len(raw_data)
                 raw_data = struct.pack(struct_format, *raw_data)
