@@ -12,7 +12,6 @@ from brokkr.config.main import CONFIG
 import brokkr.utils.misc
 
 
-OUTPUT_NONE = "none"
 OUTPUT_CUSTOM = "custom"
 
 
@@ -74,7 +73,7 @@ def _convert_timestamp(value, time_format="%Y-%m-%d %H:%M:%S"):
 
 
 CONVERSION_FUNCTIONS = {
-    OUTPUT_NONE: _convert_none,
+    "": _convert_none,
     "pass": _convert_pass,
     "bitfield": _convert_bitfield,
     "byte": _convert_byte,
@@ -167,7 +166,7 @@ class DataDecoder(brokkr.utils.misc.AutoReprMixin):
     def output_na_data(self):
         output_data = {variable.name: self.na_marker
                        for variable in self.variables
-                       if variable.output_type is not OUTPUT_NONE}
+                       if variable.output_type}
         return output_data
 
     def convert_data(self, raw_data):
