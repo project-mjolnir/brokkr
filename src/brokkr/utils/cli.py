@@ -55,8 +55,9 @@ def generate_argparser_main():
         "help", help="Print help on Brokkr's command line arguments")
 
     # Parser for the start subcommand
+    desc_start = "Start the monitoring, processing and control client"
     parser_start = subparsers.add_parser(
-        "start", help="Start the monitoring, processing and control client",
+        "start", help=desc_start, description=desc_start,
         argument_default=argparse.SUPPRESS)
     parser_start.add_argument(
         "--log-level-file", type=str,
@@ -66,8 +67,9 @@ def generate_argparser_main():
         help="Level of messages to log to the console")
 
     # Parser for the monitor subcommand
+    desc_monitor = "Print real-time data from the default monitor pipeline"
     parser_monitor = subparsers.add_parser(
-        "monitor", help="Start just the monitoring client",
+        "monitor", help=desc_monitor, description=desc_monitor,
         argument_default=argparse.SUPPRESS)
     parser_monitor.add_argument(
         "--interval-s", type=int, default=INTERVAL_S_DEFAULT,
@@ -75,14 +77,16 @@ def generate_argparser_main():
     verbose_parsers.append(parser_monitor)
 
     # Parser for the status subcommand
+    desc_status = "Print a snapshot of data from the monitor pipeline"
     parser_status = subparsers.add_parser(
-        "status", help="Get and print the current monitoring data",
+        "status", help=desc_status, description=desc_status,
         argument_default=argparse.SUPPRESS)
     verbose_parsers.append(parser_status)
 
     # Parser for the install-all subcommand
+    desc_install_all = "Install all elements needed to run the client"
     parser_install_all = subparsers.add_parser(
-        "install-all", help="Install all elements needed to run the package",
+        "install-all", help=desc_install_all, description=desc_install_all,
         argument_default=argparse.SUPPRESS)
     parser_install_all.add_argument(
         "--no-install-services", action="store_true",
@@ -90,9 +94,10 @@ def generate_argparser_main():
     verbose_parsers.append(parser_install_all)
 
     # Parser for the install-autossh subcommand
+    desc_install_autossh = "Install AutoSSH as a Systemd service (Linux)"
     parser_install_autossh = subparsers.add_parser(
-        "install-autossh", help="Install AutoSSH as a systemd service",
-        argument_default=argparse.SUPPRESS)
+        "install-autossh", help=desc_install_autossh,
+        description=desc_install_autossh, argument_default=argparse.SUPPRESS)
     parser_install_autossh.add_argument(
         "--skip-package-install", action="store_true",
         help="Don't attempt to install distro package, just service unit")
@@ -102,42 +107,48 @@ def generate_argparser_main():
     verbose_parsers.append(parser_install_autossh)
 
     # Parser for the install-dialout subcommand
+    desc_install_dialout = "Enable serial port access for the user"
     parser_install_dialout = subparsers.add_parser(
-        "install-dialout", help="Enable serial port access for the user",
-        argument_default=argparse.SUPPRESS)
+        "install-dialout", help=desc_install_dialout,
+        description=desc_install_dialout, argument_default=argparse.SUPPRESS)
     verbose_parsers.append(parser_install_dialout)
 
     # Parser for the install-firewall subcommand
+    desc_install_firewall = "Enable needed ports through the firewall"
     parser_install_firewall = subparsers.add_parser(
-        "install-firewall", help="Enable needed ports through the firewall",
-        argument_default=argparse.SUPPRESS)
+        "install-firewall", help=desc_install_firewall,
+        description=desc_install_firewall, argument_default=argparse.SUPPRESS)
     verbose_parsers.append(parser_install_firewall)
 
     # Parser for the install-service subcommand
+    desc_install_service = "Install Brokkr as a Systemd service (Linux)"
     parser_install_service = subparsers.add_parser(
-        "install-service", help="Install Brokkr as a systemd service (Linux)",
-        argument_default=argparse.SUPPRESS)
+        "install-service", help=desc_install_service,
+        description=desc_install_service, argument_default=argparse.SUPPRESS)
     parser_install_service.add_argument(
         "--platform", choices={"linux", },
         help="Manually override automatic platform detection")
     verbose_parsers.append(parser_install_service)
 
     # Parser for the install-udev subcommand
+    desc_install_udev = "Enable full access to USB ports via udev rules"
     parser_install_udev = subparsers.add_parser(
-        "install-udev", help="Enable full access to USB ports via udev rules",
-        argument_default=argparse.SUPPRESS)
+        "install-udev", help=desc_install_udev,
+        description=desc_install_udev, argument_default=argparse.SUPPRESS)
     verbose_parsers.append(parser_install_udev)
 
     # Parser for the configure-init subcommand
+    desc_configure_init = "Install and initialize Brokkr's config files"
     parser_configure_init = subparsers.add_parser(
-        "configure-init", help="Install and initialize Brokkr's config files",
-        argument_default=argparse.SUPPRESS)
+        "configure-init", help=desc_configure_init,
+        description=desc_configure_init, argument_default=argparse.SUPPRESS)
     verbose_parsers.append(parser_configure_init)
 
     # Parser for the configure-reset subcommand
+    desc_configure_reset = "Reset brokkr-managed configuration files"
     parser_configure_reset = subparsers.add_parser(
-        "configure-reset", help="Reset brokkr-managed configuration files",
-        argument_default=argparse.SUPPRESS)
+        "configure-reset", help=desc_configure_reset,
+        description=desc_configure_reset, argument_default=argparse.SUPPRESS)
     parser_configure_reset.add_argument(
         "--reset-names", nargs="+",
         help="Which config names to reset; by default, resets all of them")
@@ -150,9 +161,10 @@ def generate_argparser_main():
     verbose_parsers.append(parser_configure_reset)
 
     # Parser for the configure-unit subcommand
+    desc_configure_unit = "Set up per-unit configuration"
     parser_configure_unit = subparsers.add_parser(
-        "configure-unit", help="Set up per-unit configuration",
-        argument_default=argparse.SUPPRESS)
+        "configure-unit", help=desc_configure_unit,
+        description=desc_configure_unit, argument_default=argparse.SUPPRESS)
     parser_configure_unit.add_argument(
         "number", type=int, nargs="?", default=None,
         help=("The unit number of this particular Brokkr client. "
@@ -169,9 +181,10 @@ def generate_argparser_main():
     verbose_parsers.append(parser_configure_unit)
 
     # Parser for the configure-system subcommand
+    desc_configure_system = "Set up sensor system configuration"
     parser_configure_system = subparsers.add_parser(
-        "configure-system", help="Set up sensor system configuration",
-        argument_default=argparse.SUPPRESS)
+        "configure-system", help=desc_configure_system,
+        description=desc_configure_system, argument_default=argparse.SUPPRESS)
     parser_configure_system.add_argument(
         "system_name", nargs="?",
         help=("The system name to act on (show, add, update, remove). "
