@@ -2,7 +2,6 @@
 Reprisent of each measurement/observation/variable as a standard DataValue.
 """
 
-
 # Local imports
 from brokkr.config.main import CONFIG
 import brokkr.utils.misc

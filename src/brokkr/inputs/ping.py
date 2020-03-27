@@ -22,7 +22,6 @@ class PingInput(brokkr.pipeline.step.ValueInputStep):
             **value_step_kwargs):
         ping_data_type = brokkr.pipeline.datavalue.DataType(
             name=data_name,
-            conversion="int",
             binary_type="i",
             full_name=full_name,
             unit=False,

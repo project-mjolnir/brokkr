@@ -23,7 +23,6 @@ class RunTimeInput(brokkr.pipeline.step.ValueInputStep):
             **value_step_kwargs):
         runtime_data_type = brokkr.pipeline.datavalue.DataType(
             name=data_name,
-            conversion="float",
             binary_type="d",
             full_name=full_name,
             unit="s",

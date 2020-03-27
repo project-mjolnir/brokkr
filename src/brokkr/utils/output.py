@@ -17,12 +17,31 @@ import brokkr.utils.misc
 LOGGER = logging.getLogger(__name__)
 
 
-def format_data(data=None, seperator="\n"):
-    data_list = [
-        "{key}: {value!s}".format(
-            key=key.replace("_", " ").title(), value=value)
-        for key, value in data.items()]
-    formatted_data = seperator.join(data_list) + "\n"
+def format_data(data=None, seperator="\n", include_raw=False):
+    output_data_list = []
+    for data_name, data_value in data.items():
+        # Get key attributes to pretty-print
+        name = getattr(
+            data_value, "full_name", data_name.replace("_", " ").title())
+        value = getattr(data_value, "value", data_value)
+        raw_value = getattr(data_value, "raw_value", None)
+        uncertainty = getattr(data_value, "uncertainty", None)
+        if getattr(data_value, "data_type", None):
+            unit = getattr(data_value.data_type, "unit", None)
+
+        # Build list of values to print per data object
+        data_componets = [f"{name}:", f"{value!s}"]
+        if not data_value.is_na:
+            if unit:
+                data_componets.append(f"{unit}")
+            if uncertainty not in (None, False, 1):
+                data_componets.append(f"+/-{uncertainty!s}")
+            if raw_value is not None and include_raw:
+                data_componets.append(f"(Raw: {raw_value!r})")
+        data_item = " ".join(data_componets)
+        output_data_list.append(data_item)
+
+    formatted_data = seperator.join(output_data_list) + "\n"
     return formatted_data
 
 

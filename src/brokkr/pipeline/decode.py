@@ -169,8 +169,17 @@ class DataDecoder(brokkr.utils.misc.AutoReprMixin):
                 output_data[data_type.name] = data_value
                 error_count += 1
             else:
+                if data_type.uncertainty is True:
+                    uncertainty = abs(
+                        self.conversion_functions[data_type.conversion](
+                            1, **data_type.conversion_kwargs)
+                        - self.conversion_functions[data_type.conversion](
+                            0, **data_type.conversion_kwargs))
+                else:
+                    uncertainty = data_type.uncertainty
                 data_value = brokkr.pipeline.datavalue.DataValue(
-                    output_value, data_type=data_type, raw_value=value)
+                    output_value, data_type=data_type, raw_value=value,
+                    uncertainty=uncertainty)
                 output_data[data_type.name] = data_value
 
         if error_count > 1:
