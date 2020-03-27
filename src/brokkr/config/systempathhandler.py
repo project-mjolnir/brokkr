@@ -29,7 +29,7 @@ ENV_VARIABLES_SYSTEMPATH = {
     (PACKAGE_NAME.upper() + "_SYSTEM_PATH"): ("system_path_override",),
     }
 CLI_ARGUMENTS_SYSTEMPATH = {
-    "system": ("default_system_path",),
+    "system": ("default_system",),
     "system_path": ("system_path_override",),
     }
 
