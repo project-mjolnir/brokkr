@@ -28,7 +28,8 @@ class DataType(brokkr.utils.misc.AutoReprMixin):
         self.na_marker = na_marker
         self.conversion_kwargs = conversion_kwargs
 
-        self.full_name = self.name if full_name is None else full_name
+        self.full_name = (self.name.replace("_", " ").title()
+                          if full_name is None else full_name)
         self.unit = unit
         self.uncertainty = uncertainty
 

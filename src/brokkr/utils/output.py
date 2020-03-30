@@ -21,23 +21,31 @@ def format_data(data=None, seperator="\n", include_raw=False):
     output_data_list = []
     for data_name, data_value in data.items():
         # Get key attributes to pretty-print
-        name = getattr(
-            data_value, "full_name", data_name.replace("_", " ").title())
         value = getattr(data_value, "value", data_value)
         raw_value = getattr(data_value, "raw_value", None)
         uncertainty = getattr(data_value, "uncertainty", None)
         if getattr(data_value, "data_type", None):
-            unit = getattr(data_value.data_type, "unit", None)
+            name = data_value.data_type.full_name
+            unit = data_value.data_type.unit
+        else:
+            name = data_name.replace("_", " ").title()
+            unit = None
 
         # Build list of values to print per data object
         data_componets = [f"{name}:", f"{value!s}"]
-        if not data_value.is_na:
+        if not getattr(data_value, "is_na", data_value == "NA"):
             if unit:
                 data_componets.append(f"{unit}")
-            if uncertainty not in (None, False, 1):
+            if (uncertainty not in (None, False)
+                    and not (isinstance(uncertainty, int)
+                             and uncertainty == 1)):
                 data_componets.append(f"+/-{uncertainty!s}")
+                if unit:
+                    data_componets.append(f"{unit}")
             if raw_value is not None and include_raw:
                 data_componets.append(f"(Raw: {raw_value!r})")
+        elif getattr(data_value, "value", data_value) != "NA":
+            data_componets.append("(NA)")
         data_item = " ".join(data_componets)
         output_data_list.append(data_item)
 
