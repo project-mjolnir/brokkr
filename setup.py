@@ -47,8 +47,14 @@ setuptools.setup(
         ],
     extras_require={
         "all": [
+            "Adafruit-Blinka",
+            "adafruit-circuitpython-busdevice",
             "pymodbus",
             "pyserial",
+            ],
+        "adafruit": [
+            "Adafruit-Blinka",
+            "adafruit-circuitpython-busdevice",
             ],
         "modbus": [
             "pymodbus",
