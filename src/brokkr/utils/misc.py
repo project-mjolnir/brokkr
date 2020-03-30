@@ -14,7 +14,11 @@ import multiprocessing
 import time
 
 # Local imports
-from brokkr.constants import SLEEP_TICK_S, LEVEL_NAME_SYSTEM
+from brokkr.constants import (
+    SLEEP_TICK_S,
+    LEVEL_NAME_SYSTEM,
+    SYSTEM_NAME_DEFAULT,
+    )
 
 
 # Constants for run periodic
@@ -106,11 +110,7 @@ def convert_path(path):
 
 # --- System path utilities --- #
 
-def get_system_path(systempath_config, errors="ignore"):
-    # Replace errors with enum
-    error_modes = {"raise", "ignore"}
-    if errors not in error_modes:
-        raise ValueError(f"Errors must be one of {error_modes}, not {errors}")
+def get_system_path(systempath_config, allow_default=True):
     default_system = systempath_config["default_system"]
     system_paths = systempath_config["system_paths"]
     system_path_override = systempath_config["system_path_override"]
@@ -118,22 +118,22 @@ def get_system_path(systempath_config, errors="ignore"):
     if system_path_override:
         return system_path_override
 
+    if (default_system == SYSTEM_NAME_DEFAULT
+            and not system_paths.get(default_system, None)):
+        if allow_default:
+            return Path()
+        raise RuntimeError(f"System still set to default ({default_system})")
+
     if not system_paths:
-        if errors == "raise":
-            raise RuntimeError("No system paths configured; no override set")
-        return Path()
+        raise RuntimeError("No system paths configured; no override set")
 
     if not default_system:
-        if errors == "raise":
-            raise RuntimeError("No system name configured; no override set")
-        return Path()
+        raise RuntimeError("No system name configured; no override set")
 
     try:
         system_path = system_paths[default_system]
     except KeyError:
-        if errors == "raise":
-            raise KeyError(f"System {default_system} not in {system_paths!r}")
-        return Path()
+        raise KeyError(f"System {default_system} not in {system_paths!r}")
 
     return convert_path(system_path)
 

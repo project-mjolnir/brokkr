@@ -19,6 +19,9 @@ SLEEP_TICK_S = 0.5
 METADATA_VARS = [
     "name_full", "author", "description", "homepage", "repo", "version"]
 
+# Default system name
+SYSTEM_NAME_DEFAULT = "mjolnir"
+
 
 # --- Path constants ---
 

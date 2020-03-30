@@ -30,21 +30,22 @@ DEFAULT_PIPELINE = {
 
 # --- Startup helper functions --- #
 
-def warn_on_startup_issues():
+def warn_on_startup_issues(logger=None):
     from brokkr.config.confighandlers import CONFIG_HANDLER_UNIT
     from brokkr.config.metadatahandler import CONFIG_HANDLER_METADATA
     from brokkr.config.systempath import SYSTEMPATH_CONFIG
     from brokkr.config.unit import UNIT_CONFIGS
     import brokkr.utils.misc
 
-    logger = logging.getLogger(__name__)
+    if logger is None:
+        logger = logging.getLogger(__name__)
 
     issues_found = False
 
     # Avoid users trying to start Brokkr without setting up the basic config
     try:
         system_path = brokkr.utils.misc.get_system_path(
-            SYSTEMPATH_CONFIG, errors="raise")
+            SYSTEMPATH_CONFIG, allow_default=False)
     except RuntimeError as e:
         logger.warning("%s getting system path: %s", type(e).__name__, e)
         logger.debug("Error details:", exc_info=True)
@@ -211,6 +212,7 @@ def get_monitoring_pipeline(interval_s=1, exit_event=None, logger=None):
 def print_status():
     logger = logging.getLogger(__name__)
     logger.debug("Getting oneshot status data")
+    warn_on_startup_issues()
 
     pipeline_name, monitoring_pipeline = get_monitoring_pipeline(logger=logger)
     logger.debug("Running monitoring pipeline %s", pipeline_name)
@@ -222,6 +224,7 @@ def print_status():
 def start_monitoring(interval_s=1):
     logger = logging.getLogger(__name__)
     logger.debug("Printing monitoring data")
+    warn_on_startup_issues()
 
     pipeline_name, monitoring_pipeline = get_monitoring_pipeline(
         interval_s=interval_s, logger=logger)

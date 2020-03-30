@@ -10,6 +10,7 @@ from brokkr.constants import (
     CONFIG_VERSION,
     LEVEL_NAME_LOCAL,
     PACKAGE_NAME,
+    SYSTEM_NAME_DEFAULT,
     )
 
 
@@ -20,7 +21,7 @@ CONFIG_HANDLER_FACTORY = brokkr.config.base.ConfigHandlerFactory(
 
 
 DEFAULT_CONFIG_SYSTEMPATH = {
-    "default_system": "",
+    "default_system": SYSTEM_NAME_DEFAULT,
     "system_path_override": "",
     "system_paths": {},
     }
