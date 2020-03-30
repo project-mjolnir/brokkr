@@ -49,7 +49,7 @@ BROKKR_SERVICE_DEFAULTS = {
             "systemd-timesyncd.service sshd.service"
             ),
         "After": (
-            "time-sync.target multi-user.target "
+            "time-sync.target multi-user.target network.target "
             "sshd.service systemd-time-wait-sync.service "
             f"systemd-timesyncd.service {AUTOSSH_SERVICE_NAME}"
             ),
@@ -76,7 +76,7 @@ AUTOSSH_SERVICE_DEFAULTS = {
     "Unit": {
         "Description": "Brokkr AutoSSH tunnel for {SYSTEM_FULLNAME}",
         "Wants": "sshd.service",
-        "After": "multi-user.target sshd.service",
+        "After": "multi-user.target network.target sshd.service",
         "Before": f"{BROKKR_SERVICE_NAME}",
         },
     "Service": {
