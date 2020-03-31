@@ -3,11 +3,11 @@ Read and decode a binary UDP datagram.
 """
 
 # Local imports
-import brokkr.pipeline.step
+import brokkr.pipeline.baseinput
 import brokkr.utils.network
 
 
-class UDPInput(brokkr.pipeline.step.ValueInputStep):
+class UDPInput(brokkr.pipeline.baseinput.ValueInputStep):
     def __init__(
             self,
             host,

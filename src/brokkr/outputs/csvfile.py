@@ -6,7 +6,7 @@ Data output to a CSV file.
 import csv
 
 # Local imports
-import brokkr.pipeline.step
+import brokkr.pipeline.baseoutput
 import brokkr.utils.output
 
 
@@ -19,7 +19,7 @@ CSV_KWARGS_DEFAULT = {
     }
 
 
-class CSVFileOutput(brokkr.pipeline.step.FileOutputStep):
+class CSVFileOutput(brokkr.pipeline.baseoutput.FileOutputStep):
     def __init__(
             self, csv_kwargs=None, extension="csv", **file_kwargs):
         super().__init__(extension=extension, **file_kwargs)

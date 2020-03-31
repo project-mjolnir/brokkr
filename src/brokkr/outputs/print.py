@@ -7,7 +7,7 @@ import logging
 import sys
 
 # Local imports
-import brokkr.pipeline.step
+import brokkr.pipeline.base
 import brokkr.utils.output
 
 
@@ -15,7 +15,7 @@ CURSOR_UP_CHAR = '\x1b[1A'
 ERASE_LINE_CHAR = '\x1b[2K'
 
 
-class PrintOutput(brokkr.pipeline.step.OutputStep):
+class PrintOutput(brokkr.pipeline.base.OutputStep):
     def __init__(self, prefix="", in_place=False, **pipeline_step_kwargs):
         super().__init__(**pipeline_step_kwargs)
         self.prefix = prefix

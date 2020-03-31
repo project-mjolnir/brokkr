@@ -8,10 +8,10 @@ import time
 
 # Local imports
 import brokkr.pipeline.datavalue
-import brokkr.pipeline.step
+import brokkr.pipeline.baseinput
 
 
-class CurrentTimeInput(brokkr.pipeline.step.ValueInputStep):
+class CurrentTimeInput(brokkr.pipeline.baseinput.ValueInputStep):
     def __init__(
             self,
             data_name="time",

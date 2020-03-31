@@ -11,7 +11,7 @@ import pymodbus.pdu
 import serial.tools.list_ports
 
 # Local imports
-import brokkr.pipeline.step
+import brokkr.pipeline.baseinput
 import brokkr.utils.misc
 import brokkr.utils.ports
 
@@ -26,7 +26,7 @@ MODBUS_SERIAL_KWARGS_DEFAULT = {
     }
 
 
-class ModbusInput(brokkr.pipeline.step.ValueInputStep):
+class ModbusInput(brokkr.pipeline.baseinput.ValueInputStep):
     def __init__(
             self,
             start_address=0x0000,

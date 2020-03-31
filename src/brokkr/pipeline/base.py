@@ -11,6 +11,8 @@ import brokkr.utils.log
 import brokkr.utils.misc
 
 
+# --- Common base classes --- #
+
 class Executable(brokkr.utils.misc.AutoReprMixin, metaclass=abc.ABCMeta):
     def __init__(self, name="Unnamed", input_data=None, exit_event=None):
         self.name = name
@@ -26,6 +28,8 @@ class Executable(brokkr.utils.misc.AutoReprMixin, metaclass=abc.ABCMeta):
             input_data = self.input_data
         return input_data
 
+
+# --- Common mixin classes --- #
 
 class SequentialMixin:
     def execute_step(self, idx, step, input_data=None):
@@ -47,3 +51,30 @@ class SequentialMixin:
             return None
         else:
             return output_data
+
+
+# --- Core PipelineStep classes --- #
+
+class PipelineStep(Executable, metaclass=abc.ABCMeta):
+    # pylint: disable=abstract-method
+    pass
+
+
+class UnitStep(PipelineStep, metaclass=abc.ABCMeta):
+    # pylint: disable=abstract-method
+    pass
+
+
+class InputStep(PipelineStep, metaclass=abc.ABCMeta):
+    # pylint: disable=abstract-method
+    pass
+
+
+class TransformStep(PipelineStep, metaclass=abc.ABCMeta):
+    # pylint: disable=abstract-method
+    pass
+
+
+class OutputStep(PipelineStep, metaclass=abc.ABCMeta):
+    # pylint: disable=abstract-method
+    pass

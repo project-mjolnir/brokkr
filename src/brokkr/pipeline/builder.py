@@ -203,7 +203,7 @@ class MonitorBuilder(ObjectBuilder):
             **builder_kwargs,
                 ):
         monitor_input_step = {
-            "_module_path": "brokkr.pipeline.step",
+            "_module_path": "brokkr.pipeline.multistep",
             "_class_name": "SequentialMultiStep",
             "name": "Monitoring Data Input",
             "steps": monitor_input_steps,
@@ -217,7 +217,7 @@ class MonitorBuilder(ObjectBuilder):
                 }
         else:
             monitor_output_step = {
-                "_module_path": "brokkr.pipeline.step",
+                "_module_path": "brokkr.pipeline.multistep",
                 "_class_name": "SequentialMultiStep",
                 "name": "Monitoring Data Output",
                 "steps": monitor_output_steps,

@@ -7,14 +7,14 @@ import time
 
 # Local imports
 import brokkr.pipeline.datavalue
-import brokkr.pipeline.step
+import brokkr.pipeline.baseinput
 import brokkr.utils.misc
 
 
 DEFAULT_PRECISION = 3
 
 
-class RunTimeInput(brokkr.pipeline.step.ValueInputStep):
+class RunTimeInput(brokkr.pipeline.baseinput.ValueInputStep):
     def __init__(
             self,
             data_name="runtime",
