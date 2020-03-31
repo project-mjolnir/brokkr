@@ -43,7 +43,7 @@ class OutputStep(PipelineStep, metaclass=abc.ABCMeta):
 
 # --- Base input classes --- #
 
-class ValueInputStep(PipelineStep, metaclass=abc.ABCMeta):
+class ValueInputStep(InputStep, metaclass=abc.ABCMeta):
     def __init__(
             self,
             data_types,
@@ -161,8 +161,24 @@ class SequentialMultiStep(MultiStep, brokkr.pipeline.base.SequentialMixin):
         input_data = super().execute(input_data=input_data)
         output_data = []
         for idx, step in enumerate(self.steps):
-            step_output = self.execute_step(idx, step, input_data=input_data)
-            if output_data is not None:
+            step_output = self.execute_step(
+                idx, step, input_data=input_data)
+            if step_output is None and isinstance(step, ValueInputStep):
+                try:
+                    step_output = step.decoder.output_na_data()
+                except Exception as e:
+                    self.logger.critical(
+                        "%s outputing NA data for InputStep %s (%s): %s",
+                        type(e).__name__, step.name,
+                        brokkr.utils.misc.get_full_class_name(step), e)
+                    self.logger.info("Error details:", exc_info=True)
+                else:
+                    self.logger.debug(
+                        "Replaced output None for InputStep %s (%s) with %r",
+                        step.name, brokkr.utils.misc.get_full_class_name(step),
+                        step_output)
+
+            if step_output is not None:
                 output_data.append(step_output)
 
         output_data_flat = {}

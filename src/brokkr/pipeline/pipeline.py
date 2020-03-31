@@ -59,9 +59,9 @@ class Pipeline(brokkr.pipeline.base.Executable, metaclass=abc.ABCMeta):
 
 class SequentialPipeline(Pipeline, brokkr.pipeline.base.SequentialMixin):
     def execute(self, input_data=None):
-        input_data = super().execute(input_data=input_data)
+        data = super().execute(input_data=input_data)
         for idx, step in enumerate(self.steps):
-            input_data = self.execute_step(idx, step, input_data=input_data)
-            if input_data is None:
+            data = self.execute_step(idx, step, input_data=data)
+            if data is None:
                 break
-        return input_data
+        return data
