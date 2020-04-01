@@ -18,6 +18,8 @@ class DataType(brokkr.utils.misc.AutoReprMixin):
             full_name=None,
             unit=None,
             uncertainty=None,
+            range_min=None,
+            range_max=None,
             custom_attrs=None,
             **conversion_kwargs,
                 ):
@@ -32,6 +34,7 @@ class DataType(brokkr.utils.misc.AutoReprMixin):
                           if full_name is None else full_name)
         self.unit = unit
         self.uncertainty = uncertainty
+        self.range = (range_min, range_max)
 
         if custom_attrs is not None:
             for attr_name, attr_value in custom_attrs.items():

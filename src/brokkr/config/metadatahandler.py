@@ -25,6 +25,7 @@ CONFIG_HANDLER_FACTORY = brokkr.config.base.ConfigHandlerFactory(
 DEFAULT_CONFIG_METADATA = {
     "name": "mjolnir",
     **{key: "" for key in METADATA_VARS},
+    "license": "",
     "brokkr_version_min": "0.3.0",
     "sindri_version_min": "0.3.0",
     }
