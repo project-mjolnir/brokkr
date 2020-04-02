@@ -27,7 +27,7 @@ class SequentialMultiStep(MultiStep, brokkr.pipeline.base.SequentialMixin):
             if step_output is None and isinstance(
                     step, brokkr.pipeline.baseinput.ValueInputStep):
                 try:
-                    step_output = step.decoder.output_na_data()
+                    step_output = step.decoder.output_na_values()
                 except Exception as e:
                     self.logger.critical(
                         "%s outputing NA data for InputStep %s (%s): %s",

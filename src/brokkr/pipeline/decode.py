@@ -12,6 +12,8 @@ import brokkr.pipeline.datavalue
 import brokkr.utils.misc
 
 
+NA_MARKER_DEFAULT = "NA"
+
 OUTPUT_CUSTOM = "custom"
 
 
@@ -114,6 +116,7 @@ class DataDecoder(brokkr.utils.misc.AutoReprMixin):
     def __init__(
             self,
             data_types,
+            na_marker=None,
             conversion_functions=None,
                 ):
         self.data_types = data_types
@@ -121,21 +124,29 @@ class DataDecoder(brokkr.utils.misc.AutoReprMixin):
             conversion_functions = {}
         conversion_functions = {
             **self.conversion_functions, **conversion_functions}
+        self.na_marker = NA_MARKER_DEFAULT if na_marker is None else na_marker
 
     def __len__(self):
         return len(self.data_types)
 
-    def output_na_data(self):
-        output_data = {
-            data_type.name: brokkr.pipeline.datavalue.DataValue(
-                data_type.na_marker, data_type=data_type, is_na=True)
-            for data_type in self.data_types
-            if data_type.conversion}
+    def output_na_value(self, data_type):
+        if data_type.na_marker is not None:
+            na_marker = data_type.na_marker
+        else:
+            na_marker = self.na_marker
+        data_value = brokkr.pipeline.datavalue.DataValue(
+            na_marker, data_type=data_type, is_na=True)
+        return data_value
+
+    def output_na_values(self):
+        output_data = {data_type.name: self.output_na_value(data_type)
+                       for data_type in self.data_types
+                       if data_type.conversion}
         return output_data
 
     def convert_data(self, raw_data):
         if not raw_data:
-            output_data = self.output_na_data()
+            output_data = self.output_na_values()
             LOGGER.debug("No data to convert, returning: %r", output_data)
             return output_data
 
@@ -145,6 +156,12 @@ class DataDecoder(brokkr.utils.misc.AutoReprMixin):
         for data_type, value in zip(self.data_types, raw_data):
             if not data_type.conversion:
                 continue  # If this data value should be dropped, ignore it
+            if value is None:
+                LOGGER.debug("Data value is None decoding data_type %r to %s, "
+                             "coercing to NA",
+                             data_type.name, data_type.conversion)
+                output_data[data_type.name] = self.output_na_value(data_type)
+                continue
             try:
                 output_value = (
                     self.conversion_functions[data_type.conversion](
@@ -164,9 +181,7 @@ class DataDecoder(brokkr.utils.misc.AutoReprMixin):
                         data_type.name, data_type.conversion, e)
                     LOGGER.debug("Error details:", exc_info=True)
 
-                data_value = brokkr.pipeline.datavalue.DataValue(
-                    data_type.na_marker, data_type=data_type, is_na=True)
-                output_data[data_type.name] = data_value
+                output_data[data_type.name] = self.output_na_value(data_type)
                 error_count += 1
             else:
                 if data_type.uncertainty is True:
@@ -192,7 +207,7 @@ class DataDecoder(brokkr.utils.misc.AutoReprMixin):
     def decode_data(self, data):
         if data is None:
             LOGGER.debug("No data to decode")
-            output_data = self.output_na_data()
+            output_data = self.output_na_values()
         else:
             output_data = self.convert_data(data)
         return output_data

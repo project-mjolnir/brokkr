@@ -179,6 +179,7 @@ def create_build_context(exit_event, mp_handler=None):
         subobject_presets=PRESETS,
         plugin_root_path=(brokkr.utils.misc.get_system_path(SYSTEMPATH_CONFIG)
                           / SYSTEM_SUBPATH_PLUGINS),
+        na_marker=CONFIG["general"]["na_marker"],
         )
     return build_context
 

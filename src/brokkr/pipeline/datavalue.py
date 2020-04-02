@@ -3,7 +3,6 @@ Reprisent of each measurement/observation/variable as a standard DataValue.
 """
 
 # Local imports
-from brokkr.config.main import CONFIG
 import brokkr.utils.misc
 
 
@@ -14,7 +13,7 @@ class DataType(brokkr.utils.misc.AutoReprMixin):
             conversion=True,
             binary_type=None,
             input_type=None,
-            na_marker=CONFIG["general"]["na_marker"],
+            na_marker=None,
             full_name=None,
             unit=None,
             uncertainty=None,

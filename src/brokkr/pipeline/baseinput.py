@@ -18,6 +18,7 @@ class ValueInputStep(brokkr.pipeline.base.InputStep, metaclass=abc.ABCMeta):
             binary_decoder=False,
             datatype_default_kwargs=None,
             conversion_functions=None,
+            na_marker=None,
             **pipeline_step_kwargs):
         super().__init__(**pipeline_step_kwargs)
         if datatype_default_kwargs is None:
@@ -47,6 +48,7 @@ class ValueInputStep(brokkr.pipeline.base.InputStep, metaclass=abc.ABCMeta):
         self.decoder = decoder_class(
             data_types=self.data_types,
             conversion_functions=conversion_functions,
+            na_marker=na_marker,
             )
 
     @abc.abstractmethod

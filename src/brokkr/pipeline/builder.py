@@ -29,6 +29,7 @@ class BuildContext(brokkr.utils.misc.AutoReprMixin):
             subobject_lookup=None,
             subobject_presets=None,
             plugin_root_path=None,
+            na_marker=None,
                 ):
         self.exit_event = exit_event
         self.subobject_lookup = (
@@ -40,6 +41,7 @@ class BuildContext(brokkr.utils.misc.AutoReprMixin):
         else:
             self.plugin_root_path = brokkr.utils.misc.convert_path(
                 plugin_root_path)
+        self.na_marker = na_marker
 
     def merge(self, build_context):
         if build_context is None:
@@ -159,9 +161,9 @@ class ObjectBuilder(Builder):
         self.init_kwargs = copy.deepcopy(init_kwargs)
         if name is not None:
             self.init_kwargs["name"] = name
-
-        if name is None:
+        else:
             name = "Unnamed " + self.class_name
+
         super().__init__(
             subobjects=steps,
             name=name,
@@ -211,6 +213,9 @@ class ObjectBuilder(Builder):
 
         # Build the final object
         obj_class = getattr(module_object, self.class_name)
+        if (issubclass(obj_class, brokkr.pipeline.baseinput.ValueInputStep)
+                and getattr(self.init_kwargs, "na_marker", None) is None):
+            self.init_kwargs["na_marker"] = build_context.na_marker
         obj_instance = obj_class(
             exit_event=build_context.exit_event, **self.init_kwargs)
         return obj_instance
