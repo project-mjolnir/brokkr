@@ -5,6 +5,7 @@ Build pipelines to be executed by a MultiprocessHandler.
 # Standard library imports
 import copy
 import importlib
+import importlib.util
 import logging
 
 # Local imports
@@ -15,7 +16,38 @@ INTERVAL_DEFAULT = 60
 
 PRESET_KEY = "_preset"
 
+PLUGIN_SUBPACKAGE = "plugins"
+PLUGIN_SUFFIX_DEFAULT = ".py"
+
 LOGGER = logging.getLogger(__name__)
+
+
+class BuildContext(brokkr.utils.misc.AutoReprMixin):
+    def __init__(
+            self,
+            exit_event=None,
+            subobject_lookup=None,
+            subobject_presets=None,
+            plugin_root_path=None,
+                ):
+        self.exit_event = exit_event
+        self.subobject_lookup = (
+            {} if subobject_lookup is None else subobject_lookup)
+        self.subobject_presets = (
+            {} if subobject_presets is None else subobject_presets)
+        if plugin_root_path is None:
+            self.plugin_root_path = None
+        else:
+            self.plugin_root_path = brokkr.utils.misc.convert_path(
+                plugin_root_path)
+
+    def merge(self, build_context):
+        if build_context is None:
+            return self
+        build_kwargs = {
+            key: value for key, value in vars(build_context).items() if value}
+        build_context = BuildContext(**{**vars(self), **build_kwargs})
+        return build_context
 
 
 class Builder(brokkr.utils.misc.AutoReprMixin):
@@ -24,39 +56,27 @@ class Builder(brokkr.utils.misc.AutoReprMixin):
             subobjects=None,
             name=None,
             name_sep=":",
-            exit_event=None,
-            subobject_lookup=None,
-            subobject_presets=None,
+            build_context=None,
                 ):
         self.subobjects = [] if subobjects is None else subobjects
         self.name = "Unnamed" if name is None else name
         self.name_sep = name_sep
-        self.exit_event = exit_event
-        self.subobject_lookup = (
-            {} if subobject_lookup is None else subobject_lookup)
-        self.subobject_presets = (
-            {} if subobject_presets is None else subobject_presets)
+        self.build_context = (
+            BuildContext() if build_context is None else build_context)
 
     def build_subobject(
             self,
             subobject,
             idx=0,
-            exit_event=None,
-            subobject_lookup=None,
-            subobject_presets=None,
+            build_context=None,
                 ):
-        if exit_event is None:
-            exit_event = self.exit_event
-        if subobject_lookup is None:
-            subobject_lookup = self.subobject_lookup
-        if subobject_presets is None:
-            subobject_presets = self.subobject_presets
+        build_context = self.build_context.merge(build_context)
 
         if not isinstance(subobject, Builder):
             # Lookup subobject names in the local dictionary
             if isinstance(subobject, str):
                 try:
-                    subobject = subobject_lookup[subobject]
+                    subobject = build_context.subobject_lookup[subobject]
                 except KeyError:
                     # If subobject not found, format it as a preset
                     subobject = {PRESET_KEY: subobject}
@@ -65,15 +85,15 @@ class Builder(brokkr.utils.misc.AutoReprMixin):
                 key_parts = subobject[PRESET_KEY].split(".")
                 try:
                     preset = brokkr.utils.misc.get_inner_dict(
-                        obj=subobject_presets, keys=key_parts)
+                        obj=build_context.subobject_presets, keys=key_parts)
                 except KeyError as e:
                     LOGGER.error(
-                        "%s finding object %s of preset %r in of pipeline %r",
+                        "%s finding object %s of preset %r in pipeline %r",
                         type(e).__name__, e, subobject[PRESET_KEY], self.name)
                     LOGGER.info("Error details:", exc_info=True)
-                    sub_dict = subobject_presets
+                    sub_dict = build_context.subobject_presets
                     LOGGER.info("Valid names for local lookup table: %r",
-                                list(subobject_lookup.keys()))
+                                list(build_context.subobject_lookup.keys()))
                     for key_part, next_part in zip(["root", *key_parts[:-1]],
                                                    key_parts):
                         LOGGER.info("Valid names for preset level %r: %r",
@@ -99,11 +119,7 @@ class Builder(brokkr.utils.misc.AutoReprMixin):
                 raise SystemExit(1)
 
             subobject.pop("_builder", None)
-            subobject = builder(
-                exit_event=exit_event,
-                subobject_lookup=subobject_lookup,
-                subobject_presets=subobject_presets,
-                **subobject)
+            subobject = builder(build_context=build_context, **subobject)
         return subobject
 
     def build_subobjects(self, **build_kwargs):
@@ -121,8 +137,9 @@ class Builder(brokkr.utils.misc.AutoReprMixin):
             return built_subobjects
         return None
 
-    def build(self, exit_event=None, **build_kwargs):
-        return self.build_subobjects(exit_event=exit_event, **build_kwargs)
+    def build(self, build_context=None, **build_kwargs):
+        return self.build_subobjects(
+            build_context=build_context, **build_kwargs)
 
 
 class ObjectBuilder(Builder):
@@ -130,14 +147,14 @@ class ObjectBuilder(Builder):
             self,
             _module_path="brokkr.pipeline.pipeline",
             _class_name="SequentialPipeline",
+            _is_plugin=False,
             name=None,
             steps=None,
-            exit_event=None,
-            subobject_lookup=None,
-            subobject_presets=None,
+            build_context=None,
             **init_kwargs):
         self.module_path = _module_path
         self.class_name = _class_name
+        self.is_plugin = _is_plugin
 
         self.init_kwargs = copy.deepcopy(init_kwargs)
         if name is not None:
@@ -148,48 +165,54 @@ class ObjectBuilder(Builder):
         super().__init__(
             subobjects=steps,
             name=name,
-            exit_event=exit_event,
-            subobject_lookup=subobject_lookup,
-            subobject_presets=subobject_presets,
+            build_context=build_context,
             )
 
     def build_subobject(
             self,
             subobject,
             idx=0,
-            exit_event=None,
-            subobject_lookup=None,
-            subobject_presets=None,
+            build_context=None,
                 ):
         subobject = super().build_subobject(
             subobject,
             idx=idx,
-            exit_event=exit_event,
-            subobject_lookup=subobject_lookup,
-            subobject_presets=subobject_presets,
+            build_context=build_context,
             )
 
-        built_subobject = subobject.build(
-            exit_event=exit_event,
-            subobject_lookup=subobject_lookup,
-            subobject_presets=subobject_presets,
-            )
+        built_subobject = subobject.build(build_context=build_context)
         return built_subobject
 
-    def build(self, exit_event=None, **build_kwargs):
+    def build(self, build_context=None, **build_kwargs):
         LOGGER.debug(
             "Building %s (%s.%s) with kwargs %r",
             self.name, self.module_path, self.class_name, self.init_kwargs)
+        build_context = self.build_context.merge(build_context)
 
         # Recursively build the steps comprising this item, if present
-        built_steps = super().build(exit_event=exit_event, **build_kwargs)
+        built_steps = super().build(
+            build_context=build_context, **build_kwargs)
         if built_steps:
             self.init_kwargs["steps"] = built_steps
 
-        # Load and generate the final object
-        module_object = importlib.import_module(self.module_path)
+        # Load specified module or plugin
+        if self.is_plugin:
+            module_path = brokkr.utils.misc.convert_path(self.module_path)
+            if not module_path.is_absolute():
+                module_path = build_context.plugin_root_path / module_path
+            if not module_path.suffix:
+                module_path = module_path.with_suffix(PLUGIN_SUFFIX_DEFAULT)
+            module_spec = importlib.util.spec_from_file_location(
+                ".".join([PLUGIN_SUBPACKAGE, module_path.stem]), module_path)
+            module_object = importlib.util.module_from_spec(module_spec)
+            module_spec.loader.exec_module(module_object)
+        else:
+            module_object = importlib.import_module(self.module_path)
+
+        # Build the final object
         obj_class = getattr(module_object, self.class_name)
-        obj_instance = obj_class(exit_event=exit_event, **self.init_kwargs)
+        obj_instance = obj_class(
+            exit_event=build_context.exit_event, **self.init_kwargs)
         return obj_instance
 
 
@@ -241,7 +264,6 @@ class TopLevelBuilder(Builder):
             name_sep="-",
             **builder_kwargs,
             )
-        print(pipelines)
 
 
 BUILDERS = {

@@ -20,7 +20,7 @@ class RunTimeInput(brokkr.pipeline.baseinput.ValueInputStep):
             data_name="runtime",
             full_name="Runtime",
             precision=DEFAULT_PRECISION,
-            **value_step_kwargs):
+            **value_input_kwargs):
         runtime_data_type = brokkr.pipeline.datavalue.DataType(
             name=data_name,
             binary_type="d",
@@ -30,7 +30,7 @@ class RunTimeInput(brokkr.pipeline.baseinput.ValueInputStep):
                             1 / (10 ** precision))
             )
         super().__init__(data_types=[runtime_data_type], binary_decoder=False,
-                         **value_step_kwargs)
+                         **value_input_kwargs)
 
         self._precision = precision
 

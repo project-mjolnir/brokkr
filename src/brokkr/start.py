@@ -13,7 +13,11 @@ from pathlib import Path
 import sys
 
 # Local imports
-from brokkr.constants import LEVEL_NAME_SYSTEM, PACKAGE_NAME
+from brokkr.constants import (
+    LEVEL_NAME_SYSTEM,
+    PACKAGE_NAME,
+    SYSTEM_SUBPATH_PLUGINS,
+    )
 import brokkr.utils.log
 
 
@@ -143,19 +147,44 @@ def handle_startup_error(e, mp_handler, exit_event, logger, message=""):
     if isinstance(e, SystemExit):
         logger.critical("Error caught%s, exiting", message)
         exit_event.set()
-        mp_handler.shutdown_logger()
+        if mp_handler is not None:
+            mp_handler.shutdown_logger()
         sys.exit(e.code)
     if isinstance(e, Exception):
         logger.critical("%s%s: %s", type(e).__name__, message, e)
         logger.info("Error details:", exc_info=True)
         exit_event.set()
-        mp_handler.shutdown_logger()
+        if mp_handler is not None:
+            mp_handler.shutdown_logger()
         sys.exit(1)
+
+
+def create_build_context(exit_event, mp_handler=None):
+    from brokkr.config.main import CONFIG
+    from brokkr.config.systempath import SYSTEMPATH_CONFIG
+
+    logger = logging.getLogger(__name__)
+
+    # Import presets, and handle any errors doing so
+    try:
+        from brokkr.config.presets import PRESETS
+    except BaseException as e:
+        handle_startup_error(
+            e, mp_handler, exit_event, logger, message="loading presets")
+        raise
+
+    build_context = brokkr.pipeline.builder.BuildContext(
+        exit_event=exit_event,
+        subobject_lookup=CONFIG["steps"],
+        subobject_presets=PRESETS,
+        plugin_root_path=(brokkr.utils.misc.get_system_path(SYSTEMPATH_CONFIG)
+                          / SYSTEM_SUBPATH_PLUGINS),
+        )
+    return build_context
 
 
 def get_monitoring_pipeline(interval_s=1, exit_event=None, logger=None):
     from brokkr.config.main import CONFIG
-    from brokkr.config.presets import PRESETS
     import brokkr.pipeline.builder
 
     if exit_event is None:
@@ -193,15 +222,9 @@ def get_monitoring_pipeline(interval_s=1, exit_event=None, logger=None):
         monitoring_pipeline_kwargs.pop("_builder")
         builder_kwargs = monitoring_pipeline_kwargs
 
-    built_pipeline = builder(
-        exit_event=exit_event,
-        subobject_lookup=CONFIG["steps"],
-        subobject_presets=PRESETS,
-        **builder_kwargs).build(
-            exit_event=exit_event,
-            subobject_lookup=CONFIG["steps"],
-            subobject_presets=PRESETS,
-        )
+    build_context = create_build_context(exit_event=exit_event)
+    built_pipeline = builder(build_context=build_context,
+                             **builder_kwargs).build()
 
     return pipeline_key, built_pipeline
 
@@ -269,12 +292,6 @@ def start_brokkr(log_level_file=None, log_level_console=None):
 
     # Log startup messages
     logger = logging.getLogger(__name__)
-    try:
-        from brokkr.config.presets import PRESETS
-    except BaseException as e:
-        handle_startup_error(
-            e, mp_handler, exit_event, logger, message="loading presets")
-        raise
 
     try:
         log_startup_messages(
@@ -294,15 +311,16 @@ def start_brokkr(log_level_file=None, log_level_console=None):
     if not pipelines:
         logger.info("No pipelines defined; falling back to default")
         pipelines = {"default": DEFAULT_PIPELINE}
+
     logger.debug("Building pipelines")
+    build_context = create_build_context(
+        exit_event=exit_event, mp_handler=mp_handler)
     top_level_builder = brokkr.pipeline.builder.TopLevelBuilder(
         pipelines,
-        exit_event=exit_event,
-        subobject_lookup=CONFIG["steps"],
-        subobject_presets=PRESETS,
+        build_context=build_context,
         )
     try:
-        pipeline_builders = top_level_builder.build(exit_event=exit_event)
+        pipeline_builders = top_level_builder.build()
     except BaseException as e:
         handle_startup_error(
             e, mp_handler, exit_event, logger,

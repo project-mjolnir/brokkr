@@ -40,17 +40,17 @@ def start_worker_process(
         try:
             executor_new = getattr(executor, worker_config.build_method)(
                 *worker_config.build_args,
-                exit_event=exit_event,
                 **worker_config.build_kwargs,
                 )
         except SystemExit as e:
             logger.critical(
-                "Error caught building pipeline for process %s, exiting",
+                "Error caught building process %s, exiting",
                 worker_config.name)
             logger.info("Build method: %s; Build args: %r; Build kwargs: %r",
                         worker_config.build_method,
                         worker_config.build_args, worker_config.build_kwargs)
-            exit_event.set()
+            if exit_event is not None:
+                exit_event.set()
             sys.exit(e.code)
         except Exception as e:
             logger.critical("%s during executor build for process %s: %s",
@@ -59,7 +59,8 @@ def start_worker_process(
             logger.info("Build method: %s; Build args: %r; Build kwargs: %r",
                         worker_config.build_method,
                         worker_config.build_args, worker_config.build_kwargs)
-            exit_event.set()
+            if exit_event is not None:
+                exit_event.set()
             sys.exit(1)
         if executor_new:
             executor = executor_new
@@ -70,7 +71,6 @@ def start_worker_process(
 
     run_callable(
         *worker_config.run_args,
-        exit_event=exit_event,
         **worker_config.run_kwargs,
         )
 
@@ -194,7 +194,7 @@ class MultiprocessHandler(brokkr.utils.misc.AutoReprMixin):
         # Start processes
         self.logger.debug("Starting up processes: %r", self.workers)
         for worker in self.workers:
-            self.logger.info("Starting worker process %s...", worker)
+            self.logger.info("Starting worker process %s", worker)
             worker.start()
             self.logger.info("Finished starting worker process %s", worker)
 
@@ -213,14 +213,14 @@ class MultiprocessHandler(brokkr.utils.misc.AutoReprMixin):
         self.logger.info("Exiting manager")
 
     def shutdown_workers(self):
-        self.logger.info("Beginning worker shutdown...")
+        self.logger.info("Beginning worker shutdown")
         shutdown_start_time = time.monotonic()
         self.exit_event.set()
 
         # Join workers gracefully as they end, up to the timeout
         shutdown_wait_time = shutdown_start_time + self.worker_shutdown_wait_s
         for worker in self.workers:
-            self.logger.info("Attempting to shut down worker %s...", worker)
+            self.logger.info("Attempting to shut down worker %s", worker)
             join_timeout = max(0, shutdown_wait_time - time.monotonic())
             worker.join(join_timeout)
             self.logger.info("Process %s shut down", worker)

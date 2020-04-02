@@ -17,7 +17,7 @@ class CurrentTimeInput(brokkr.pipeline.baseinput.ValueInputStep):
             data_name="time",
             full_name=None,
             use_local=False,
-            **value_step_kwargs):
+            **value_input_kwargs):
         if full_name is None:
             full_name = f"Time ({'Local' if use_local else 'UTC'})"
         time_data_type = brokkr.pipeline.datavalue.DataType(
@@ -30,7 +30,7 @@ class CurrentTimeInput(brokkr.pipeline.baseinput.ValueInputStep):
             use_local=use_local,
             )
         super().__init__(data_types=[time_data_type], binary_decoder=False,
-                         **value_step_kwargs)
+                         **value_input_kwargs)
 
     def read_raw_data(self, input_data=None):
         current_time = datetime.datetime.now(

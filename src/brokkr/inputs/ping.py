@@ -19,7 +19,7 @@ class PingInput(brokkr.pipeline.baseinput.ValueInputStep):
             timeout_s=brokkr.utils.network.TIMEOUT_S_DEFAULT,
             data_name="ping",
             full_name="Ping Retcode",
-            **value_step_kwargs):
+            **value_input_kwargs):
         ping_data_type = brokkr.pipeline.datavalue.DataType(
             name=data_name,
             binary_type="i",
@@ -28,7 +28,7 @@ class PingInput(brokkr.pipeline.baseinput.ValueInputStep):
             uncertainty=False,
             )
         super().__init__(data_types=[ping_data_type], binary_decoder=False,
-                         **value_step_kwargs)
+                         **value_input_kwargs)
 
         self._host = host
         self._timeout_s = timeout_s
