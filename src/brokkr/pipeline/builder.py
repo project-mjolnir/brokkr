@@ -46,9 +46,9 @@ class BuildContext(brokkr.utils.misc.AutoReprMixin):
     def merge(self, build_context):
         if build_context is None:
             return self
-        build_kwargs = {
+        build_context_kwargs = {
             key: value for key, value in vars(build_context).items() if value}
-        build_context = BuildContext(**{**vars(self), **build_kwargs})
+        build_context = BuildContext(**{**vars(self), **build_context_kwargs})
         return build_context
 
 
@@ -66,7 +66,9 @@ class Builder(brokkr.utils.misc.AutoReprMixin):
         self.build_context = (
             BuildContext() if build_context is None else build_context)
 
-    def build_subobject(
+        self.subbuilders = []
+
+    def setup_subobject(
             self,
             subobject,
             idx=0,
@@ -124,24 +126,27 @@ class Builder(brokkr.utils.misc.AutoReprMixin):
             subobject = builder(build_context=build_context, **subobject)
         return subobject
 
-    def build_subobjects(self, **build_kwargs):
+    def setup_subobjects(self, **setup_kwargs):
         # Recursively build the sub-objects comprising this object
         if self.subobjects is not None:
-            built_subobjects = []
+            setup_subobjects = []
             try:
                 subobjects = self.subobjects.values()
             except AttributeError:  # For lists that don't have values()
                 subobjects = self.subobjects
             for idx, subobject in enumerate(subobjects):
-                built_subobject = self.build_subobject(
-                    subobject, idx=idx, **build_kwargs)
-                built_subobjects.append(built_subobject)
-            return built_subobjects
+                setup_subobject = self.setup_subobject(
+                    subobject, idx=idx, **setup_kwargs)
+                setup_subobjects.append(setup_subobject)
+            return setup_subobjects
         return None
 
-    def build(self, build_context=None, **build_kwargs):
-        return self.build_subobjects(
-            build_context=build_context, **build_kwargs)
+    def setup(self, build_context=None, **setup_kwargs):
+        subbuilders = self.setup_subobjects(
+            build_context=build_context, **setup_kwargs)
+        if subbuilders:
+            self.subbuilders = subbuilders
+        return subbuilders
 
 
 class ObjectBuilder(Builder):
@@ -150,6 +155,7 @@ class ObjectBuilder(Builder):
             _module_path="brokkr.pipeline.pipeline",
             _class_name="SequentialPipeline",
             _is_plugin=False,
+            _dependencies=None,
             name=None,
             steps=None,
             build_context=None,
@@ -157,6 +163,7 @@ class ObjectBuilder(Builder):
         self.module_path = _module_path
         self.class_name = _class_name
         self.is_plugin = _is_plugin
+        self.dependencies = _dependencies
 
         self.init_kwargs = copy.deepcopy(init_kwargs)
         if name is not None:
@@ -170,30 +177,29 @@ class ObjectBuilder(Builder):
             build_context=build_context,
             )
 
-    def build_subobject(
+    def setup_subobject(
             self,
             subobject,
             idx=0,
             build_context=None,
                 ):
-        subobject = super().build_subobject(
+        subobject = super().setup_subobject(
             subobject,
             idx=idx,
             build_context=build_context,
             )
 
-        built_subobject = subobject.build(build_context=build_context)
-        return built_subobject
+        subobject.setup(build_context=build_context)
+        return subobject
 
-    def build(self, build_context=None, **build_kwargs):
+    def build(self, build_context=None):
         LOGGER.debug(
             "Building %s (%s.%s) with kwargs %r",
             self.name, self.module_path, self.class_name, self.init_kwargs)
         build_context = self.build_context.merge(build_context)
 
-        # Recursively build the steps comprising this item, if present
-        built_steps = super().build(
-            build_context=build_context, **build_kwargs)
+        # Recursively build subobjects
+        built_steps = [subbuilder.build() for subbuilder in self.subbuilders]
         if built_steps:
             self.init_kwargs["steps"] = built_steps
 
@@ -218,7 +224,13 @@ class ObjectBuilder(Builder):
             self.init_kwargs["na_marker"] = build_context.na_marker
         obj_instance = obj_class(
             exit_event=build_context.exit_event, **self.init_kwargs)
+
         return obj_instance
+
+    def setup_and_build(self, build_context=None, **setup_kwargs):
+        self.setup(build_context=build_context, **setup_kwargs)
+        built_object = self.build(build_context=build_context)
+        return built_object
 
 
 class MonitorBuilder(ObjectBuilder):

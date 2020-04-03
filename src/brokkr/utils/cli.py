@@ -106,6 +106,17 @@ def generate_argparser_main():
         help="Manually override automatic platform detection")
     verbose_parsers.append(parser_install_autossh)
 
+    # Parser for the install-dependencies subcommand
+    desc_install_dependencies = "Install dependencies of the enabled plugins"
+    parser_install_dependencies = subparsers.add_parser(
+        "install-dependencies", help=desc_install_dependencies,
+        description=desc_install_dependencies,
+        argument_default=argparse.SUPPRESS)
+    parser_install_dependencies.add_argument(
+        "--dry-run", action="store_true",
+        help="Only report dependencies that would be installed, don't install")
+    verbose_parsers.append(parser_install_dependencies)
+
     # Parser for the install-dialout subcommand
     desc_install_dialout = "Enable serial port access for the user"
     parser_install_dialout = subparsers.add_parser(

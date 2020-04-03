@@ -5,6 +5,7 @@ Baseline hierarchical configuration setup functions for Brokkr.
 # Standard library imports
 import abc
 import argparse
+import collections.abc
 import copy
 import json
 import logging
@@ -118,14 +119,16 @@ def write_config_file(config_data, path, extension=None):
 
 
 def insert_values(config_data, insert_items, logger=None):
+    # pylint: disable=too-many-nested-blocks, too-many-branches
     if logger is True:
         logger = logging.getLogger(__name__)
 
     # Insert the specified values into the given keys
     for preset_name, preset_data in config_data.items():
         for table_name, target_key in insert_items:
-            if preset_data.get(table_name, None) is None:
-                continue  # Skip if target table is not preset
+            if (preset_data.get(table_name, None) is None
+                    or preset_data.get(target_key, None) is None):
+                continue  # Skip if source or target table is not preset
             if preset_data[table_name].get(
                     target_key, None) is not None:
                 # If target key is present at first level, use that
@@ -144,11 +147,18 @@ def insert_values(config_data, insert_items, logger=None):
                 try:
                     if brokkr.utils.misc.is_iterable(
                             target_table[target_key]):
-                        # If the target's current value is an iterable,
-                        # look up each value in the source table
-                        target_table[target_key] = {
-                            inner_key: preset_data[target_key][inner_key]
-                            for inner_key in target_table[target_key]}
+                        if isinstance(preset_data[target_key],
+                                      collections.abc.Mapping):
+                            # If the target is an iterable and the src a dict,
+                            # look up each value in the source table
+                            target_table[target_key] = {
+                                inner_key: preset_data[target_key][inner_key]
+                                for inner_key in target_table[target_key]}
+                        else:
+                            # Otherwise, if both are lists, merge them
+                            target_table[target_key] = set(
+                                target_table[target_key]
+                                + preset_data[target_key])
                     else:
                         # Otherwise, look up the value in the source table
                         # and merge them, keeping values in the original
@@ -159,6 +169,8 @@ def insert_values(config_data, insert_items, logger=None):
                         # And remove the now-redundant item
                         del target_table[target_key]
                 except KeyError as e:
+                    if not logger:
+                        raise
                     logger.error(
                         "%s inserting value for preset %r: "
                         "Can't find inner key %s in key %r to insert into "
@@ -169,6 +181,7 @@ def insert_values(config_data, insert_items, logger=None):
                     logger.info("Possible keys: %r",
                                 list(preset_data[target_key].keys()))
                     raise SystemExit(1)
+
     return config_data
 
 

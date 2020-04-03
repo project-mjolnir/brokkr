@@ -146,22 +146,25 @@ def handle_startup_error(e, mp_handler, exit_event, logger, message=""):
         message = " " + message
     if isinstance(e, SystemExit):
         logger.critical("Error caught%s, exiting", message)
-        exit_event.set()
+        if exit_event:
+            exit_event.set()
         if mp_handler is not None:
             mp_handler.shutdown_logger()
         sys.exit(e.code)
     if isinstance(e, Exception):
         logger.critical("%s%s: %s", type(e).__name__, message, e)
         logger.info("Error details:", exc_info=True)
-        exit_event.set()
+        if exit_event is not None:
+            exit_event.set()
         if mp_handler is not None:
             mp_handler.shutdown_logger()
         sys.exit(1)
 
 
-def create_build_context(exit_event, mp_handler=None):
+def create_build_context(exit_event=None, mp_handler=None):
     from brokkr.config.main import CONFIG
     from brokkr.config.systempath import SYSTEMPATH_CONFIG
+    import brokkr.pipeline.builder
 
     logger = logging.getLogger(__name__)
 
@@ -225,7 +228,7 @@ def get_monitoring_pipeline(interval_s=1, exit_event=None, logger=None):
 
     build_context = create_build_context(exit_event=exit_event)
     built_pipeline = builder(build_context=build_context,
-                             **builder_kwargs).build()
+                             **builder_kwargs).setup_and_build()
 
     return pipeline_key, built_pipeline
 
@@ -316,12 +319,10 @@ def start_brokkr(log_level_file=None, log_level_console=None):
     logger.debug("Building pipelines")
     build_context = create_build_context(
         exit_event=exit_event, mp_handler=mp_handler)
-    top_level_builder = brokkr.pipeline.builder.TopLevelBuilder(
-        pipelines,
-        build_context=build_context,
-        )
+    pipeline_builders = brokkr.pipeline.builder.TopLevelBuilder(
+        pipelines, build_context=build_context)
     try:
-        pipeline_builders = top_level_builder.build()
+        pipeline_builders.setup()
     except BaseException as e:
         handle_startup_error(
             e, mp_handler, exit_event, logger,
@@ -334,10 +335,10 @@ def start_brokkr(log_level_file=None, log_level_console=None):
         brokkr.multiprocess.handler.WorkerConfig(
             executor=pipeline_builder,
             name=getattr(pipeline_builder, "name", "Unnamed") + " Process",
-            build_method="build",
+            build_method="setup_and_build",
             run_method="execute_forever",
             )
-        for pipeline_builder in pipeline_builders
+        for pipeline_builder in pipeline_builders.subbuilders
         ]
     mp_handler.worker_configs = worker_configs
     mp_handler.worker_shutdown_wait_s = (

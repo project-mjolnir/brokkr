@@ -146,6 +146,7 @@ DEFAULT_CONFIG_PRESETS = {
         "config_version": CONFIG_VERSION,
         "name": "builtins",
         "type": "builtin",
+        "_dependencies": [],
         "inputs": {
             "current_time": {
                 "_module_path": "brokkr.inputs.currenttime",
@@ -177,6 +178,7 @@ DEFAULT_CONFIG_PRESETS = {
 CONFIG_PRESET_TEMPLATE = {
     "config_version": CONFIG_VERSION,
     "type": "device",
+    "_dependencies": [],
     "metadata": {**{key: "" for key in METADATA_VARS},
                  "brokkr_version_min": "0.3.0"},
     "custom_types": {},
@@ -197,6 +199,9 @@ CONFIG_HANDLER_PRESETS = CONFIG_HANDLER_FACTORY.create_config_handler(
              "path": (SYSTEM_BASE_PATH / SYSTEM_SUBPATH_PRESETS).as_posix(),
              "template": CONFIG_PRESET_TEMPLATE,
              "insert_items": [
+                 ("inputs", "_dependencies"),
+                 ("outputs", "_dependencies"),
+                 ("commands", "_dependencies"),
                  ("data_types", "type_presets"),
                  ("inputs", "data_types"),
                  ],

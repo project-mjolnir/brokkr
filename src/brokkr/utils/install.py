@@ -18,6 +18,8 @@ except ModuleNotFoundError:  # If its not installed, eg. on non-Linux platforms
 
 # Local imports
 import brokkr.config.base
+import brokkr.pipeline.builder
+import brokkr.start
 import brokkr.utils.log
 import brokkr.utils.misc
 import brokkr.utils.services
@@ -123,6 +125,55 @@ def install_service(platform=None):
         raise ModuleNotFoundError("Serviceinstaller must be installed.")
     serviceinstaller.install_service(
         **brokkr.utils.services.BROKKR_SERVICE_KWARGS, platform=platform)
+
+
+@brokkr.utils.log.basic_logging
+def install_dependencies(dry_run=False):
+    # pylint: disable=import-outside-toplevel
+    from brokkr.config.main import CONFIG
+
+    # Build pipelines to search
+    logging.debug("Checking pipelines for dependencies to install")
+    if not CONFIG["pipelines"]:
+        logging.warning("No pipelines defined; skipping dependency search")
+        return None
+    build_context = brokkr.start.create_build_context()
+    top_level_builder = brokkr.pipeline.builder.ObjectBuilder(
+        steps=CONFIG["pipelines"], build_context=build_context)
+    top_level_builder.setup()
+
+    # Get dependencies from pipelines
+    all_dependencies = brokkr.utils.misc.get_all_attribute_values_recursive(
+        top_level_builder.subbuilders,
+        attr_get="dependencies",
+        attr_recurse="subbuilders",
+        )
+    all_dependencies = {
+        item for sublist in all_dependencies for item in sublist}
+    if not all_dependencies:
+        logging.info("No dependencies found, skipping install")
+        return all_dependencies
+    if dry_run:
+        logging.warning("Dry run, would install: %s", all_dependencies)
+        return all_dependencies
+    logging.debug("Dependencies found: %s", all_dependencies)
+
+    # Install dependencies
+    install_command = (
+        [sys.executable, "-m", "pip", "install"] + list(all_dependencies))
+    logging.debug("Dependency install command invocation: %s",
+                  " ".join(install_command))
+    try:
+        subprocess.run(install_command, check=True)
+    except Exception as e:
+        logging.error("%s running dependency install: %s",
+                      type(e).__name__, e)
+        logging.info("Error details:", exc_info=True)
+        logging.info("Command invocation: %s", " ".join(install_command))
+        return None
+    logging.info("Successfully install dependencies: %s", all_dependencies)
+
+    return all_dependencies
 
 
 @brokkr.utils.log.basic_logging

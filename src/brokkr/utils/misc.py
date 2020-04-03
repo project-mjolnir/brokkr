@@ -92,6 +92,26 @@ def get_inner_dict(obj, keys):
     return inner_dict
 
 
+def get_all_attribute_values_recursive(
+        objects, attr_get, attr_recurse):
+    all_attribute_values = []
+    for obj in objects:
+        # Get attribute value on this level
+        attr_value = getattr(obj, attr_get, None)
+        if attr_value is not None:
+            all_attribute_values.append(attr_value)
+
+        # Get attribute values for subobjects
+        subobjects = getattr(obj, attr_recurse, None)
+        if subobjects:
+            subobject_attr_values = get_all_attribute_values_recursive(
+                subobjects, attr_get=attr_get, attr_recurse=attr_recurse)
+            if subobject_attr_values:
+                all_attribute_values += subobject_attr_values
+
+    return all_attribute_values
+
+
 def get_actual_username():
     try:
         username = os.environ["SUDO_USER"]
