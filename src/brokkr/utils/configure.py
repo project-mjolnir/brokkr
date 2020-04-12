@@ -160,7 +160,8 @@ def _configure_system(
             system_alias, systempath_config, skip_verify=skip_verify)
     else:
         if set_default is None and system_alias:
-            set_default = not systempath_config["default_system"]
+            set_default = (not CONFIG_HANDLER_SYSTEMPATH.read_configs()
+                           ["local"].get("default_system", None))
             logging.debug("Set default not passed, assuming %s", set_default)
         if system_path is not None:
             if not skip_verify:
