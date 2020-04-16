@@ -7,13 +7,18 @@ import collections.abc
 import functools
 import getpass
 import logging
+import multiprocessing
+import operator
 import os
 from pathlib import Path
 import signal
-import multiprocessing
 import time
 
+# Third party imports
+import packaging.version
+
 # Local imports
+import brokkr
 from brokkr.constants import (
     SLEEP_TICK_S,
     LEVEL_NAME_SYSTEM,
@@ -182,6 +187,28 @@ def validate_system_path(system_path, metadata_handler, logger=None):
         return False
 
     return True
+
+
+def check_system_version(metadata, logger):
+    issue_found = False
+    for key_name, long_name, func in [
+            ("brokkr_version_min", "greater than", operator.gt),
+            ("brokkr_version_max", "less than", operator.le),
+                ]:
+        if metadata[key_name] and func(
+                packaging.version.parse(metadata[key_name]),
+                packaging.version.parse(brokkr.__version__)):
+            logger(
+                "%s supported Brokkr version %s of system %s "
+                "is %s current Brokkr version %s",
+                key_name.split("_")[-1].title(),
+                metadata[key_name],
+                metadata["name"],
+                long_name,
+                brokkr.__version__,
+                )
+            issue_found = True
+    return issue_found
 
 
 # --- Common utility mixins and decorators --- #

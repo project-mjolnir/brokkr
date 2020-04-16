@@ -35,7 +35,9 @@ DEFAULT_PIPELINE = {
 # --- Startup helper functions --- #
 
 def warn_on_startup_issues(logger=None):
+    import brokkr
     from brokkr.config.confighandlers import CONFIG_HANDLER_UNIT
+    from brokkr.config.metadata import METADATA
     from brokkr.config.metadatahandler import CONFIG_HANDLER_METADATA
     from brokkr.config.systempath import SYSTEMPATH_CONFIG
     from brokkr.config.unit import UNIT_CONFIGS
@@ -55,7 +57,8 @@ def warn_on_startup_issues(logger=None):
         logger.debug("Error details:", exc_info=True)
         issues_found = True
     except KeyError as e:
-        logger.error("System path %s not found in %r", type(e).__name__, e)
+        logger.error("System path %s not found in %r",
+                     e, SYSTEMPATH_CONFIG["system_paths"])
         logger.info("Error details:", exc_info=True)
         issues_found = True
     else:
@@ -70,6 +73,10 @@ def warn_on_startup_issues(logger=None):
             "No local unit config found at %r, falling back to defaults",
             CONFIG_HANDLER_UNIT.config_levels["local"].path.as_posix())
         issues_found = True
+
+    # Check that the Brokkr version is compatible with the system
+    issues_found = issues_found and brokkr.utils.misc.check_system_version(
+        METADATA, logger.warning)
 
     return issues_found
 

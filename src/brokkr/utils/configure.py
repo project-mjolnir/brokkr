@@ -178,6 +178,8 @@ def _configure_system(
                                   system_path)
                     return systempath_config
                 logging.debug("System path valid")
+                brokkr.utils.misc.check_system_version(
+                    config_handler_metadata.render_config(), logging.warning)
             else:
                 logging.debug("Skipping verification of system path %s",
                               system_path)

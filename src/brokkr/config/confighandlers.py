@@ -180,7 +180,7 @@ CONFIG_PRESET_TEMPLATE = {
     "type": "device",
     "_dependencies": [],
     "metadata": {**{key: "" for key in METADATA_VARS},
-                 "brokkr_version_min": "0.3.0"},
+                 "brokkr_version_min": "0.3.0", "brokkr_version_max": ""},
     "custom_types": {},
     "variables": {},
     "inputs": {},

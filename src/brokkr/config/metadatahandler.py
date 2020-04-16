@@ -27,7 +27,9 @@ DEFAULT_CONFIG_METADATA = {
     **{key: "" for key in METADATA_VARS},
     "license": "",
     "brokkr_version_min": "0.3.0",
+    "brokkr_version_max": "",
     "sindri_version_min": "0.3.0",
+    "sindri_version_max": "",
     }
 
 CONFIG_HANDLER_METADATA = CONFIG_HANDLER_FACTORY.create_config_handler(

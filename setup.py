@@ -41,6 +41,7 @@ setuptools.setup(
     package_dir={"": "src"},
     python_requires=">=3.6",
     install_requires=[
+        "packaging",
         "serviceinstaller >= 0.1.2 ; sys_platform=='linux'",
         "toml",
         ],
