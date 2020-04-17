@@ -16,9 +16,57 @@ Works best on Linux, but is tested to be fully functional (aside from service fe
 ## Installation and Setup
 
 
-### Standard desktop install
+### Standard install
 
-Brokkr can be installed like any other Python package via via ``pip`` (use of an isolated ``venv`` highly recommended), following which ``brokkr install-all`` can then be used to automatically install the config files, firewall access, and (on Linux) serial port access, Brokkr systemd service, and SSH/AutoSSH service and configuration.
+On Linux, Brokkr can be installed like any other Python package via ``pip`` into a virtual environment like so (with the venv created inside `ENV_NAME` in the current working directory), with the extra packages needed to support specific sensor types (e.g. ``modbus``, ``serial``, ``adafruit``, ``all`` etc) installed as desired:
+
+```bash
+python3 -m venv ENV_DIR
+source ENV_DIR/bin/activate
+pip install brokkr[EXTRA1,EXTRA2...]
+```
+
+or, to install a development version:
+
+```bash
+python3 -m venv ENV_NAME
+source ENV_DIR/bin/activate
+git clone https://github.com/hamma-dev/serviceinstaller.git
+cd serviceinstaller
+pip install -e .
+cd ..
+git clone https://github.com/hamma-dev/brokkr.git
+cd brokkr
+pip install -e .[EXTRA1,EXTRA2...]
+cd ..
+```
+
+On Windows and Mac, use of Anaconda/Miniconda is recommended, substituting conda environments for venvs. While these platforms are supported for development, some functionality specific to running Brokkr in production may be unavailable.
+
+Then, you need to take a few more steps to get your environment set up: clone the system config package(s) you want to use with Brokkr (replace the example ``mjolnir-config-template`` path with yours), register them, and set up your config and unit information.
+``SYSTEM_SHORTNAME`` is whatever name you want to register the system with in the system file, and ``UNIT_NUMBER`` is the integer number (arbitrary, but should be unique) you want to designate the device you're installing on.
+
+```
+git clone https://github.com/hamma-dev/mjolnir-config-template.git
+brokkr configure-system SYSTEM_SHORTNAME /path/to/system/mjolnir-config-template
+brokkr configure-init
+brokkr configure-unit UNIT_NUMBER
+```
+
+Finally, you can run the post-installation setup steps as needed for your system.
+For a simple system, to just install the systemd service unit to run Brokkr on startup and restart it if it fails,
+
+```bash
+sudo /path/to/virtual/environment/ENV_DIR/bin/python -m brokkr install-service``
+```
+
+or for a full install of all post-setup tasks, including the config files, firewall access, and (on Linux) serial port access, Brokkr systemd service, and SSH/AutoSSH service and configuration:
+
+```
+sudo /path/to/virtual/environment/ENV_DIR/bin/python -m brokkr install-all
+```
+
+Finally, you can check that Brokkr is working with ``brokkr --version``, ``brokkr status`` and the other commands detailed in ``brokkr --help``.
 Simply reboot to automatically complete setup and start the ``brokkr`` service, or on all platforms you can manually execute it on the command line immediately with ``brokkr start``.
 
 
