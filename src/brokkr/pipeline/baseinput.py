@@ -112,7 +112,7 @@ class PropertyInputStep(ValueInputStep):
                 data_value = getattr(sensor_object, data_type.property_name)
             except Exception as e:
                 self.logger.error(
-                    "%s getting attirbute %s from %s sensor object %s "
+                    "%s getting attribute %s from %s sensor object %s "
                     "on step %s: %s",
                     type(e).__name__, data_type.property_name, type(self),
                     type(self.object_class), self.name, e)
