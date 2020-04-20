@@ -1,9 +1,6 @@
 """
-Input steps for arbitrary Adafruit I2C devices.
+Input steps for Adafruit digital I2C devices (e.g. SHT31, HTU21, BMP280, etc).
 """
-
-# Standard library imports
-import importlib
 
 # Third party imports
 import board
@@ -13,41 +10,17 @@ import busio
 import brokkr.pipeline.baseinput
 
 
-class AdafruitI2CInput(brokkr.pipeline.baseinput.ValueInputStep):
+class AdafruitI2CInput(brokkr.pipeline.baseinput.PropertyInputStep):
     def __init__(
             self,
-            adafruit_module,
-            adafruit_class,
-            **value_input_kwargs):
-        super().__init__(binary_decoder=False, **value_input_kwargs)
+            i2c_kwargs=None,
+            **property_input_kwargs):
+        super().__init__(**property_input_kwargs)
+        self._i2c_kwargs = {} if i2c_kwargs is None else i2c_kwargs
 
-        module_object = importlib.import_module(adafruit_module)
-        self.obj_class = getattr(module_object, adafruit_class)
-
-    def read_raw_data(self, input_data=None):
-        try:
-            i2c = busio.I2C(board.SCL, board.SDA)
-            adafruit_obj = self.obj_class(i2c)
-        except Exception as e:
-            self.logger.error(
-                "%s initializing Adafruit I2C device %s on step %s: %s",
-                type(e).__name__, type(self.obj_class), self.name, e)
-            self.logger.info("Error details:", exc_info=True)
-            return None
-
-        raw_data = []
-        for data_type in self.data_types:
-            try:
-                data_value = getattr(
-                    adafruit_obj, data_type.adafruit_property)
-            except Exception as e:
-                self.logger.error(
-                    "%s getting attirbute %s from Adafruit I2C device %s "
-                    "on step %s: %s",
-                    type(e).__name__, data_type.adafruit_property,
-                    type(self.obj_class), self.name, e)
-                self.logger.info("Error details:", exc_info=True)
-                data_value = None
-            raw_data.append(data_value)
-
+    def read_properties(self, sensor_object=None):
+        with busio.I2C(board.SCL, board.SDA, **self._i2c_kwargs) as i2c:
+            sensor_object = self.object_class(
+                i2c_bus=i2c, **self.sensor_kwargs)
+            raw_data = super().read_properties(sensor_object=sensor_object)
         return raw_data

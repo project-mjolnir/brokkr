@@ -4,12 +4,15 @@ Base classes for pipeline input steps.
 
 # Standard library imports
 import abc
+import importlib
 
 # Local imports
 import brokkr.pipeline.base
 import brokkr.pipeline.decode
 import brokkr.pipeline.datavalue
 
+
+# --- Core base classes --- #
 
 class ValueInputStep(brokkr.pipeline.base.InputStep, metaclass=abc.ABCMeta):
     def __init__(
@@ -65,3 +68,59 @@ class ValueInputStep(brokkr.pipeline.base.InputStep, metaclass=abc.ABCMeta):
         raw_data = self.read_raw_data(input_data=input_data)
         output_data = self.decode_data(raw_data)
         return output_data
+
+
+class PropertyInputStep(ValueInputStep):
+    def __init__(
+            self,
+            sensor_module,
+            sensor_class,
+            sensor_kwargs=None,
+            **value_input_kwargs):
+        super().__init__(binary_decoder=False, **value_input_kwargs)
+        self.sensor_kwargs = {} if sensor_kwargs is None else sensor_kwargs
+        self.sensor_object = None
+
+        module_object = importlib.import_module(sensor_module)
+        self.object_class = getattr(module_object, sensor_class)
+
+    def init_sensor_object(self):
+        try:
+            sensor_object = self.object_class(**self.sensor_kwargs)
+        except Exception as e:
+            self.logger.error(
+                "%s initializing %s sensor object %s on step %s: %s",
+                type(e).__name__, type(self), type(self.object_class),
+                self.name, e)
+            self.logger.info("Error details:", exc_info=True)
+            return None
+        else:
+            return sensor_object
+
+    def read_properties(self, sensor_object=None):
+        if sensor_object is None:
+            sensor_object = self.sensor_object
+
+        if sensor_object is None:
+            sensor_object = self.init_sensor_object()
+            if sensor_object is None:
+                return None
+
+        raw_data = []
+        for data_type in self.data_types:
+            try:
+                data_value = getattr(sensor_object, data_type.property_name)
+            except Exception as e:
+                self.logger.error(
+                    "%s getting attirbute %s from %s sensor object %s "
+                    "on step %s: %s",
+                    type(e).__name__, data_type.property_name, type(self),
+                    type(self.object_class), self.name, e)
+                self.logger.info("Error details:", exc_info=True)
+                data_value = None
+            raw_data.append(data_value)
+        return raw_data
+
+    def read_raw_data(self, input_data=None):
+        raw_data = self.read_properties()
+        return raw_data
