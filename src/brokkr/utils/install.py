@@ -26,6 +26,8 @@ import brokkr.utils.services
 
 
 # General constants
+COMMAND_TIMEOUT = 30
+
 DISTRO_INSTALL_COMMANDS = (
     lambda package_name: ("apt-get", "-y", "install", package_name),
     lambda package_name: ("dnf", "-y", "install", package_name),
@@ -182,7 +184,7 @@ def install_dialout():
                   brokkr.utils.misc.get_actual_username())
     subprocess.run(("usermod", "-a", "-G", "dialout",
                     brokkr.utils.misc.get_actual_username()),
-                   timeout=5, check=True)
+                   timeout=COMMAND_TIMEOUT, check=True)
     logging.info("Enabled serial port access for user %s",
                  brokkr.utils.misc.get_actual_username())
 
@@ -204,7 +206,8 @@ def install_firewall(ports_to_open=PORTS_TO_OPEN):
         logging.debug("Trying %s...", name)
         for port, proto in ports_to_open:
             try:
-                subprocess.run(command(port, proto), timeout=5, check=False)
+                subprocess.run(
+                    command(port, proto), timeout=COMMAND_TIMEOUT, check=False)
             except FileNotFoundError:
                 logging.debug("%s not found on system.", name)
             except Exception:
@@ -216,7 +219,7 @@ def install_firewall(ports_to_open=PORTS_TO_OPEN):
         for name, command in FIREWALL_COMMANDS_LINUX_AFTER.items():
             logging.debug("Running followup command for %s...", name)
             try:
-                subprocess.run(command, timeout=5, check=False)
+                subprocess.run(command, timeout=COMMAND_TIMEOUT, check=False)
             except FileNotFoundError:
                 logging.debug("%s not found on system.", name)
             except Exception:
@@ -242,8 +245,9 @@ def install_udev(
 
     # Reload udev to update configuration
     subprocess.run(["udevadm", "control", "--reload-rules"],
-                   timeout=5, check=True)
-    subprocess.run(["udevadm", "trigger"], timeout=5, check=True)
+                   timeout=COMMAND_TIMEOUT, check=True)
+    subprocess.run(
+        ["udevadm", "trigger"], timeout=COMMAND_TIMEOUT, check=True)
 
 
 @brokkr.utils.log.basic_logging
