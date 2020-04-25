@@ -30,7 +30,7 @@ or, to install a development version:
 
 ```bash
 python3 -m venv ENV_NAME
-source ENV_DIR/bin/activate
+source ENV_NAME/bin/activate
 git clone https://github.com/hamma-dev/serviceinstaller.git
 cd serviceinstaller
 pip install -e .
@@ -80,12 +80,12 @@ A typical semi-automated install flow might look like the following
 1. Flash SD card with OS image
 2. Perform basic raspi-config, Fedora, etc. setup; change username if desired
 3. Create and activate venv, ``pip install brokkr --no-dependencies`` from offline sdist and copy system config dir and any keyfiles
-4. Run ``brokkr configure-system <systempath>`` to set the system config dir path
+4. Run ``brokkr configure-system <systemname> <systempath>`` to set the system config dir path
 5. Run ``brokkr install --phase 1`` to perform the necessary steps to enable Internet
 6. Update all packages to latest (``apt update && apt full-upgrade && apt autoremove``) and reinstall brokkr with all packages (``pip uninstall brokkr && pip install brokkr``)
 7. Run ``brokkr install --phase 2`` to install remaining items
 8. Run ``brokkr setup-device`` to trigger device-specific setup actions
-9. Create venv for Sindri and ``pip install`` it (optional)
+9. Create venv for Sindri and ``pip install sindri`` it (optional)
 10. Once on-site, perform unit configuration (see below)
 
 A sample bash script will be provided that runs steps 3-9 of this workflow automatically, and can be customized to the needs of a specific system.
@@ -96,7 +96,6 @@ A sample bash script will be provided that runs steps 3-9 of this workflow autom
 If a card is already prepared via the steps mentioned in the "Automated clean install" section (minus the `brokkr setup-device` step), flashing it onto another device and preparing it for deployment is simple.
 
 1. After flashing the Pi and activating the appropriate venv, run ``brokkr setup-device`` to regenerate the harnesses device-specific items (password, hashes, SSH keys, etc). You’ll need to enter the Pi’s current and desired password at the interactive prompt.
-2. Once a specific unit number is assigned to a Pi, or on site, run ``brokkr configure-unit <unit-number> <network-interface>`` to set the unit number, connection mode, and other unit-specific details.
 3. Finally, on site, once the final unit configuration is set (or after it is changed in the future), perform on-site setup as below
 
 
@@ -104,7 +103,7 @@ If a card is already prepared via the steps mentioned in the "Automated clean in
 
 On site, you'll want to take a couple additional actions to pair a specific device with a specific site, and test connectivity.
 
-1. Run ``brokkr configure-unit <unit-number> <network-interface>`` to set up the basic unit configuration
+1. Run ``brokkr configure-unit <unit-number> --network-interface <network-interface>`` to set up the basic unit configuration
 2. Run ``brokkr setup-unit`` to perform final per-unit on-site setup, register and test the link to the sensor, and verify connectivity to the upstream server
 3. Power off the device, connect it to all desired hardware and reboot
 
@@ -112,16 +111,91 @@ On site, you'll want to take a couple additional actions to pair a specific devi
 
 ## Usage
 
+
+### Overview
+
 Run the `brokkr status` command to get a snapshot of the monitoring data, and the `brokkr monitor` command to get a pretty-printed display of all the main monitoring variables, updated in real time (1s) as you watch.
 
 The ``brokkr install-*`` commands perform installation functions and the ``brokkr configure-*`` scripts help set up a new or updated ``brokkr`` install.
 Use ``brokkr --help`` to get help, ``brokkr --version`` to get the current version.
-On Linux, the ``brokkr`` systemd service can be interacted with via the standard systemd commands, e.g. ``sudo systemd {start, stop, enable, disable} brokkr``, ``systemd status brokkr``, ``journalctl -u brokkr``, etc, and the same for ``autossh-brokkr`` which controls remote SSH connectivity.
+On Linux, the ``brokkr`` systemd service can be interacted with via the standard systemd commands, e.g. ``sudo systemd {start, stop, enable, disable} brokkr-hamma``, ``systemd status brokkr-hamma``, ``journalctl -u brokkr-hamma``, etc, and the same for ``autossh-brokkr`` which controls remote SSH connectivity.
+
+
+### Interactive Use (Foreground)
+First activate the appropriate Python virtual environment (``source ENV_DIR/bin/activate``).
+
+Then:
+
+* Main foreground start command, for testing: ``brokkr start``
+* Oneshot status output: ``brokkr status``
+* Lightweight realtime monitoring (prints to screen, can also write to file): ``brokkr monitor``
+
+
+### Running Brokkr as a Service (Background)
+
+* Generate, install and enable service automatically
+    * ``sudo /home/pi/path/to/ENV_DIR/bin/python -m brokkr install-service``
+* Start/stop
+    * ``sudo systemctl start brokkr-SYSTEMNAME``
+    * ``sudo systemctl start brokkr-SYSTEMNAME``
+* Enable/disable running on startup
+    * ``sudo systemctl enable brokkr-SYSTEMNAME``
+    * ``sudo systemctl disable brokkr-SYSTEMNAME``
+* Basic status check and latest log output
+    * ``systemctl status brokkr-SYSTEMNAME``
+* Full log output (also logged to text file ``~/brokkr/hamma/brokkr_hamma_NNN.log``)
+    * ``journalctl -xe -u brokkr-SYSTEMNAME``
 
 
 
 ## Configuration
 
-Configuration files are located under the XDG-standard ``~/.config/brokkr`` directory in the ini-like [TOML](https://github.com/toml-lang/toml) format; they can be generated by running ``brokkr install-config`` (which will not overwrite them if they already exist), and reset to defaults with ``brokkr configure-reset``.
-The ``*_remote.json`` config files are designed to be updated automatically from the server.
-To temporarily override the centrally-managed settings with local ones, configure the appropriate settings in ``{config-name}_local.toml`` and set its ``override`` to ``true``.
+
+A major design goal of Brokkr and the Mjolnir system is extensive, flexible and straightforward reconfiguration for different sensor networks and changing needs.
+All the system configuration is normally handled through the Mjolnir-HAMMA system config package in the standard Mjolnir config schema developed for this system (located at ~/dev/mjolnir-hamma), aside from a few high-level elements specific to each unit which all have interactive configuration commands as below.
+
+However, if local customization is needed beyond the high-level options specified here, instead of modifying the version-control-tracked system config package directly, the config system built for this is fully hierarchical and all settings can be fully overridden via the corresponding local config in ~/.config/brokkr/hamma
+Brokkr fully supports configuration, logging, operation and output of any number of Mjolnir systems simultaneously, all on the same Pi.
+
+Configuration files are located under the XDG-standard ``~/.config/brokkr`` directory in the ini-like [TOML](https://github.com/toml-lang/toml) format; they can be generated by running ``brokkr configure-init`` (which will not overwrite them if they already exist), and reset to defaults with ``brokkr configure-reset``.
+
+
+### High-level local setting configuration
+
+#### Register, update and remove systems
+
+Register a Mjolnir system:
+
+```bash
+brokkr configure-system <SYSTEM-NAME> </PATH/TO/SYSTEM/CONFIG/DIR>
+```
+
+(e.g. ``brokkr configure-system hamma /home/pi/dev/mjolnir-hamma``)
+
+You can also use this command to remove, update, verify and set default systems with the appropriate arguments, see brokkr configure-system --help``
+
+
+#### Generate local config files
+
+Generate empty local per-system (i.e. override) config files if not already present:
+
+```
+brokkr configure-init
+```
+
+#### Set per-unit configuration
+
+```
+brokkr configure-unit <UNIT_NUMBER> --network-interface <INTERFACE>
+```
+
+(e.g. ``brokkr configure-unit 1 --network-interface wlan0``)
+
+
+#### Reset configuration
+
+Reset unit and local override configuration (optionally minus system registry):
+
+```
+brokkr configure-reset
+```
