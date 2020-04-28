@@ -75,18 +75,26 @@ class PropertyInputStep(ValueInputStep):
             self,
             sensor_module,
             sensor_class,
+            sensor_args=None,
             sensor_kwargs=None,
             **value_input_kwargs):
         super().__init__(binary_decoder=False, **value_input_kwargs)
+        self.sensor_args = () if sensor_args is None else sensor_args
         self.sensor_kwargs = {} if sensor_kwargs is None else sensor_kwargs
         self.sensor_object = None
 
         module_object = importlib.import_module(sensor_module)
         self.object_class = getattr(module_object, sensor_class)
 
-    def init_sensor_object(self):
+    def init_sensor_object(self, *sensor_args, **sensor_kwargs):
+        if not sensor_args:
+            sensor_args = self.sensor_args
+        if not sensor_kwargs:
+            sensor_kwargs = self.sensor_kwargs
+
         try:
-            sensor_object = self.object_class(**self.sensor_kwargs)
+            sensor_object = self.object_class(
+                *sensor_args, **sensor_kwargs)
         except Exception as e:
             self.logger.error(
                 "%s initializing %s sensor object %s on step %s: %s",
