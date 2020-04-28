@@ -49,12 +49,18 @@ setuptools.setup(
         "all": [
             "Adafruit-Blinka",
             "adafruit-circuitpython-busdevice",
+            "gpiozero",
             "pymodbus",
             "pyserial",
+            "RPi.GPIO",
             ],
         "adafruit": [
             "Adafruit-Blinka",
             "adafruit-circuitpython-busdevice",
+            ],
+        "gpio": [
+            "gpiozero",
+            "RPi.GPIO",
             ],
         "modbus": [
             "pymodbus",
