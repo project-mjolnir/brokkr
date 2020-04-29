@@ -70,7 +70,7 @@ class ValueInputStep(brokkr.pipeline.base.InputStep, metaclass=abc.ABCMeta):
         return output_data
 
 
-class PropertyInputStep(ValueInputStep):
+class SensorInputStep(ValueInputStep, metaclass=abc.ABCMeta):
     def __init__(
             self,
             sensor_module,
@@ -105,7 +105,11 @@ class PropertyInputStep(ValueInputStep):
         else:
             return sensor_object
 
-    def read_properties(self, sensor_object=None):
+    @abc.abstractmethod
+    def read_sensor_value(self, sensor_object, data_type):
+        pass
+
+    def read_sensor_data(self, sensor_object=None):
         if sensor_object is None:
             sensor_object = self.sensor_object
 
@@ -114,10 +118,11 @@ class PropertyInputStep(ValueInputStep):
             if sensor_object is None:
                 return None
 
-        raw_data = []
+        sensor_data = []
         for data_type in self.data_types:
             try:
-                data_value = getattr(sensor_object, data_type.property_name)
+                data_value = self.read_sensor_value(
+                    sensor_object=sensor_object, data_type=data_type)
             except Exception as e:
                 self.logger.error(
                     "%s getting attribute %s from %s sensor object %s "
@@ -126,9 +131,27 @@ class PropertyInputStep(ValueInputStep):
                     type(self.object_class), self.name, e)
                 self.logger.info("Error details:", exc_info=True)
                 data_value = None
-            raw_data.append(data_value)
-        return raw_data
+            sensor_data.append(data_value)
+        return sensor_data
 
     def read_raw_data(self, input_data=None):
-        raw_data = self.read_properties()
+        raw_data = self.read_sensor_data()
         return raw_data
+
+
+class PropertyInputStep(SensorInputStep):
+    def read_sensor_value(self, sensor_object, data_type):
+        if sensor_object is None:
+            sensor_object = self.sensor_object
+        data_value = getattr(sensor_object, data_type.property_name)
+        return data_value
+
+
+class MethodInputStep(SensorInputStep):
+    def read_sensor_value(self, sensor_object, data_type):
+        if sensor_object is None:
+            sensor_object = self.sensor_object
+        function_kwargs = getattr(data_type, "function_kwargs", {})
+        data_value = getattr(sensor_object, data_type.function_name)(
+            **function_kwargs)
+        return data_value
