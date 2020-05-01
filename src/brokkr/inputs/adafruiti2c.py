@@ -10,7 +10,7 @@ import busio
 import brokkr.pipeline.baseinput
 
 
-class AdafruitI2CInput(brokkr.pipeline.baseinput.PropertyInputStep):
+class BaseAdafruitI2CInput(brokkr.pipeline.baseinput.PropertyInputStep):
     def __init__(
             self,
             i2c_kwargs=None,
@@ -18,6 +18,8 @@ class AdafruitI2CInput(brokkr.pipeline.baseinput.PropertyInputStep):
         super().__init__(**property_input_kwargs)
         self._i2c_kwargs = {} if i2c_kwargs is None else i2c_kwargs
 
+
+class AdafruitI2CInput(BaseAdafruitI2CInput):
     def read_sensor_data(self, sensor_object=None):
         with busio.I2C(board.SCL, board.SDA, **self._i2c_kwargs) as i2c:
             sensor_object = self.init_sensor_object(i2c)
@@ -25,3 +27,16 @@ class AdafruitI2CInput(brokkr.pipeline.baseinput.PropertyInputStep):
                 return None
             raw_data = super().read_sensor_data(sensor_object=sensor_object)
         return raw_data
+
+
+class AdafruitPersistantI2CInput(BaseAdafruitI2CInput):
+    def __init__(self, **adafruit_i2c_kwargs):
+        super().__init__(**adafruit_i2c_kwargs)
+        self.sensor_object = self.init_sensor_object()
+
+    def init_sensor_object(self, *sensor_args, **sensor_kwargs):
+        i2c = busio.I2C(board.SCL, board.SDA, **self._i2c_kwargs)
+        sensor_object = super().init_sensor_object(
+            i2c, *sensor_args, **sensor_kwargs)
+        self.sensor_object = sensor_object
+        return sensor_object
