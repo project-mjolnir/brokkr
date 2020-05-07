@@ -12,14 +12,7 @@ class AdafruitOnewireInput(brokkr.pipeline.baseinput.PropertyInputStep):
             sensor_kwargs = {}
         sensor_kwargs["pin"] = pin
 
-        super().__init__(sensor_kwargs=sensor_kwargs, **property_input_kwargs)
-        self.sensor_object = self.init_sensor_object()
-
-    def read_sensor_data(self, sensor_object=None):
-        if sensor_object is None:
-            sensor_object = self.sensor_object
-        if sensor_object is None:
-            self.sensor_object = self.init_sensor_object()
-
-        sensor_data = super().read_sensor_data()
-        return sensor_data
+        super().__init__(
+            sensor_kwargs=sensor_kwargs,
+            cache_sensor_object=True,
+            **property_input_kwargs)

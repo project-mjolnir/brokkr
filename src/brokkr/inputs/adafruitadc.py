@@ -34,6 +34,7 @@ class AdafruitADCInput(brokkr.pipeline.baseinput.PropertyInputStep):
         super().__init__(
             sensor_module=sensor_module,
             sensor_class=sensor_class,
+            cache_sensor_object=False,
             **property_input_kwargs)
         self._i2c_kwargs = {} if i2c_kwargs is None else i2c_kwargs
         self._adc_kwargs = {} if adc_kwargs is None else adc_kwargs
@@ -42,7 +43,7 @@ class AdafruitADCInput(brokkr.pipeline.baseinput.PropertyInputStep):
         self._analog_class = getattr(analog_object, analog_class)
 
         if (adc_channel is None
-                and self._adc_kwargs.get("channel", None) is None):
+                and self._adc_kwargs.get("positive_pin", None) is None):
             adc_channel = DEFAULT_ADC_CHANNEL
         if adc_channel is not None:
             self._adc_kwargs["positive_pin"] = adc_channel

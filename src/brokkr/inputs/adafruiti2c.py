@@ -30,13 +30,13 @@ class AdafruitI2CInput(BaseAdafruitI2CInput):
 
 
 class AdafruitPersistantI2CInput(BaseAdafruitI2CInput):
-    def __init__(self, **adafruit_i2c_kwargs):
-        super().__init__(**adafruit_i2c_kwargs)
-        self.sensor_object = self.init_sensor_object()
+    def __init__(
+            self,
+            **adafruit_i2c_input_kwargs):
+        super().__init__(cache_sensor_object=True, **adafruit_i2c_input_kwargs)
 
     def init_sensor_object(self, *sensor_args, **sensor_kwargs):
         i2c = busio.I2C(board.SCL, board.SDA, **self._i2c_kwargs)
         sensor_object = super().init_sensor_object(
             i2c, *sensor_args, **sensor_kwargs)
-        self.sensor_object = sensor_object
         return sensor_object

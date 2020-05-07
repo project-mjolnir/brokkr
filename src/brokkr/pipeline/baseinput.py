@@ -77,11 +77,13 @@ class SensorInputStep(ValueInputStep, metaclass=abc.ABCMeta):
             sensor_class,
             sensor_args=None,
             sensor_kwargs=None,
+            cache_sensor_object=False,
             **value_input_kwargs):
         super().__init__(binary_decoder=False, **value_input_kwargs)
         self.sensor_args = () if sensor_args is None else sensor_args
         self.sensor_kwargs = {} if sensor_kwargs is None else sensor_kwargs
         self.sensor_object = None
+        self.cache_sensor_object = cache_sensor_object
 
         module_object = importlib.import_module(sensor_module)
         self.object_class = getattr(module_object, sensor_class)
@@ -101,9 +103,13 @@ class SensorInputStep(ValueInputStep, metaclass=abc.ABCMeta):
                 type(e).__name__, type(self), type(self.object_class),
                 self.name, e)
             self.logger.info("Error details:", exc_info=True)
-            return None
-        else:
-            return sensor_object
+            self.logger.info("Sensor args: %r | Sensor kwargs: %r:",
+                             sensor_args, sensor_kwargs)
+            sensor_object = None
+
+        if self.cache_sensor_object:
+            self.sensor_object = sensor_object
+        return sensor_object
 
     @abc.abstractmethod
     def read_sensor_value(self, sensor_object, data_type):
