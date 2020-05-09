@@ -3,9 +3,15 @@ Common decode and conversion functionality.
 """
 
 # Standard library imports
+import ast
 import datetime
 import logging
+import math
+import operator
 import struct
+
+# Third party imports
+import simpleeval
 
 # Local imports
 import brokkr.pipeline.datavalue
@@ -15,6 +21,15 @@ import brokkr.utils.misc
 NA_MARKER_DEFAULT = "NA"
 
 OUTPUT_CUSTOM = "custom"
+
+EVAL_OPERATORS_EXTRA = {
+    ast.BitAnd: operator.and_,
+    ast.BitOr: operator.or_,
+    ast.BitXor: operator.xor,
+    ast.Invert: operator.invert,
+    ast.RShift: operator.rshift,
+    ast.RShift: operator.rshift,
+    }
 
 
 def _convert_none(value):
@@ -28,6 +43,10 @@ def _convert_pass(value):
 
 def _convert_bitfield(value):
     return int(value)
+
+
+def _convert_bool(value):
+    return bool(value)
 
 
 def _convert_byte(value):
@@ -46,8 +65,8 @@ def _convert_float(value):
     return float(value)
 
 
-def _convert_int(value):
-    return int(value)
+def _convert_int(value, **kwargs):
+    return int(value, **kwargs)
 
 
 def _convert_str(value):
@@ -77,10 +96,23 @@ def _convert_timestamp(value, time_format="%Y-%m-%d %H:%M:%S"):
     return datetime.datetime.strptime(value, time_format)
 
 
+def _convert_custom(value, base=2, power=0, scale=1, offset=0):
+    return value * (base ** power) * scale + offset
+
+
+def _convert_eval(value, expression):
+    value_parser = simpleeval.SimpleEval(names={"value": value})
+    value_parser.operators = {
+        **value_parser.operators, **EVAL_OPERATORS_EXTRA}
+    value = value_parser.eval(expression)
+    return value
+
+
 CONVERSION_FUNCTIONS = {
     False: _convert_none,
     True: _convert_pass,
     "bitfield": _convert_bitfield,
+    "bool": _convert_bool,
     "byte": _convert_byte,
     "bytestr": _convert_bytestr,
     "bytestr_strip": _convert_bytestr_strip,
@@ -90,21 +122,36 @@ CONVERSION_FUNCTIONS = {
     "time_posix": _convert_time_posix,
     "time_posix_ms": _convert_time_posix_ms,
     "timestamp": _convert_timestamp,
+    "custom": _convert_custom,
+    "eval": _convert_eval,
     }
 
 
-def convert_custom(
-        value, scale=1, offset=0, base=2, power=0, digits=None, after=None,
-        **after_kwargs):
-    value = value * (base ** power) * scale + offset
-    if digits is not None:
-        value = round(value, digits)
+def convert_multistep(
+        value,
+        before=None,
+        before_kwargs=None,
+        main=None,
+        after=None,
+        after_kwargs=None,
+        **main_kwargs,
+        ):
+    if before_kwargs is None:
+        before_kwargs = {}
+    if after_kwargs is None:
+        after_kwargs = {}
+
+    if before is not None:
+        value = CONVERSION_FUNCTIONS[before](value, **before_kwargs)
+    if main is not None:
+        value = CONVERSION_FUNCTIONS[main](value, **main_kwargs)
     if after is not None:
         value = CONVERSION_FUNCTIONS[after](value, **after_kwargs)
+
     return value
 
 
-CONVERSION_FUNCTIONS["custom"] = convert_custom
+CONVERSION_FUNCTIONS["multistep"] = convert_multistep
 
 
 LOGGER = logging.getLogger(__name__)
@@ -166,6 +213,8 @@ class DataDecoder(brokkr.utils.misc.AutoReprMixin):
                 output_value = (
                     self.conversion_functions[data_type.conversion](
                         value, **data_type.conversion_kwargs))
+                if data_type.digits is not None:
+                    output_value = round(output_value, data_type.digits)
             # Handle errors decoding specific values
             except Exception as e:
                 if error_count < 1:
@@ -190,6 +239,9 @@ class DataDecoder(brokkr.utils.misc.AutoReprMixin):
                             1, **data_type.conversion_kwargs)
                         - self.conversion_functions[data_type.conversion](
                             0, **data_type.conversion_kwargs))
+                    uncertainty = round(
+                        uncertainty, -int(math.floor(math.log10(uncertainty))))
+
                 else:
                     uncertainty = data_type.uncertainty
                 data_value = brokkr.pipeline.datavalue.DataValue(

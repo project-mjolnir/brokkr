@@ -43,6 +43,7 @@ setuptools.setup(
     install_requires=[
         "packaging",
         "serviceinstaller >= 0.1.3 ; sys_platform=='linux'",
+        "simpleeval",
         "toml",
         ],
     extras_require={

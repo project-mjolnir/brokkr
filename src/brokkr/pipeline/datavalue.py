@@ -13,6 +13,7 @@ class DataType(brokkr.utils.misc.AutoReprMixin):
             conversion=True,
             binary_type=None,
             input_type=None,
+            digits=None,
             na_marker=None,
             full_name=None,
             unit=None,
@@ -20,12 +21,12 @@ class DataType(brokkr.utils.misc.AutoReprMixin):
             range_min=None,
             range_max=None,
             custom_attrs=None,
-            **conversion_kwargs,
-                ):
+            **conversion_kwargs):
         self.name = name
         self.conversion = conversion
         self.binary_type = binary_type
         self.input_type = binary_type if input_type is None else input_type
+        self.digits = digits
         self.na_marker = na_marker
         self.conversion_kwargs = conversion_kwargs
 
