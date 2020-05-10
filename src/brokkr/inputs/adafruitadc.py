@@ -51,7 +51,7 @@ class AdafruitADCInput(brokkr.pipeline.baseinput.PropertyInputStep):
     def read_sensor_data(self, sensor_object=None):
         with busio.I2C(board.SCL, board.SDA, **self._i2c_kwargs) as i2c:
             sensor_object = self.init_sensor_object(i2c)
-            if not sensor_object:
+            if sensor_object is None:
                 return None
             channel_object = self._analog_class(
                 sensor_object, **self._adc_kwargs)

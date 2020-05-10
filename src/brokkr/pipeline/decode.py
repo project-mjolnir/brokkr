@@ -16,6 +16,7 @@ import simpleeval
 # Local imports
 import brokkr.pipeline.datavalue
 import brokkr.utils.misc
+import brokkr.utils.output
 
 
 NA_MARKER_DEFAULT = "NA"
@@ -194,12 +195,6 @@ class DataDecoder(brokkr.utils.misc.AutoReprMixin):
         return output_data
 
     def convert_data(self, raw_data):
-        # pylint: disable=too-many-branches
-        if not raw_data:
-            output_data = self.output_na_values()
-            LOGGER.debug("No data to convert, returning: %r", output_data)
-            return output_data
-
         error_count = 0
         output_data = {}
 
@@ -210,9 +205,10 @@ class DataDecoder(brokkr.utils.misc.AutoReprMixin):
             if not self.include_all_data_each:
                 value = value[idx]
             if value is None:
-                LOGGER.debug("Data value is None decoding data_type %r to %s, "
-                             "coercing to NA",
-                             data_type.name, data_type.conversion)
+                LOGGER.debug("Data value is None decoding data_type %s to %s, "
+                             "coercing to NA value %r",
+                             data_type.name, data_type.conversion,
+                             self.output_na_value(data_type))
                 output_data[data_type.name] = self.output_na_value(data_type)
                 continue
             try:
@@ -259,15 +255,17 @@ class DataDecoder(brokkr.utils.misc.AutoReprMixin):
             LOGGER.warning("%s additional decode errors were suppressed.",
                            error_count - 1)
 
-        LOGGER.debug("Converted data: {%s}",
-                     ", ".join([f"{key!r}: {value!s}"
-                                for key, value in output_data.items()]))
+        LOGGER.debug("Converted data: {%s}", brokkr.utils.output.format_data(
+            data=output_data, seperator=", ", include_raw=True))
         return output_data
 
     def decode_data(self, data):
         if data is None:
-            LOGGER.debug("No data to decode")
             output_data = self.output_na_values()
+            LOGGER.debug(
+                "No data to decode, returning NAs: %r",
+                brokkr.utils.output.format_data(
+                    data=output_data, seperator=", ", include_raw=False))
         else:
             output_data = self.convert_data(data)
         return output_data

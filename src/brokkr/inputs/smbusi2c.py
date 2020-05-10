@@ -3,6 +3,7 @@ Generalized input class for an I2C/SMBus device using the SMBus library.
 """
 
 # Standard library imports
+import logging
 from pathlib import Path
 
 # Third party imports
@@ -18,6 +19,8 @@ MAX_I2C_BUS_N = 6
 I2C_BLOCK_READ_FUNCTION = "read_i2c_block_data"
 DEFAULT_READ_FUNCTION = I2C_BLOCK_READ_FUNCTION
 
+LOGGER = logging.getLogger(__name__)
+
 
 class SMBusI2CDevice(brokkr.utils.misc.AutoReprMixin):
     def __init__(self, bus=None, force=None):
@@ -28,6 +31,7 @@ class SMBusI2CDevice(brokkr.utils.misc.AutoReprMixin):
             for n_bus in range(0, MAX_I2C_BUS_N + 1):
                 if Path(f"/dev/i2c-{n_bus}").exists():
                     bus = n_bus
+                    LOGGER.debug("Found I2C device at bus %s", bus)
                     break
             else:
                 raise RuntimeError("Could not find I2C any bus device")
@@ -38,9 +42,12 @@ class SMBusI2CDevice(brokkr.utils.misc.AutoReprMixin):
              read_function=DEFAULT_READ_FUNCTION, **read_kwargs):
         if force is None:
             force = self.force
+        LOGGER.debug("Reading I2C data with function %s at bus %r, kwargs %r",
+                     read_function, self.bus, read_kwargs)
         with smbus2.SMBus(self.bus, force=self.force) as i2c_bus:
             buffer = getattr(i2c_bus, read_function)(
                 force=force, **read_kwargs)
+        LOGGER.debug("Read I2C data %r", buffer)
         return buffer
 
 
@@ -77,7 +84,7 @@ class SMBusI2CInput(brokkr.pipeline.baseinput.SensorInputStep):
                 "%s reading data from I2C SMBus device with function %s "
                 "of %s sensor object %s on step %s: %s",
                 type(e).__name__, self._read_function,
-                type(self), type(self.object_class), self.name, e)
+                type(self), self.object_class, self.name, e)
             self.logger.info("Error details:", exc_info=True)
             sensor_data = None
 

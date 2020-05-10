@@ -35,7 +35,7 @@ class ValueInputStep(brokkr.pipeline.base.InputStep, metaclass=abc.ABCMeta):
             except AttributeError:  # If data_type isn't already an object
                 try:
                     data_type["name"]
-                except TypeError:
+                except TypeError:  # If data_types is a list, not a dict
                     data_type_dict = data_types[data_type]
                     data_type_dict["name"] = data_type
                     data_type = data_type_dict
@@ -88,7 +88,7 @@ class SensorInputStep(ValueInputStep, metaclass=abc.ABCMeta):
         self.sensor_object = None
         self.cache_sensor_object = cache_sensor_object
 
-        if sensor_module:
+        if sensor_module is not None:
             module_object = importlib.import_module(sensor_module)
             sensor_class = getattr(module_object, sensor_class)
         self.object_class = sensor_class
@@ -99,21 +99,28 @@ class SensorInputStep(ValueInputStep, metaclass=abc.ABCMeta):
         if not sensor_kwargs:
             sensor_kwargs = self.sensor_kwargs
 
+        self.logger.debug(
+            "Initializing sensor object %s with args %r, kwargs %s",
+            self.object_class, sensor_args, sensor_kwargs)
         try:
             sensor_object = self.object_class(
                 *sensor_args, **sensor_kwargs)
         except Exception as e:
             self.logger.error(
                 "%s initializing %s sensor object %s on step %s: %s",
-                type(e).__name__, type(self), type(self.object_class),
+                type(e).__name__, type(self), self.object_class,
                 self.name, e)
             self.logger.info("Error details:", exc_info=True)
             self.logger.info("Sensor args: %r | Sensor kwargs: %r:",
                              sensor_args, sensor_kwargs)
             sensor_object = None
+        self.logger.debug(
+            "Initialized sensor object %s to %r",
+            self.object_class, sensor_object)
 
         if self.cache_sensor_object:
             self.sensor_object = sensor_object
+            self.logger.debug("Cached sensor object %s", self.object_class)
         return sensor_object
 
     def get_sensor_object(self, sensor_object=None):
@@ -154,9 +161,13 @@ class AttributeInputStep(SensorInputStep, metaclass=abc.ABCMeta):
                     "%s on attribute %s from %s sensor object %s "
                     "on step %s: %s",
                     type(e).__name__, data_type.attribute_name, type(self),
-                    type(self.object_class), self.name, e)
+                    self.object_class, self.name, e)
                 self.logger.info("Error details:", exc_info=True)
                 data_value = None
+            else:
+                self.logger.debug(
+                    "Read value %r from attribute %s of sensor %s",
+                    data_value, data_type.attribute_name, self.object_class)
             sensor_data.append(data_value)
         return sensor_data
 

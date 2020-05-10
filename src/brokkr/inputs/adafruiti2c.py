@@ -23,10 +23,10 @@ class AdafruitI2CInput(BaseAdafruitI2CInput):
     def read_sensor_data(self, sensor_object=None):
         with busio.I2C(board.SCL, board.SDA, **self._i2c_kwargs) as i2c:
             sensor_object = self.init_sensor_object(i2c)
-            if not sensor_object:
+            if sensor_object is None:
                 return None
-            raw_data = super().read_sensor_data(sensor_object=sensor_object)
-        return raw_data
+            sensor_data = super().read_sensor_data(sensor_object=sensor_object)
+        return sensor_data
 
 
 class AdafruitPersistantI2CInput(BaseAdafruitI2CInput):
