@@ -27,7 +27,7 @@ EVAL_OPERATORS_EXTRA = {
     ast.BitOr: operator.or_,
     ast.BitXor: operator.xor,
     ast.Invert: operator.invert,
-    ast.RShift: operator.rshift,
+    ast.LShift: operator.lshift,
     ast.RShift: operator.rshift,
     }
 
@@ -165,8 +165,10 @@ class DataDecoder(brokkr.utils.misc.AutoReprMixin):
             data_types,
             na_marker=None,
             conversion_functions=None,
+            include_all_data_each=False,
                 ):
         self.data_types = data_types
+        self.include_all_data_each = include_all_data_each
         if conversion_functions is None:
             conversion_functions = {}
         conversion_functions = {
@@ -192,6 +194,7 @@ class DataDecoder(brokkr.utils.misc.AutoReprMixin):
         return output_data
 
     def convert_data(self, raw_data):
+        # pylint: disable=too-many-branches
         if not raw_data:
             output_data = self.output_na_values()
             LOGGER.debug("No data to convert, returning: %r", output_data)
@@ -200,9 +203,12 @@ class DataDecoder(brokkr.utils.misc.AutoReprMixin):
         error_count = 0
         output_data = {}
 
-        for data_type, value in zip(self.data_types, raw_data):
+        for idx, data_type in enumerate(self.data_types):
             if not data_type.conversion:
                 continue  # If this data value should be dropped, ignore it
+            value = raw_data
+            if not self.include_all_data_each:
+                value = value[idx]
             if value is None:
                 LOGGER.debug("Data value is None decoding data_type %r to %s, "
                              "coercing to NA",
@@ -250,10 +256,12 @@ class DataDecoder(brokkr.utils.misc.AutoReprMixin):
                 output_data[data_type.name] = data_value
 
         if error_count > 1:
-            LOGGER.warning("%s additioanl decode errors were suppressed.",
+            LOGGER.warning("%s additional decode errors were suppressed.",
                            error_count - 1)
 
-        LOGGER.debug("Converted data: %r", output_data)
+        LOGGER.debug("Converted data: {%s}",
+                     ", ".join([f"{key!r}: {value!s}"
+                                for key, value in output_data.items()]))
         return output_data
 
     def decode_data(self, data):

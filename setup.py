@@ -54,6 +54,7 @@ setuptools.setup(
             "pymodbus",
             "pyserial",
             "RPi.GPIO",
+            "smbus2",
             ],
         "adafruit": [
             "Adafruit-Blinka",
@@ -66,6 +67,9 @@ setuptools.setup(
         "modbus": [
             "pymodbus",
             "pyserial",
+            ],
+        "smbus": [
+            "smbus2",
             ],
         },
     entry_points={
