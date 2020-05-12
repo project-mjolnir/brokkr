@@ -162,10 +162,10 @@ def insert_values(config_data, insert_items, logger=None):
                     else:
                         # Otherwise, look up the value in the source table
                         # and merge them, keeping values in the original
-                        target_table.update({
-                            **preset_data[target_key][
-                                target_table[target_key]],
-                            **target_table})
+                        merged_table = brokkr.utils.misc.update_dict_recursive(
+                            preset_data[target_key][target_table[target_key]],
+                            target_table)
+                        target_table.update(merged_table)
                         # And remove the now-redundant item
                         del target_table[target_key]
                 except KeyError as e:

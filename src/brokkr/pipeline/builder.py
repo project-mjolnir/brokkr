@@ -107,7 +107,8 @@ class Builder(brokkr.utils.misc.AutoReprMixin):
                             break
                     raise SystemExit(1)
                 del subobject[PRESET_KEY]
-                subobject = {**preset, **subobject}
+                subobject = brokkr.utils.misc.update_dict_recursive(
+                    preset, subobject)
 
             if subobject.get("name", None) is None:
                 subobject["name"] = f"{self.name}{self.name_sep}{idx + 1}"
