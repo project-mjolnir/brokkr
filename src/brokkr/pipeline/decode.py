@@ -3,18 +3,34 @@ Common decode and conversion functionality.
 """
 
 # Standard library imports
+import ast
 import datetime
 import logging
+import math
+import operator
 import struct
+
+# Third party imports
+import simpleeval
 
 # Local imports
 import brokkr.pipeline.datavalue
 import brokkr.utils.misc
+import brokkr.utils.output
 
 
 NA_MARKER_DEFAULT = "NA"
 
 OUTPUT_CUSTOM = "custom"
+
+EVAL_OPERATORS_EXTRA = {
+    ast.BitAnd: operator.and_,
+    ast.BitOr: operator.or_,
+    ast.BitXor: operator.xor,
+    ast.Invert: operator.invert,
+    ast.LShift: operator.lshift,
+    ast.RShift: operator.rshift,
+    }
 
 
 def _convert_none(value):
@@ -28,6 +44,10 @@ def _convert_pass(value):
 
 def _convert_bitfield(value):
     return int(value)
+
+
+def _convert_bool(value):
+    return bool(value)
 
 
 def _convert_byte(value):
@@ -46,8 +66,8 @@ def _convert_float(value):
     return float(value)
 
 
-def _convert_int(value):
-    return int(value)
+def _convert_int(value, **kwargs):
+    return int(value, **kwargs)
 
 
 def _convert_str(value):
@@ -77,10 +97,23 @@ def _convert_timestamp(value, time_format="%Y-%m-%d %H:%M:%S"):
     return datetime.datetime.strptime(value, time_format)
 
 
+def _convert_custom(value, base=2, power=0, scale=1, offset=0):
+    return value * (base ** power) * scale + offset
+
+
+def _convert_eval(value, expression):
+    value_parser = simpleeval.SimpleEval(names={"value": value})
+    value_parser.operators = {
+        **value_parser.operators, **EVAL_OPERATORS_EXTRA}
+    value = value_parser.eval(expression)
+    return value
+
+
 CONVERSION_FUNCTIONS = {
     False: _convert_none,
     True: _convert_pass,
     "bitfield": _convert_bitfield,
+    "bool": _convert_bool,
     "byte": _convert_byte,
     "bytestr": _convert_bytestr,
     "bytestr_strip": _convert_bytestr_strip,
@@ -90,21 +123,36 @@ CONVERSION_FUNCTIONS = {
     "time_posix": _convert_time_posix,
     "time_posix_ms": _convert_time_posix_ms,
     "timestamp": _convert_timestamp,
+    "custom": _convert_custom,
+    "eval": _convert_eval,
     }
 
 
-def convert_custom(
-        value, scale=1, offset=0, base=2, power=0, digits=None, after=None,
-        **after_kwargs):
-    value = value * (base ** power) * scale + offset
-    if digits is not None:
-        value = round(value, digits)
+def convert_multistep(
+        value,
+        before=None,
+        before_kwargs=None,
+        main=None,
+        after=None,
+        after_kwargs=None,
+        **main_kwargs,
+        ):
+    if before_kwargs is None:
+        before_kwargs = {}
+    if after_kwargs is None:
+        after_kwargs = {}
+
+    if before is not None:
+        value = CONVERSION_FUNCTIONS[before](value, **before_kwargs)
+    if main is not None:
+        value = CONVERSION_FUNCTIONS[main](value, **main_kwargs)
     if after is not None:
         value = CONVERSION_FUNCTIONS[after](value, **after_kwargs)
+
     return value
 
 
-CONVERSION_FUNCTIONS["custom"] = convert_custom
+CONVERSION_FUNCTIONS["multistep"] = convert_multistep
 
 
 LOGGER = logging.getLogger(__name__)
@@ -118,8 +166,10 @@ class DataDecoder(brokkr.utils.misc.AutoReprMixin):
             data_types,
             na_marker=None,
             conversion_functions=None,
+            include_all_data_each=False,
                 ):
         self.data_types = data_types
+        self.include_all_data_each = include_all_data_each
         if conversion_functions is None:
             conversion_functions = {}
         conversion_functions = {
@@ -145,27 +195,28 @@ class DataDecoder(brokkr.utils.misc.AutoReprMixin):
         return output_data
 
     def convert_data(self, raw_data):
-        if not raw_data:
-            output_data = self.output_na_values()
-            LOGGER.debug("No data to convert, returning: %r", output_data)
-            return output_data
-
         error_count = 0
         output_data = {}
 
-        for data_type, value in zip(self.data_types, raw_data):
+        for idx, data_type in enumerate(self.data_types):
             if not data_type.conversion:
                 continue  # If this data value should be dropped, ignore it
+            value = raw_data
+            if not self.include_all_data_each:
+                value = value[idx]
             if value is None:
-                LOGGER.debug("Data value is None decoding data_type %r to %s, "
-                             "coercing to NA",
-                             data_type.name, data_type.conversion)
+                LOGGER.debug("Data value is None decoding data_type %s to %s, "
+                             "coercing to NA value %r",
+                             data_type.name, data_type.conversion,
+                             self.output_na_value(data_type))
                 output_data[data_type.name] = self.output_na_value(data_type)
                 continue
             try:
                 output_value = (
                     self.conversion_functions[data_type.conversion](
                         value, **data_type.conversion_kwargs))
+                if data_type.digits is not None:
+                    output_value = round(output_value, data_type.digits)
             # Handle errors decoding specific values
             except Exception as e:
                 if error_count < 1:
@@ -190,6 +241,9 @@ class DataDecoder(brokkr.utils.misc.AutoReprMixin):
                             1, **data_type.conversion_kwargs)
                         - self.conversion_functions[data_type.conversion](
                             0, **data_type.conversion_kwargs))
+                    uncertainty = round(
+                        uncertainty, -int(math.floor(math.log10(uncertainty))))
+
                 else:
                     uncertainty = data_type.uncertainty
                 data_value = brokkr.pipeline.datavalue.DataValue(
@@ -198,16 +252,20 @@ class DataDecoder(brokkr.utils.misc.AutoReprMixin):
                 output_data[data_type.name] = data_value
 
         if error_count > 1:
-            LOGGER.warning("%s additioanl decode errors were suppressed.",
+            LOGGER.warning("%s additional decode errors were suppressed.",
                            error_count - 1)
 
-        LOGGER.debug("Converted data: %r", output_data)
+        LOGGER.debug("Converted data: {%s}", brokkr.utils.output.format_data(
+            data=output_data, seperator=", ", include_raw=True))
         return output_data
 
     def decode_data(self, data):
         if data is None:
-            LOGGER.debug("No data to decode")
             output_data = self.output_na_values()
+            LOGGER.debug(
+                "No data to decode, returning NAs: %r",
+                brokkr.utils.output.format_data(
+                    data=output_data, seperator=", ", include_raw=False))
         else:
             output_data = self.convert_data(data)
         return output_data

@@ -43,16 +43,33 @@ setuptools.setup(
     install_requires=[
         "packaging",
         "serviceinstaller >= 0.1.3 ; sys_platform=='linux'",
+        "simpleeval",
         "toml",
         ],
     extras_require={
         "all": [
+            "Adafruit-Blinka",
+            "adafruit-circuitpython-busdevice",
+            "gpiozero",
             "pymodbus",
             "pyserial",
+            "RPi.GPIO",
+            "smbus2",
+            ],
+        "adafruit": [
+            "Adafruit-Blinka",
+            "adafruit-circuitpython-busdevice",
+            ],
+        "gpio": [
+            "gpiozero",
+            "RPi.GPIO",
             ],
         "modbus": [
             "pymodbus",
             "pyserial",
+            ],
+        "smbus": [
+            "smbus2",
             ],
         },
     entry_points={

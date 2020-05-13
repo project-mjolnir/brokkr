@@ -41,7 +41,7 @@ class PrettyPrintOutput(PrintOutput):
         super().__init__(in_place=in_place, **print_output_kwargs)
 
     def execute(self, input_data=None):
-        output_data = brokkr.utils.output.format_data(input_data)
+        output_data = brokkr.utils.output.format_data(input_data) + "\n"
         if self.in_place and self.ran_once:
             output_data = (
                 (CURSOR_UP_CHAR + ERASE_LINE_CHAR) * output_data.count("\n")

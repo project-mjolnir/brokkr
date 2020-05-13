@@ -49,7 +49,7 @@ def format_data(data=None, seperator="\n", include_raw=False):
         data_item = " ".join(data_componets)
         output_data_list.append(data_item)
 
-    formatted_data = seperator.join(output_data_list) + "\n"
+    formatted_data = seperator.join(output_data_list)
     return formatted_data
 
 
