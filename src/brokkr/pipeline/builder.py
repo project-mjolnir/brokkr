@@ -238,11 +238,15 @@ class MonitorBuilder(ObjectBuilder):
     def __init__(
             self,
             monitor_input_steps,
+            monitor_process_steps=None,
             monitor_output_steps=None,
             monitor_interval_s=INTERVAL_DEFAULT,
             name="Monitoring Data Pipeline",
             **builder_kwargs,
                 ):
+        if monitor_process_steps is None:
+            monitor_process_steps = []
+
         monitor_input_step = {
             "_module_path": "brokkr.pipeline.multistep",
             "_class_name": "SequentialMultiStep",
@@ -264,7 +268,8 @@ class MonitorBuilder(ObjectBuilder):
                 "steps": monitor_output_steps,
                 }
 
-        monitor_steps = [monitor_input_step, monitor_output_step]
+        monitor_steps = [
+            monitor_input_step, *monitor_process_steps, monitor_output_step]
         monitor_pipeline = {
             "name": name,
             "period_s": monitor_interval_s,
