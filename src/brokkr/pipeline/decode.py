@@ -19,9 +19,13 @@ import brokkr.utils.misc
 import brokkr.utils.output
 
 
+# --- Module-level constants --- #
+
 NA_MARKER_DEFAULT = "NA"
 
 OUTPUT_CUSTOM = "custom"
+
+LOGGER = logging.getLogger(__name__)
 
 EVAL_OPERATORS_EXTRA = {
     ast.BitAnd: operator.and_,
@@ -32,6 +36,23 @@ EVAL_OPERATORS_EXTRA = {
     ast.RShift: operator.rshift,
     }
 
+
+# --- Utility functions --- #
+
+def generate_eval_parser(**simpleeval_kwargs):
+    value_parser = simpleeval.SimpleEval(**simpleeval_kwargs)
+    value_parser.operators = {
+        **value_parser.operators, **EVAL_OPERATORS_EXTRA}
+    return value_parser
+
+
+def eval_oneshot(expression, **simpleeval_kwargs):
+    value_parser = generate_eval_parser(**simpleeval_kwargs)
+    eval_result = value_parser.eval(expression)
+    return eval_result
+
+
+# --- Conversion functions --- #
 
 def _convert_none(value):
     # pylint: disable=unused-argument
@@ -102,11 +123,7 @@ def _convert_custom(value, base=2, power=0, scale=1, offset=0):
 
 
 def _convert_eval(value, expression):
-    value_parser = simpleeval.SimpleEval(names={"value": value})
-    value_parser.operators = {
-        **value_parser.operators, **EVAL_OPERATORS_EXTRA}
-    value = value_parser.eval(expression)
-    return value
+    return eval_oneshot(names={"value": value}, expression=expression)
 
 
 CONVERSION_FUNCTIONS = {
@@ -155,8 +172,7 @@ def convert_multistep(
 CONVERSION_FUNCTIONS["multistep"] = convert_multistep
 
 
-LOGGER = logging.getLogger(__name__)
-
+# --- Core decoder classes --- #
 
 class DataDecoder(brokkr.utils.misc.AutoReprMixin):
     conversion_functions = CONVERSION_FUNCTIONS
