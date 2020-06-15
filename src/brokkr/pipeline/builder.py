@@ -130,7 +130,7 @@ class Builder(brokkr.utils.misc.AutoReprMixin):
     def setup_subobjects(self, **setup_kwargs):
         # Recursively build the sub-objects comprising this object
         if self.subobjects is not None:
-            setup_subobjects = []
+            subobjects_to_setup = []
             try:
                 subobjects = self.subobjects.values()
             except AttributeError:  # For lists that don't have values()
@@ -138,8 +138,8 @@ class Builder(brokkr.utils.misc.AutoReprMixin):
             for idx, subobject in enumerate(subobjects):
                 setup_subobject = self.setup_subobject(
                     subobject, idx=idx, **setup_kwargs)
-                setup_subobjects.append(setup_subobject)
-            return setup_subobjects
+                subobjects_to_setup.append(setup_subobject)
+            return subobjects_to_setup
         return None
 
     def setup(self, build_context=None, **setup_kwargs):

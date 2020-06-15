@@ -218,6 +218,7 @@ class DataDecoder(brokkr.utils.misc.AutoReprMixin):
             if not data_type.conversion:
                 continue  # If this data value should be dropped, ignore it
             value = raw_data
+            # Split input into items if each corresponds to one output
             if not self.include_all_data_each:
                 value = value[idx]
             if value is None:

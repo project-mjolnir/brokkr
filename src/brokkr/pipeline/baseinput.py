@@ -23,6 +23,7 @@ class ValueInputStep(brokkr.pipeline.base.InputStep, metaclass=abc.ABCMeta):
             conversion_functions=None,
             na_marker=None,
             include_all_data_each=False,
+            name_suffix="",
             **pipeline_step_kwargs):
         super().__init__(**pipeline_step_kwargs)
         if datatype_default_kwargs is None:
@@ -42,6 +43,7 @@ class ValueInputStep(brokkr.pipeline.base.InputStep, metaclass=abc.ABCMeta):
 
                 data_type = brokkr.pipeline.datavalue.DataType(
                     **{**datatype_default_kwargs, **data_type})
+            data_type.name += name_suffix
             self.data_types.append(data_type)
 
         if binary_decoder:
