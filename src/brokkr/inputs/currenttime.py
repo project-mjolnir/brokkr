@@ -30,7 +30,7 @@ class CurrentTimeInput(brokkr.pipeline.baseinput.ValueInputStep):
             use_local=use_local,
             )
         super().__init__(data_types=[time_data_type], binary_decoder=False,
-                         **value_input_kwargs)
+                         ignore_na_on_start=True, **value_input_kwargs)
 
     def read_raw_data(self, input_data=None):
         current_time = datetime.datetime.now(

@@ -11,6 +11,12 @@ import brokkr.utils.log
 import brokkr.utils.misc
 
 
+# --- Utility functions and classes --- #
+
+class NASentinel:
+    pass
+
+
 # --- Common base classes --- #
 
 class Executable(brokkr.utils.misc.AutoReprMixin, metaclass=abc.ABCMeta):

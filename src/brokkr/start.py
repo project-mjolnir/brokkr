@@ -232,6 +232,7 @@ def get_monitoring_pipeline(interval_s=1, exit_event=None, logger=None):
     else:
         monitoring_pipeline_kwargs.pop("_builder")
         builder_kwargs = monitoring_pipeline_kwargs
+    builder_kwargs["na_on_start"] = False
 
     build_context = create_build_context(exit_event=exit_event)
     built_pipeline = builder(build_context=build_context,

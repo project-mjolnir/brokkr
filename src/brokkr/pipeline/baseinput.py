@@ -24,8 +24,10 @@ class ValueInputStep(brokkr.pipeline.base.InputStep, metaclass=abc.ABCMeta):
             na_marker=None,
             include_all_data_each=False,
             name_suffix="",
+            ignore_na_on_start=False,
             **pipeline_step_kwargs):
         super().__init__(**pipeline_step_kwargs)
+        self.ignore_na_on_start = ignore_na_on_start
         if datatype_default_kwargs is None:
             datatype_default_kwargs = {}
 
@@ -69,6 +71,10 @@ class ValueInputStep(brokkr.pipeline.base.InputStep, metaclass=abc.ABCMeta):
 
     def execute(self, input_data=None):
         input_data = super().execute(input_data=input_data)
+        # Handle when the pipeline signals an NA data block should be sent
+        if (isinstance(input_data, brokkr.pipeline.base.NASentinel)
+                and not self.ignore_na_on_start):
+            return self.decode_data(raw_data=None)
         raw_data = self.read_raw_data(input_data=input_data)
         output_data = self.decode_data(raw_data)
         return output_data

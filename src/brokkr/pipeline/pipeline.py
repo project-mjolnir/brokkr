@@ -18,10 +18,12 @@ class Pipeline(brokkr.pipeline.base.Executable, metaclass=abc.ABCMeta):
             self,
             steps,
             period_s=0,
+            na_on_start=False,
             **executable_kwargs):
         super().__init__(**executable_kwargs)
         self.steps = steps
         self.period_s = period_s
+        self.na_on_start = na_on_start
         self.outer_exit_event = multiprocessing.Event()
 
     def shutdown(self):
@@ -48,6 +50,9 @@ class Pipeline(brokkr.pipeline.base.Executable, metaclass=abc.ABCMeta):
         self.logger.info(
             "Beginning execution of %s (%s)", self.name,
             brokkr.utils.misc.get_full_class_name(self))
+        if self.na_on_start:
+            self.logger.debug("Injecting NA values on start")
+            self.execute(input_data=brokkr.pipeline.base.NASentinel())
         brokkr.utils.misc.run_periodic(
             type(self).execute,
             period_s=self.period_s,
