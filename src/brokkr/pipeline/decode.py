@@ -96,13 +96,17 @@ def _convert_str(value):
 
 
 def _convert_time_posix(
-        value, multiplier_to_s=1, divisor_to_s=1, use_local=False):
+        value, multiplier_to_s=1, divisor_to_s=1,
+        use_local=False, strip_tz=False):
     if use_local:
         time_zone = None
     else:
         time_zone = datetime.timezone.utc
-    return datetime.datetime.fromtimestamp(
+    datetime_object = datetime.datetime.fromtimestamp(
         value * multiplier_to_s / divisor_to_s, tz=time_zone)
+    if strip_tz:
+        datetime_object = datetime_object.replace(tzinfo=None)
+    return datetime_object
 
 
 def _convert_time_posix_ms(value, divisor_to_s=1000, **time_posix_kwargs):

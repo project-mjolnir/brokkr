@@ -17,6 +17,7 @@ class CurrentTimeInput(brokkr.pipeline.baseinput.ValueInputStep):
             data_name="time",
             full_name=None,
             use_local=False,
+            strip_tz=False,
             **value_input_kwargs):
         if full_name is None:
             full_name = f"Time ({'Local' if use_local else 'UTC'})"
@@ -28,6 +29,7 @@ class CurrentTimeInput(brokkr.pipeline.baseinput.ValueInputStep):
             unit="s",
             uncertainty=time.get_clock_info("time").resolution,
             use_local=use_local,
+            strip_tz=strip_tz,
             )
         super().__init__(data_types=[time_data_type], binary_decoder=False,
                          ignore_na_on_start=True, **value_input_kwargs)
