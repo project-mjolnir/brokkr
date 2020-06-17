@@ -190,6 +190,7 @@ def create_build_context(exit_event=None, mp_handler=None):
         plugin_root_path=(brokkr.utils.misc.get_system_path(SYSTEMPATH_CONFIG)
                           / SYSTEM_SUBPATH_PLUGINS),
         na_marker=CONFIG["general"]["na_marker"],
+        preset_fill_mappings=[("data_types", CONFIG.get("data_types", {}))],
         )
     return build_context
 

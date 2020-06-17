@@ -38,7 +38,7 @@ class ValueInputStep(brokkr.pipeline.base.InputStep, metaclass=abc.ABCMeta):
             except AttributeError:  # If data_type isn't already an object
                 try:
                     data_type["name"]
-                except TypeError:  # If data_types is a list, not a dict
+                except TypeError:  # If data_types is a dict, not a list
                     data_type_dict = data_types[data_type]
                     data_type_dict["name"] = data_type
                     data_type = data_type_dict

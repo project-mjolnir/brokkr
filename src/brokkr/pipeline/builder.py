@@ -30,6 +30,7 @@ class BuildContext(brokkr.utils.misc.AutoReprMixin):
             subobject_presets=None,
             plugin_root_path=None,
             na_marker=None,
+            preset_fill_mappings=None,
                 ):
         self.exit_event = exit_event
         self.subobject_lookup = (
@@ -42,6 +43,8 @@ class BuildContext(brokkr.utils.misc.AutoReprMixin):
             self.plugin_root_path = brokkr.utils.misc.convert_path(
                 plugin_root_path)
         self.na_marker = na_marker
+        self.preset_fill_mappings = (
+            [] if preset_fill_mappings is None else preset_fill_mappings)
 
     def merge(self, build_context):
         if build_context is None:
@@ -65,8 +68,71 @@ class Builder(brokkr.utils.misc.AutoReprMixin):
         self.name_sep = name_sep
         self.build_context = (
             BuildContext() if build_context is None else build_context)
-
         self.subbuilders = []
+
+    def _setup_preset(self, subobject, build_context, step_key=None):
+        subobject = copy.deepcopy(subobject)
+        key_parts = subobject[PRESET_KEY].split(".")
+        try:
+            preset = brokkr.utils.misc.get_inner_dict(
+                obj=build_context.subobject_presets, keys=key_parts)
+        except KeyError as e:
+            LOGGER.error(
+                "%s finding object %s of preset %r in pipeline %r",
+                type(e).__name__, e, subobject[PRESET_KEY], self.name)
+            LOGGER.info("Error details:", exc_info=True)
+            sub_dict = build_context.subobject_presets
+            LOGGER.info("Valid names for local lookup table: %r",
+                        list(build_context.subobject_lookup.keys()))
+            for key_part, next_part in zip(["root", *key_parts[:-1]],
+                                           key_parts):
+                LOGGER.info("Valid names for preset level %r: %r",
+                            key_part, list(sub_dict.keys()))
+                sub_dict = sub_dict.get(next_part, None)
+                if sub_dict is None:
+                    break
+            raise SystemExit(1)
+
+        # Fill data types defined in steps table with data type presets
+        device_preset = (
+            build_context.subobject_presets[key_parts[0]])
+        for preset_fill_key, preset_fill_value in (
+                build_context.preset_fill_mappings):
+            if preset_fill_key in subobject:
+                # Build preset lookup from values in preset, config and step
+                preset_fill_lookup = brokkr.utils.misc.update_dict_recursive(
+                    device_preset.get(preset_fill_key, {}),
+                    preset_fill_value)
+
+                preset_filled = {}
+                preset = copy.deepcopy(preset)
+                for inner_key in subobject[preset_fill_key]:
+                    if isinstance(inner_key, str):
+                        try:
+                            preset_filled[inner_key] = (
+                                preset_fill_lookup[inner_key])
+                        except KeyError as e:
+                            LOGGER.error(
+                                "%s inserting value for preset %r: "
+                                "Can't find inner key %s in key %r to insert "
+                                "into step %s",
+                                type(e).__name__, subobject[PRESET_KEY], e,
+                                preset_fill_key, step_key)
+                            LOGGER.info("Error details:", exc_info=True)
+                            LOGGER.info("Possible keys: %r",
+                                        list(preset_fill_lookup.keys()))
+                            raise SystemExit(1)
+                        else:
+                            preset.pop(preset_fill_key, None)
+                    else:
+                        preset_filled[inner_key.name] = inner_key
+                subobject[preset_fill_key] = preset_filled
+
+        # Update subobject arguments with those from preset
+        del subobject[PRESET_KEY]
+        subobject = brokkr.utils.misc.update_dict_recursive(
+            preset, subobject)
+        return subobject
 
     def setup_subobject(
             self,
@@ -79,36 +145,19 @@ class Builder(brokkr.utils.misc.AutoReprMixin):
         if not isinstance(subobject, Builder):
             # Lookup subobject names in the local dictionary
             if isinstance(subobject, str):
+                step_key = subobject
                 try:
                     subobject = build_context.subobject_lookup[subobject]
                 except KeyError:
                     # If subobject not found, format it as a preset
                     subobject = {PRESET_KEY: subobject}
+            else:
+                step_key = None
+
             # Lookup subobject names in the preset dictionary
-            if subobject.get(PRESET_KEY, None) is not None:
-                key_parts = subobject[PRESET_KEY].split(".")
-                try:
-                    preset = brokkr.utils.misc.get_inner_dict(
-                        obj=build_context.subobject_presets, keys=key_parts)
-                except KeyError as e:
-                    LOGGER.error(
-                        "%s finding object %s of preset %r in pipeline %r",
-                        type(e).__name__, e, subobject[PRESET_KEY], self.name)
-                    LOGGER.info("Error details:", exc_info=True)
-                    sub_dict = build_context.subobject_presets
-                    LOGGER.info("Valid names for local lookup table: %r",
-                                list(build_context.subobject_lookup.keys()))
-                    for key_part, next_part in zip(["root", *key_parts[:-1]],
-                                                   key_parts):
-                        LOGGER.info("Valid names for preset level %r: %r",
-                                    key_part, list(sub_dict.keys()))
-                        sub_dict = sub_dict.get(next_part, None)
-                        if sub_dict is None:
-                            break
-                    raise SystemExit(1)
-                del subobject[PRESET_KEY]
-                subobject = brokkr.utils.misc.update_dict_recursive(
-                    preset, subobject)
+            if PRESET_KEY in subobject:
+                subobject = self._setup_preset(
+                    subobject, build_context=build_context, step_key=step_key)
 
             if subobject.get("name", None) is None:
                 subobject["name"] = f"{self.name}{self.name_sep}{idx + 1}"
