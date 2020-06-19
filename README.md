@@ -4,6 +4,20 @@ A client for data ingest/logging/uplink, remote management and autonomous & cent
 Originally developed to receive science data and status information from a local HAMMA2 lightning sensor and a Sunsaver MPPT-15L charge controller, store it locally, and transmit it back to a central server (generally, but not necessarily one running the Sindri package), but is now being evolved to be extensible and configurable for a wide variety of applications, from low-cost, low-power arrays of hundreds of environmental monitoring sensors, to sophisticated instruments mounted on aircraft and UAVs.
 Further, it can maintain a reverse SSH tunnel to an accessible server for remote access, and receive and execute power, processing system and sensor control commands forwarded as TCP packets over said connection.
 
+The goal of Project Mjolnir is to make it easy for PIs or students without a coding background to easily get started gathering and analyzing data from low-cost sensors right away, and allowing those with basic programming experience to easily develop, test and share their own plugins to work with new types of sensors, outputs and more with little or no extra work over a "quick and dirty" approach but major long-term benefits.
+The long-term vision is to create an ecosystem of open-source presets, plugins, examples and more for a wide variety of low-cost scientific IoT sensors.
+
+
+## Key Features
+
+* Support for SPI, I2C, GPIO, Analog, SMBus, UART, Modbus, TCP, UDP, and more as inputs, and print/pretty print, file and system logging, CSV, and TCP packets as output built into the core
+* Easy to use, powerful plugin framework with a simple API and minimal boilterplate for input, processing and output steps; can be either simple Python files placed in a specific directory, or proper Python packages
+* Plugins for alerts/triggered actions, Slack notifications, REST/web APIs and much more
+* Built-in support for dozens of different sensors including ECH2O EC-5, EC-10, EC-20, DS18S20, DS1822, DS18B20, DS28EA00, DS1825, MAX31850K, HIH6130, Si7021, SHT31D, MPL3115A2, MLX90614, HTU21D, DHT11, DHT22, BMP280, BME280, MPPT-15L, HAMMA2, ADS1015, ADS1115, and generic switch, counter, GPIO and analog anemometer dir and speed, plus time, runtime, ping, and more
+* Drop-in, declarative preset system for supporting new sensors, devices and protocols; presets can be enabled with as little as 1 line in the master config file, and extensively customized via config options
+* Robust error handling, status logging, automatic installation, service configuration and multiprocess management infrastructure
+* Hierarchical configuration system, allowing for multiple levels of settings and overrides
+* System-independent and fully multi-system capable; all metadata, config, plugins and presets stored within VCS-trackable self-contained package for easy management
 
 
 ## Requirements
