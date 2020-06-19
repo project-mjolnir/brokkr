@@ -1,7 +1,90 @@
 # Brokkr Changelog
 
 
-## Version 0.2.5 (2019-01-24)
+## Version 0.3.0 Final (2020-06-18)
+
+Stable release with the following changes:
+
+* Ensure preset fill is recursive
+* Add suffix to column name to allow multiple sensors per preset
+* Add option to inject zero on startup to indicate breaks in data continuity
+* Add ability to fill data_types presets defined in steps
+* Further minor improvements, refactoring and bug fixes
+* Further enhancements to documentation
+* Package for stable release
+
+
+
+## Version 0.3.0 Alpha 3 (2020-05-13)
+
+Alpha release with the following changes:
+
+Core Features:
+* Add support for numerous new sensor and protocol types:
+    * Adafruit Analog
+    * Adafruit I2C
+    * Adafruit Onewire
+    * Generic Analog
+    * Generic Counter
+    * Generic GPIO/Digital
+    * Generic I2C/SMBus
+    * Generic Onewire
+
+Under the Hood:
+* Numerous minor improvements and bug fixes
+* Further documentation improvements
+
+
+
+## Version 0.3.0 Alpha 2 (2020-04-25)
+
+Alpha release with the following changes:
+
+Core Features:
+* Add DataType and DataValue classes with automatic handling and extra attributes
+* Add ValueInputStep with built-in decode and additional automation
+* Add lightweight plugin system for steps
+
+Infrastructure:
+* Add preset type insertion in presets
+* Add dependency checking, installation and management
+* Add version check for system config packages
+
+Under the Hood:
+* Refactor existing classes and presets to use new API
+* Numerous minor improvements and bug fixes
+* Further documentation improvements
+
+
+
+## Version 0.3.0 Alpha 1 (2020-03-21)
+
+Major alpha release with the following changes:
+
+Core Features:
+* Add multiprocess architecture, management and termination
+* Add Pipeline core framework and port current codebase over to it
+* Centralize configuration, presets and plugins into a system config package
+* Enable use with non-HAMMA systems, and support multiple at once
+* Add system and unit config creation, handling and management
+
+Infrastructure:
+* Make behavior fully configuration via preferences and factor out HAMMA-specific components
+* Improve handling of config file/preset errors with much friendlier messages and behavior
+* Enhance install, configuration and setup features
+* Improve handling, formatting and customizability of logging
+* Overhaul CLI UI, UX, commands and flexibility
+
+Under the Hood:
+* Complete rewrite of core config system to OO for modularity, flexibility and simplicity
+* Make all inputs, outputs and primary logic OO and class-based for modularity
+* Comprehensively refactor for cleaner organization, more reliable operating and easier extension
+* Numerous bug fixes and minor improvements
+* Improve readme and documentation
+
+
+
+## Version 0.2.5 (2020-01-24)
 
 Bugfix release with the following change:
 
@@ -12,7 +95,7 @@ Bugfix release with the following change:
 
 
 
-## Version 0.2.4 (2019-01-14)
+## Version 0.2.4 (2020-01-14)
 
 Bugfix release with the following change:
 
