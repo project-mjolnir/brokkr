@@ -77,7 +77,7 @@ setuptools.setup(
             f"{PROJECT_NAME}={PROJECT_NAME}.__main__:main"]
         },
     classifiers=[
-        "Development Status :: 3 - Alpha",
+        "Development Status :: 4 - Beta",
         "Environment :: Console",
         "Environment :: No Input/Output (Daemon)",
         "Intended Audience :: Science/Research",
