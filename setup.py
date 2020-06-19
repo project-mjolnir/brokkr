@@ -81,6 +81,7 @@ setuptools.setup(
         "Environment :: Console",
         "Environment :: No Input/Output (Daemon)",
         "Intended Audience :: Science/Research",
+        "License :: OSI Approved :: GNU Lesser General Public License v3 or later (LGPLv3+)",
         "Operating System :: OS Independent",
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.6",
