@@ -11,7 +11,6 @@ import brokkr.pipeline.baseinput
 
 
 class MultiStep(brokkr.pipeline.base.PipelineStep, metaclass=abc.ABCMeta):
-    # pylint: disable=abstract-method
     def __init__(self, steps, **pipeline_step_kwargs):
         super().__init__(**pipeline_step_kwargs)
         self.steps = steps

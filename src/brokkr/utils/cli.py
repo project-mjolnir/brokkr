@@ -45,6 +45,7 @@ def generate_argparser_main():
         metavar="Subcommand", dest=SUBCOMMAND_PARAM)
 
     verbose_parsers = []
+    pipeline_parsers = []
 
     # Parser for the version subcommand
     subparsers.add_parser(
@@ -75,6 +76,7 @@ def generate_argparser_main():
         "--interval-s", type=int, default=INTERVAL_S_DEFAULT,
         help="Interval between updates, in s")
     verbose_parsers.append(parser_monitor)
+    pipeline_parsers.append(parser_monitor)
 
     # Parser for the status subcommand
     desc_status = "Print a snapshot of data from the monitor pipeline"
@@ -82,6 +84,7 @@ def generate_argparser_main():
         "status", help=desc_status, description=desc_status,
         argument_default=argparse.SUPPRESS)
     verbose_parsers.append(parser_status)
+    pipeline_parsers.append(parser_status)
 
     # Parser for the install-all subcommand
     desc_install_all = "Install all elements needed to run the client"
@@ -222,10 +225,14 @@ def generate_argparser_main():
     for verbose_parser in verbose_parsers:
         verbose_parser.add_argument(
             "-v", "--verbose", action="count", default=0,
-            help=("Verbosity level; pass -v, -vv or -vvv for more verbosity"))
+            help="Verbosity level; pass -v, -vv or -vvv for more verbosity")
         verbose_parser.add_argument(
             "-q", "--quiet", action="count", default=0,
-            help=("Quietness level; pass -q, -qq or -qqq for more silence"))
+            help="Quietness level; pass -q, -qq or -qqq for more silence")
+
+    for pipeline_parser in pipeline_parsers:
+        pipeline_parser.add_argument(
+            "--pipeline", help="Pipeline to use, if not the default")
 
     return parser_main
 

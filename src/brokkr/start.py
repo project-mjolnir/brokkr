@@ -195,7 +195,12 @@ def create_build_context(exit_event=None, mp_handler=None):
     return build_context
 
 
-def get_monitoring_pipeline(interval_s=1, exit_event=None, logger=None):
+def get_monitoring_pipeline(
+        pipeline_key=None,
+        interval_s=1,
+        exit_event=None,
+        logger=None
+        ):
     from brokkr.config.main import CONFIG
     import brokkr.pipeline.builder
 
@@ -206,16 +211,17 @@ def get_monitoring_pipeline(interval_s=1, exit_event=None, logger=None):
     if not pipelines:
         pipelines = {"default": DEFAULT_PIPELINE}
 
-    pipeline_key = CONFIG["general"]["monitoring_pipeline_default"]
     if not pipeline_key:
-        pipeline_key = list(pipelines.keys())[0]
+        pipeline_key = CONFIG["general"]["monitoring_pipeline_default"]
+        if not pipeline_key:
+            pipeline_key = list(pipelines.keys())[0]
 
     try:
         monitoring_pipeline_kwargs = pipelines[pipeline_key]
     except KeyError as e:
         if logger:
             logger.critical(
-                "%s finding default monitoring pipeline %s",
+                "%s finding pipeline %s",
                 type(e).__name__, e)
             logger.info("Error details:", exc_info=True)
             logger.error("Valid pipelines: %r", list(pipelines.keys()))
@@ -245,25 +251,26 @@ def get_monitoring_pipeline(interval_s=1, exit_event=None, logger=None):
 # --- Primary commands --- #
 
 @brokkr.utils.log.basic_logging
-def print_status():
+def print_status(pipeline=None):
     logger = logging.getLogger(__name__)
     logger.debug("Getting oneshot status data")
     warn_on_startup_issues()
 
-    pipeline_name, monitoring_pipeline = get_monitoring_pipeline(logger=logger)
+    pipeline_name, monitoring_pipeline = get_monitoring_pipeline(
+        pipeline_key=pipeline, logger=logger)
     logger.debug("Running monitoring pipeline %s", pipeline_name)
 
     monitoring_pipeline.execute()
 
 
 @brokkr.utils.log.basic_logging
-def start_monitoring(interval_s=1):
+def start_monitoring(pipeline=None, interval_s=1):
     logger = logging.getLogger(__name__)
     logger.debug("Printing monitoring data")
     warn_on_startup_issues()
 
     pipeline_name, monitoring_pipeline = get_monitoring_pipeline(
-        interval_s=interval_s, logger=logger)
+        pipeline_key=pipeline, interval_s=interval_s, logger=logger)
     logger.debug("Running monitoring pipeline %s", pipeline_name)
 
     monitoring_pipeline.execute_forever()

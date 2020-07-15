@@ -62,25 +62,20 @@ class SequentialMixin:
 # --- Core PipelineStep classes --- #
 
 class PipelineStep(Executable, metaclass=abc.ABCMeta):
-    # pylint: disable=abstract-method
     pass
 
 
 class UnitStep(PipelineStep, metaclass=abc.ABCMeta):
-    # pylint: disable=abstract-method
     pass
 
 
 class InputStep(PipelineStep, metaclass=abc.ABCMeta):
-    # pylint: disable=abstract-method
     pass
 
 
 class TransformStep(PipelineStep, metaclass=abc.ABCMeta):
-    # pylint: disable=abstract-method
     pass
 
 
 class OutputStep(PipelineStep, metaclass=abc.ABCMeta):
-    # pylint: disable=abstract-method
     pass
