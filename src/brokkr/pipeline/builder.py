@@ -31,6 +31,7 @@ class BuildContext(brokkr.utils.misc.AutoReprMixin):
             plugin_root_path=None,
             na_marker=None,
             preset_fill_mappings=None,
+            only_enabled=True,
                 ):
         self.exit_event = exit_event
         self.subobject_lookup = (
@@ -45,6 +46,7 @@ class BuildContext(brokkr.utils.misc.AutoReprMixin):
         self.na_marker = na_marker
         self.preset_fill_mappings = (
             [] if preset_fill_mappings is None else preset_fill_mappings)
+        self.only_enabled = only_enabled
 
     def merge(self, build_context):
         if build_context is None:
@@ -176,7 +178,9 @@ class Builder(brokkr.utils.misc.AutoReprMixin):
             subobject = builder(build_context=build_context, **subobject)
         return subobject
 
-    def setup_subobjects(self, **setup_kwargs):
+    def setup_subobjects(self, build_context=None, **setup_kwargs):
+        build_context = self.build_context.merge(build_context)
+
         # Recursively build the sub-objects comprising this object
         if self.subobjects is not None:
             subobjects_to_setup = []
@@ -186,8 +190,18 @@ class Builder(brokkr.utils.misc.AutoReprMixin):
                 subobjects = self.subobjects
             for idx, subobject in enumerate(subobjects):
                 setup_subobject = self.setup_subobject(
-                    subobject, idx=idx, **setup_kwargs)
-                subobjects_to_setup.append(setup_subobject)
+                    subobject,
+                    idx=idx,
+                    build_context=build_context,
+                    **setup_kwargs)
+                if (not build_context.only_enabled
+                        or setup_subobject.enabled):
+                    subobjects_to_setup.append(setup_subobject)
+                else:
+                    LOGGER.debug("Object %s (%s.%s) disabled",
+                                 setup_subobject.name,
+                                 setup_subobject.module_path,
+                                 setup_subobject.class_name)
             return subobjects_to_setup
         return None
 
@@ -202,6 +216,7 @@ class Builder(brokkr.utils.misc.AutoReprMixin):
 class ObjectBuilder(Builder):
     def __init__(
             self,
+            _enabled=True,
             _module_path="brokkr.pipeline.pipeline",
             _class_name="SequentialPipeline",
             _is_plugin=False,
@@ -210,6 +225,7 @@ class ObjectBuilder(Builder):
             steps=None,
             build_context=None,
             **init_kwargs):
+        self.enabled = _enabled
         self.module_path = _module_path
         self.class_name = _class_name
         self.is_plugin = _is_plugin

@@ -326,12 +326,13 @@ def start_brokkr(log_level_file=None, log_level_console=None):
             message="generating startup messages")
         raise
 
-    # Import and set up system pipeline config
+    # Import system pipeline config
     pipelines = CONFIG["pipelines"]
     if not pipelines:
         logger.info("No pipelines defined; falling back to default")
         pipelines = {"default": DEFAULT_PIPELINE}
 
+    # Build system pipelines
     logger.debug("Building pipelines")
     build_context = create_build_context(
         exit_event=exit_event, mp_handler=mp_handler)
