@@ -3,6 +3,7 @@ General shared configuration constants for Brokkr.
 """
 
 # Standard library imports
+import enum
 import os
 from pathlib import Path
 
@@ -67,3 +68,12 @@ CONFIG_PATH_XDG = Path(
     f"~{os.environ.get('SUDO_USER', '')}/.config").expanduser()
 CONFIG_PATH_LOCAL = CONFIG_PATH_XDG / PACKAGE_NAME
 CONFIG_VERSION = 1
+
+
+# --- Sentinels and enums ---
+
+class Errors(enum.Enum):
+    RAISE = enum.auto()
+    WARN = enum.auto()
+    LOG = enum.auto()
+    IGNORE = enum.auto()

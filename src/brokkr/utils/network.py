@@ -10,10 +10,14 @@ import socket
 import subprocess
 
 # Local imports
+from brokkr.constants import Errors
 import brokkr.utils.log
+import brokkr.utils.misc
 
 
 BUFFER_SIZE_DEFAULT = 4096
+MAX_DATA_SIZE = 2**31 - 2
+
 
 TIMEOUT_S_DEFAULT = 2
 SUBPROCESS_TIMEOUT_EXTRA = 2
@@ -66,48 +70,141 @@ def ping(
     return ping_output
 
 
-def recieve_udp(
+def handle_socket_error(e, errors=Errors.RAISE, **log_kwargs):
+    if errors == Errors.RAISE:
+        raise e
+    if errors in {Errors.WARN, Errors.LOG}:
+        LOGGER.error("%s with socket: %s", type(e).__name__, e)
+        LOG_HELPER.log(**log_kwargs)
+    elif errors == Errors.IGNORE:
+        LOGGER.debug("Suppressing %s with socket: %s", type(e).__name__, e)
+        LOG_HELPER.log(log_helper_log_level="debug", **log_kwargs)
+    else:
+        error_levels = {"Errors." + errors.name for errors in Errors}
+        LOGGER.critical(
+            "Error level for %s.handle_socket_error must be one of %r, not %r;"
+            " assuming raise", __file__, error_levels, errors)
+        LOGGER.info("Stack trace:", stack_info=True)
+        raise e
+
+
+def setup_socket(  # pylint: disable=dangerous-default-value
+        sock,
+        address_tuple,
+        action,
+        timeout_s=None,
+        errors=Errors.RAISE,
+        error_codes_suppress=ERROR_CODES_ADDRESS_LINK_DOWN,
+        ):
+    valid_actions = {"bind", "connect"}
+    if action is not None and action not in valid_actions:
+        LOGGER.critical("Action for %s.setup_socket must be one of %r, not %r",
+                        __file__, valid_actions, action)
+        LOGGER.info("Stack trace:", stack_info=True)
+        raise ValueError(
+            f"Action must be one of {valid_actions!r}, not {action!r}")
+
+    try:
+        sock.settimeout(timeout_s)
+        if action is not None:
+            getattr(sock, action)(address_tuple)
+        LOGGER.debug("Listening on socket %r", sock)
+    except Exception as e:
+        if isinstance(e, OSError):
+            # pylint: disable=no-member
+            if (e.errno and error_codes_suppress
+                    and e.errno in error_codes_suppress):
+                errors = Errors.IGNORE
+        handle_socket_error(e, errors=errors, socket=sock,
+                            address=address_tuple, action=action)
+        return None
+    return sock
+
+
+def recieve_all(
+        sock,
+        data_length=None,
+        timeout_s=None,
+        errors=Errors.RAISE,
+        buffer_size=BUFFER_SIZE_DEFAULT,
+        ):
+    start_time_recieve = None
+    chunks = []
+    bytes_remaining = (
+        data_length if data_length else (MAX_DATA_SIZE - buffer_size))
+    while (bytes_remaining > 0
+           and (not start_time_recieve
+                or not timeout_s
+                or (brokkr.utils.misc.monotonic_ns()
+                    - start_time_recieve * brokkr.utils.misc.NS_IN_S)
+                <= (timeout_s * brokkr.utils.misc.NS_IN_S))):
+        try:
+            chunk = sock.recv(buffer_size)
+            LOGGER.debug("Network data recieved: %r", chunk)
+        except socket.timeout as e:
+            LOGGER.debug("Socket timed out in %s s while waiting for data",
+                         timeout_s)
+            handle_socket_error(
+                e, errors=Errors.IGNORE, socket=sock, data_length=data_length)
+            break
+        except Exception as e:
+            handle_socket_error(
+                e, errors=errors, socket=sock, data_length=data_length,
+                bytes_remaining=bytes_remaining)
+            return None
+        if start_time_recieve is None:
+            start_time_recieve = brokkr.utils.misc.monotonic_ns()
+        if not chunk:
+            if not data_length:
+                errors = Errors.IGNORE
+            try:
+                raise RuntimeError(
+                    f"Null {chunk!r} found in recieved socket data chunk")
+            except RuntimeError as e:
+                handle_socket_error(
+                    e, errors=errors, socket=sock, data_length=data_length,
+                    bytes_remaining=bytes_remaining)
+            break
+        bytes_remaining -= len(chunk)
+        buffer_size = min([buffer_size, bytes_remaining])
+        chunks.append(chunk)
+
+    if not chunks:
+        return None
+    data = b"".join(chunks)
+    if data_length:
+        data = data[:data_length]
+    return data
+
+
+def read_socket_data(
         host,
         port,
-        buffer_size=BUFFER_SIZE_DEFAULT,
+        action,
+        socket_family=socket.AF_INET,
+        socket_type=socket.SOCK_STREAM,
         timeout_s=TIMEOUT_S_DEFAULT,
+        errors=Errors.RAISE,
+        **recieve_kwargs,
         ):
     address_tuple = (host, port)
+    LOGGER.debug(
+        "Creating socket of family %r, type %r with host %r, port %s, "
+        "action %s, timeout %r",
+        socket_family, socket_type, host, port, action, timeout_s)
 
-    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
-        try:
-            sock.settimeout(timeout_s)
-            sock.bind(address_tuple)
-            LOGGER.debug("Listening on socket %r", sock)
-        except OSError as e:
-            if not e.errno or e.errno not in ERROR_CODES_ADDRESS_LINK_DOWN:
-                LOGGER.error("%s connecting to UDP socket: %s",
-                             type(e).__name__, e)
-                LOG_HELPER.log(socket=sock, address=address_tuple)
-            else:
-                LOGGER.debug("Suppressing address-related %s "
-                             "connecting to UDP socket: %s",
-                             type(e).__name__, e)
-                LOG_HELPER.log("debug", socket=sock, address=address_tuple)
-            return None
-        except Exception as e:
-            LOGGER.error("%s connecting to UDP socket: %s",
-                         type(e).__name__, e)
-            LOG_HELPER.log(socket=sock, address=address_tuple)
-            return None
+    with socket.socket(socket_family, socket_type) as sock:
+        setup_sock = setup_socket(
+            sock, address_tuple, action, timeout_s=timeout_s, errors=errors)
+        if setup_sock is not None:
+            sock = setup_sock
 
-        try:
-            datagram = sock.recv(buffer_size)
-            LOGGER.debug("Data recieved: %r", datagram)
-        except socket.timeout:
-            LOGGER.debug("UDP socket timed out in %s s while waiting for data",
-                         timeout_s)
-            LOG_HELPER.log("debug", socket=sock, address=address_tuple)
-            return None
-        except Exception as e:
-            LOGGER.error("%s recieving UDP datagram: %s",
-                         type(e).__name__, e)
-            LOG_HELPER.log(socket=sock, address=address_tuple)
-            return None
+            LOGGER.debug(
+                "Recieving data from socket %r with kwargs %r",
+                sock, recieve_kwargs)
+            data = recieve_all(
+                sock, timeout_s=timeout_s, errors=errors, **recieve_kwargs)
+        else:
+            data = None
 
-        return datagram
+    return data
