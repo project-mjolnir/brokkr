@@ -18,6 +18,7 @@ import brokkr.utils.misc
 BUFFER_SIZE_DEFAULT = 4096
 MAX_DATA_SIZE = 2**31 - 2
 
+MAX_DATA_PRINT_LENGTH = 4096
 
 TIMEOUT_S_DEFAULT = 2
 SUBPROCESS_TIMEOUT_EXTRA = 2
@@ -75,10 +76,10 @@ def handle_socket_error(e, errors=Errors.RAISE, **log_kwargs):
         raise e
     if errors in {Errors.WARN, Errors.LOG}:
         LOGGER.error("%s with socket: %s", type(e).__name__, e)
-        LOG_HELPER.log(**log_kwargs)
+        LOG_HELPER.log(socket=log_kwargs)
     elif errors == Errors.IGNORE:
         LOGGER.debug("Suppressing %s with socket: %s", type(e).__name__, e)
-        LOG_HELPER.log(log_helper_log_level="debug", **log_kwargs)
+        LOG_HELPER.log(log_helper_log_level="debug", socket=log_kwargs)
     else:
         error_levels = {"Errors." + errors.name for errors in Errors}
         LOGGER.critical(
@@ -140,17 +141,19 @@ def recieve_all(
                 <= (timeout_s * brokkr.utils.misc.NS_IN_S))):
         try:
             chunk = sock.recv(buffer_size)
-            LOGGER.debug("Network data recieved: %r", chunk)
+            if len(chunks) == 0:
+                LOGGER.debug("First chunk of network data recieved: %r", chunk)
         except socket.timeout as e:
             LOGGER.debug("Socket timed out in %s s while waiting for data",
                          timeout_s)
             handle_socket_error(
-                e, errors=Errors.IGNORE, socket=sock, data_length=data_length)
+                e, errors=Errors.IGNORE, socket=sock, data_length=data_length,
+                n_chunks=len(chunks), bytes_remaining=bytes_remaining)
             break
         except Exception as e:
             handle_socket_error(
                 e, errors=errors, socket=sock, data_length=data_length,
-                bytes_remaining=bytes_remaining)
+                n_chunks=len(chunks), bytes_remaining=bytes_remaining)
             return None
         if start_time_recieve is None:
             start_time_recieve = brokkr.utils.misc.monotonic_ns()
@@ -163,17 +166,28 @@ def recieve_all(
             except RuntimeError as e:
                 handle_socket_error(
                     e, errors=errors, socket=sock, data_length=data_length,
-                    bytes_remaining=bytes_remaining)
+                    n_chunks=len(chunks), bytes_remaining=bytes_remaining)
             break
         bytes_remaining -= len(chunk)
         buffer_size = min([buffer_size, bytes_remaining])
         chunks.append(chunk)
 
+    LOGGER.debug("%s total chunks of network data recieved", len(chunks))
     if not chunks:
+        LOGGER.debug("No network data to return")
         return None
+
     data = b"".join(chunks)
     if data_length:
         data = data[:data_length]
+
+    if not data:
+        LOGGER.debug("Null network data recieved: %r", data)
+    else:
+        LOGGER.debug("Network data recieved of length %s bytes", len(data))
+        LOGGER.debug("First %s bytes: %r",
+                     MAX_DATA_PRINT_LENGTH, data[:MAX_DATA_PRINT_LENGTH])
+
     return data
 
 
@@ -216,14 +230,15 @@ def netcat(data_to_send, host, port, recieve_reply=True, timeout_s=1):
     address_tuple = (host, port)
     LOGGER.info(
         "Running netcat with data %r, host %r, port %r, timeout %r",
-        data_to_send, host, port, timeout_s)
+        data_to_send[:MAX_DATA_PRINT_LENGTH], host, port, timeout_s)
 
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
         LOGGER.debug("Created socket %r", sock)
         sock = setup_socket(
             sock, address_tuple, action="connect", timeout_s=timeout_s,
             errors=Errors.RAISE, error_codes_suppress=None)
-        LOGGER.debug("Sending data %r to socket %r", data_to_send, sock)
+        LOGGER.debug("Sending data %r to socket %r",
+                     data_to_send[:MAX_DATA_PRINT_LENGTH], sock)
         if data_to_send is not None:
             sock.sendall(data_to_send)
         sock.shutdown(socket.SHUT_WR)
@@ -241,14 +256,18 @@ def netcat(data_to_send, host, port, recieve_reply=True, timeout_s=1):
 @brokkr.utils.log.basic_logging
 def netcat_main(data_to_send=None, recieve_reply=True, **netcat_args):
     if data_to_send is not None:
-        LOGGER.debug("Encoding input data %r to bytes", data_to_send)
+        LOGGER.debug("Encoding input data %r to bytes",
+                     data_to_send[:MAX_DATA_PRINT_LENGTH])
         data_to_send = data_to_send.encode()
-        LOGGER.debug("Encoded data: %r", data_to_send.hex())
+        LOGGER.debug("Encoded data: %r",
+                     data_to_send[:MAX_DATA_PRINT_LENGTH].hex())
     recieved_data = netcat(
         data_to_send, recieve_reply=recieve_reply, **netcat_args)
     if recieve_reply:
         try:
-            LOGGER.debug("Recieved binary data: %r", recieved_data.hex())
+            LOGGER.debug("First %s bytes of recieved data: %r",
+                         MAX_DATA_PRINT_LENGTH,
+                         recieved_data[:MAX_DATA_PRINT_LENGTH].hex())
             recieved_data = recieved_data.decode()
         except Exception:
             pass

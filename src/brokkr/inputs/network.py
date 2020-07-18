@@ -36,8 +36,8 @@ class NetworkInput(brokkr.pipeline.baseinput.ValueInputStep):
         self._host = host
         self._port = port
         self._action = action
-        self._socket_family = None
-        self._socket_type = None
+        self._socket_family = socket_family
+        self._socket_type = socket_type
         self._timeout_s = timeout_s
 
         for attr_name, prefix in [("socket_family", "AF_"),
@@ -73,13 +73,9 @@ class NetworkInput(brokkr.pipeline.baseinput.ValueInputStep):
             **self._network_kwargs,
             )
 
-        if raw_data is None:
-            self.logger.debug("No network data recieved: %r", raw_data)
-        elif not raw_data:
-            self.logger.warning("Null network data recieved: %r", raw_data)
-            raw_data = None
-        else:
-            self.logger.debug(
-                "Network data recieved: %s", raw_data.hex()[:1024])
+        if raw_data is not None and not raw_data:
+            self.logger.warning(
+                "Null network data recieved, returning None: %r", raw_data)
+            return None
 
         return raw_data
