@@ -189,16 +189,17 @@ def read_socket_data(
         ):
     address_tuple = (host, port)
     LOGGER.debug(
-        "Creating socket of family %r, type %r with host %r, port %s, "
-        "action %s, timeout %r",
+        "Creating socket of family %r, type %r with host %r, port %r, "
+        "action %r, timeout %r",
         socket_family, socket_type, host, port, action, timeout_s)
 
     with socket.socket(socket_family, socket_type) as sock:
+        LOGGER.debug("Created socket %r", sock)
         setup_sock = setup_socket(
             sock, address_tuple, action, timeout_s=timeout_s, errors=errors)
+
         if setup_sock is not None:
             sock = setup_sock
-
             LOGGER.debug(
                 "Recieving data from socket %r with kwargs %r",
                 sock, recieve_kwargs)
@@ -208,3 +209,49 @@ def read_socket_data(
             data = None
 
     return data
+
+
+def netcat(data_to_send, host, port, recieve_reply=True, timeout_s=1):
+    recieved_data = None
+    address_tuple = (host, port)
+    LOGGER.info(
+        "Running netcat with data %r, host %r, port %r, timeout %r",
+        data_to_send, host, port, timeout_s)
+
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        LOGGER.debug("Created socket %r", sock)
+        sock = setup_socket(
+            sock, address_tuple, action="connect", timeout_s=timeout_s,
+            errors=Errors.RAISE, error_codes_suppress=None)
+        LOGGER.debug("Sending data %r to socket %r", data_to_send, sock)
+        if data_to_send is not None:
+            sock.sendall(data_to_send)
+        sock.shutdown(socket.SHUT_WR)
+
+        if recieve_reply:
+            LOGGER.debug("Recieving data from socket %r", sock)
+            recieved_data = recieve_all(
+                sock, timeout_s=timeout_s, errors=Errors.RAISE)
+
+        sock.shutdown(socket.SHUT_RD)
+
+    return recieved_data
+
+
+@brokkr.utils.log.basic_logging
+def netcat_main(data_to_send=None, recieve_reply=True, **netcat_args):
+    if data_to_send is not None:
+        LOGGER.debug("Encoding input data %r to bytes", data_to_send)
+        data_to_send = data_to_send.encode()
+        LOGGER.debug("Encoded data: %r", data_to_send.hex())
+    recieved_data = netcat(
+        data_to_send, recieve_reply=recieve_reply, **netcat_args)
+    if recieve_reply:
+        try:
+            LOGGER.debug("Recieved binary data: %r", recieved_data.hex())
+            recieved_data = recieved_data.decode()
+        except Exception:
+            pass
+        LOGGER.info("Recieved responce:\n")
+        print(recieved_data)
+    return recieved_data

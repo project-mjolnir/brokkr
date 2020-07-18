@@ -221,6 +221,25 @@ def generate_argparser_main():
         help="Skip various verification steps that validate the name and path")
     verbose_parsers.append(parser_configure_system)
 
+    # Parser for the netcat subcommand
+    desc_netcat = "Send and recieve TCP data over the network"
+    parser_netcat = subparsers.add_parser(
+        "netcat", help=desc_netcat, description=desc_netcat,
+        argument_default=argparse.SUPPRESS)
+    parser_netcat.add_argument(
+        "data_to_send", nargs="?",
+        help="The data to send as a string. Nothing sent if not provided.")
+    parser_netcat.add_argument(
+        "--host", help="The hostname/IP of the host to connect to")
+    parser_netcat.add_argument(
+        "--port", type=int, help="The remote port to connect to")
+    parser_netcat.add_argument(
+        "--no-reply", dest="recieve_reply", action="store_false",
+        help="If passed, ignores any reply from the remote host")
+    parser_netcat.add_argument(
+        "--timeout", dest="timeout_s", help="The timeout to use, in s")
+    verbose_parsers.append(parser_netcat)
+
     # Add common parameters to subcommand groups
     for verbose_parser in verbose_parsers:
         verbose_parser.add_argument(
@@ -289,6 +308,9 @@ def dispatch_command(subcommand, parsed_args):
     elif subcommand.startswith("configure_"):
         import brokkr.utils.configure
         getattr(brokkr.utils.configure, subcommand)(**parsed_args)
+    elif subcommand == "netcat":
+        import brokkr.utils.network
+        brokkr.utils.network.netcat_main(**parsed_args)
     else:
         generate_argparser_main().print_usage()
 
