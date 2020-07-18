@@ -1,5 +1,5 @@
 """
-Read and decode a binary UDP datagram.
+Read and decode binary network packets, datagrams and more.
 """
 
 # Standard library imports
