@@ -71,16 +71,17 @@ def _convert_bool(value):
     return bool(value)
 
 
-def _convert_byte(value):
-    return int(value)
+def _convert_bytes(value):
+    return bytes(value)
 
 
-def _convert_bytestr(value):
-    return value.decode()
+def _convert_bytestr(value, encoding="utf-8"):
+    return value.decode(encoding)
 
 
-def _convert_bytestr_strip(value, strip_chars="\a\b\f\n\r\t\v\x00"):
-    return value.decode().strip(strip_chars)
+def _convert_bytestr_strip(
+        value, encoding="utf-8", strip_chars="\a\b\f\n\r\t\v\x00"):
+    return value.decode(encoding).strip(strip_chars)
 
 
 def _convert_float(value):
@@ -109,11 +110,6 @@ def _convert_time_posix(
     return datetime_object
 
 
-def _convert_time_posix_ms(value, divisor_to_s=1000, **time_posix_kwargs):
-    return _convert_time_posix(
-        value, divisor_to_s=divisor_to_s, **time_posix_kwargs)
-
-
 def _convert_timestamp(value, time_format="%Y-%m-%d %H:%M:%S"):
     try:
         value = value.decode()
@@ -135,14 +131,13 @@ CONVERSION_FUNCTIONS = {
     True: _convert_pass,
     "bitfield": _convert_bitfield,
     "bool": _convert_bool,
-    "byte": _convert_byte,
+    "bytes": _convert_bytes,
     "bytestr": _convert_bytestr,
     "bytestr_strip": _convert_bytestr_strip,
     "float": _convert_float,
     "int": _convert_int,
     "str": _convert_str,
     "time_posix": _convert_time_posix,
-    "time_posix_ms": _convert_time_posix_ms,
     "timestamp": _convert_timestamp,
     "custom": _convert_custom,
     "eval": _convert_eval,
