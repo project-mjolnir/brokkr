@@ -17,11 +17,18 @@ import brokkr.utils.misc
 LOGGER = logging.getLogger(__name__)
 
 
-def format_data(data=None, seperator="\n", include_raw=False):
+def format_data(
+        data=None,
+        seperator="\n",
+        include_raw=False,
+        item_limit=None,
+        ):
     output_data_list = []
     for data_name, data_value in data.items():
         # Get key attributes to pretty-print
-        value = getattr(data_value, "value", data_value)
+        value = str(getattr(data_value, "value", data_value))
+        if item_limit is not None:
+            value = value[:item_limit]
         raw_value = getattr(data_value, "raw_value", None)
         uncertainty = getattr(data_value, "uncertainty", None)
         if getattr(data_value, "data_type", None):
@@ -32,7 +39,7 @@ def format_data(data=None, seperator="\n", include_raw=False):
             unit = None
 
         # Build list of values to print per data object
-        data_componets = [f"{name}:", f"{value!s}"]
+        data_componets = [f"{name}:", f"{value}"]
         if not getattr(data_value, "is_na", data_value == "NA"):
             if unit:
                 data_componets.append(f"{unit}")
