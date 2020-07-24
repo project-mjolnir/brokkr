@@ -14,7 +14,7 @@ SYSTEM_PARAM = "system"
 SYSTEM_PATH_PARAM = "system_path"
 MODE_PARAM = "mode"
 
-INTERVAL_S_DEFAULT = 1
+PERIOD_S_DEFAULT = 1
 
 ARGS_TODELETE = {
     VERSION_PARAM, SUBCOMMAND_PARAM,
@@ -73,7 +73,7 @@ def generate_argparser_main():
         "monitor", help=desc_monitor, description=desc_monitor,
         argument_default=argparse.SUPPRESS)
     parser_monitor.add_argument(
-        "--interval-s", type=int, default=INTERVAL_S_DEFAULT,
+        "--period-s", type=int, default=PERIOD_S_DEFAULT,
         help="Interval between updates, in s")
     verbose_parsers.append(parser_monitor)
     pipeline_parsers.append(parser_monitor)

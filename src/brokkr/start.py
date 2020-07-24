@@ -197,7 +197,7 @@ def create_build_context(exit_event=None, mp_handler=None):
 
 def get_monitoring_pipeline(
         pipeline_key=None,
-        interval_s=1,
+        period_s=1,
         exit_event=None,
         logger=None
         ):
@@ -234,7 +234,11 @@ def get_monitoring_pipeline(
         builder_kwargs = {
             "monitor_input_steps": monitoring_pipeline_kwargs[
                 "monitor_input_steps"],
-            "monitor_interval_s": interval_s,
+            "monitor_interval_s": period_s,
+            }
+    elif issubclass(builder, brokkr.pipeline.builder.PipelineBuilder):
+        builder_kwargs = {
+            "input_steps": monitoring_pipeline_kwargs["input_steps"],
             }
     else:
         monitoring_pipeline_kwargs.pop("_builder")
@@ -264,13 +268,13 @@ def print_status(pipeline=None):
 
 
 @brokkr.utils.log.basic_logging
-def start_monitoring(pipeline=None, interval_s=1):
+def start_monitoring(pipeline=None, period_s=1):
     logger = logging.getLogger(__name__)
     logger.debug("Printing monitoring data")
     warn_on_startup_issues()
 
     pipeline_name, monitoring_pipeline = get_monitoring_pipeline(
-        pipeline_key=pipeline, interval_s=interval_s, logger=logger)
+        pipeline_key=pipeline, period_s=period_s, logger=logger)
     logger.debug("Running monitoring pipeline %s", pipeline_name)
 
     monitoring_pipeline.execute_forever()

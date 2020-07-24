@@ -31,8 +31,9 @@ class NetworkInput(brokkr.pipeline.baseinput.ValueInputStep):
             socket_type="TCP",
             timeout_s=brokkr.utils.network.TIMEOUT_S_DEFAULT,
             network_kwargs=None,
+            binary_decoder=True,
             **value_input_kwargs):
-        super().__init__(binary_decoder=True, **value_input_kwargs)
+        super().__init__(binary_decoder=binary_decoder, **value_input_kwargs)
         self._host = host
         self._port = port
         self._action = action
@@ -58,7 +59,12 @@ class NetworkInput(brokkr.pipeline.baseinput.ValueInputStep):
 
         self._network_kwargs = {} if network_kwargs is None else network_kwargs
         if not self._network_kwargs.get("data_length", None):
-            self._network_kwargs["data_length"] = self.decoder.packet_size
+            try:
+                self._network_kwargs["data_length"] = self.decoder.packet_size
+            except AttributeError:
+                self.logger.critical("Attribute data_length must be specified "
+                                     "if binary_decoder is False")
+                raise
 
     def read_raw_data(self, input_data=None):
         self.logger.debug("Reading network data")

@@ -35,6 +35,7 @@ class ModbusInput(brokkr.pipeline.baseinput.ValueInputStep):
             modbus_command="read_holding_registers",
             modbus_kwargs=None,
             datatype_default_kwargs=None,
+            binary_decoder=True,
             **value_input_kwargs):
         """
         Class to read data from an attached Modbus device.
@@ -56,7 +57,7 @@ class ModbusInput(brokkr.pipeline.baseinput.ValueInputStep):
             MODBUS_REGISTER_TYPE if "register" in modbus_command
             else MODBUS_COIL_TYPE)
         super().__init__(
-            binary_decoder=True,
+            binary_decoder=binary_decoder,
             datatype_default_kwargs={
                 **{"input_type": self._raw_type}, **datatype_default_kwargs},
             **value_input_kwargs)

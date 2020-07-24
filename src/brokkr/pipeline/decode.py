@@ -4,6 +4,7 @@ Common decode and conversion functionality.
 
 # Standard library imports
 import ast
+import collections.abc
 import datetime
 import logging
 import math
@@ -218,7 +219,9 @@ class DataDecoder(brokkr.utils.misc.AutoReprMixin):
                 continue  # If this data value should be dropped, ignore it
             value = raw_data
             # Split input into items if each corresponds to one output
-            if not self.include_all_data_each:
+            if (not self.include_all_data_each
+                    and isinstance(value, collections.abc.Sequence)
+                    and not isinstance(value, (bytes, bytearray, str))):
                 value = value[idx]
             if value is None:
                 LOGGER.debug("Data value is None decoding data_type %s to %s, "

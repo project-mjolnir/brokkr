@@ -12,7 +12,7 @@ import logging
 import brokkr.utils.misc
 
 
-INTERVAL_DEFAULT = 60
+PERIOD_S_DEFAULT = 60
 
 PRESET_KEY = "_preset"
 
@@ -299,16 +299,40 @@ class ObjectBuilder(Builder):
         return built_object
 
 
-class MonitorBuilder(ObjectBuilder):
+class PipelineBuilder(ObjectBuilder):
+    def __init__(
+            self,
+            input_steps,
+            process_steps=None,
+            output_steps=None,
+            **builder_kwargs):
+        if input_steps is None:
+            input_steps = []
+        if process_steps is None:
+            process_steps = []
+        if output_steps is None:
+            output_steps = [{
+                "_module_path": "brokkr.outputs.print",
+                "_class_name": "PrettyPrintOutput",
+                "name": "Default Pretty Print Output",
+                "in_place": False,
+                "item_limit": 2**10,
+                "fallback": True,
+                }]
+
+        pipeline_steps = [*input_steps, *process_steps, *output_steps]
+        super().__init__(steps=pipeline_steps, **builder_kwargs)
+
+
+class MonitorBuilder(PipelineBuilder):
     def __init__(
             self,
             monitor_input_steps,
             monitor_process_steps=None,
             monitor_output_steps=None,
-            monitor_interval_s=INTERVAL_DEFAULT,
+            monitor_interval_s=PERIOD_S_DEFAULT,
             name="Monitoring Data Pipeline",
-            **builder_kwargs,
-                ):
+            **builder_kwargs):
         if monitor_process_steps is None:
             monitor_process_steps = []
 
@@ -333,15 +357,15 @@ class MonitorBuilder(ObjectBuilder):
                 "steps": monitor_output_steps,
                 }
 
-        monitor_steps = [
-            monitor_input_step, *monitor_process_steps, monitor_output_step]
         monitor_pipeline = {
             "name": name,
             "period_s": monitor_interval_s,
-            "steps": monitor_steps,
+            "input_steps": [monitor_input_step],
+            "process_steps": monitor_process_steps,
+            "output_steps": [monitor_output_step],
             }
 
-        super().__init__(**monitor_pipeline, **builder_kwargs)
+        super().__init__(**{**monitor_pipeline, **builder_kwargs})
 
 
 class TopLevelBuilder(Builder):
@@ -357,6 +381,7 @@ class TopLevelBuilder(Builder):
 BUILDERS = {
     "": ObjectBuilder,
     "object": ObjectBuilder,
+    "pipeline": PipelineBuilder,
     "monitor": MonitorBuilder,
     "toplevel": TopLevelBuilder,
     }
