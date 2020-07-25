@@ -7,7 +7,6 @@ import csv
 
 # Local imports
 import brokkr.pipeline.baseoutput
-import brokkr.utils.output
 
 
 CSV_KWARGS_DEFAULT = {
@@ -29,9 +28,9 @@ class CSVFileOutput(brokkr.pipeline.baseoutput.FileOutputStep):
         self.csv_kwargs = {**CSV_KWARGS_DEFAULT, **csv_kwargs}
 
     def write_file(self, input_data, output_file_path):
+        self.logger.debug("Writing output as CSV")
         with open(output_file_path, mode="a",
                   encoding="utf-8", newline="") as output_file:
-            self.logger.debug("Writing output as CSV")
             csv_writer = csv.DictWriter(
                 output_file, fieldnames=input_data.keys(), **self.csv_kwargs)
             if not output_file.tell():

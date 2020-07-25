@@ -163,6 +163,11 @@ DEFAULT_CONFIG_PRESETS = {
                 "_class_name": "CSVFileOutput",
                 "output_path": "data",
                 },
+            "binary_file": {
+                "_module_path": "brokkr.outputs.binaryfile",
+                "_class_name": "BinaryFileOutput",
+                "output_path": "data",
+                },
             "pretty_print": {
                 "_module_path": "brokkr.outputs.print",
                 "_class_name": "PrettyPrintOutput",
