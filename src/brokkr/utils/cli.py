@@ -252,6 +252,10 @@ def generate_argparser_main():
     for pipeline_parser in pipeline_parsers:
         pipeline_parser.add_argument(
             "--pipeline", help="Pipeline to use, if not the default")
+        pipeline_parser.add_argument(
+            "--no-output-override", dest="output_override",
+            action="store_false",
+            help="If passed, runs the pipeline with its original output(s)")
 
     return parser_main
 

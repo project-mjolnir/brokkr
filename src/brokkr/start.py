@@ -197,9 +197,10 @@ def create_build_context(exit_event=None, mp_handler=None):
 
 def get_monitoring_pipeline(
         pipeline_key=None,
+        output_override=True,
         period_s=1,
         exit_event=None,
-        logger=None
+        logger=None,
         ):
     from brokkr.config.main import CONFIG
     import brokkr.pipeline.builder
@@ -228,21 +229,17 @@ def get_monitoring_pipeline(
             sys.exit(1)
         raise
 
+    builder_kwargs = monitoring_pipeline_kwargs.copy()
     builder = brokkr.pipeline.builder.BUILDERS[
-        monitoring_pipeline_kwargs.get("_builder", "")]
+        builder_kwargs.get("_builder", "")]
+    builder_kwargs.pop("_builder", None)
     if issubclass(builder, brokkr.pipeline.builder.MonitorBuilder):
-        builder_kwargs = {
-            "monitor_input_steps": monitoring_pipeline_kwargs[
-                "monitor_input_steps"],
-            "monitor_interval_s": period_s,
-            }
+        if output_override:
+            builder_kwargs.pop("monitor_output_steps", None)
+        builder_kwargs["monitor_interval_s"] = period_s
     elif issubclass(builder, brokkr.pipeline.builder.PipelineBuilder):
-        builder_kwargs = {
-            "input_steps": monitoring_pipeline_kwargs["input_steps"],
-            }
-    else:
-        monitoring_pipeline_kwargs.pop("_builder")
-        builder_kwargs = monitoring_pipeline_kwargs
+        if output_override:
+            builder_kwargs.pop("output_steps", None)
     builder_kwargs["na_on_start"] = False
 
     build_context = create_build_context(exit_event=exit_event)
@@ -255,26 +252,33 @@ def get_monitoring_pipeline(
 # --- Primary commands --- #
 
 @brokkr.utils.log.basic_logging
-def print_status(pipeline=None):
+def print_status(pipeline=None, output_override=True):
     logger = logging.getLogger(__name__)
     logger.debug("Getting oneshot status data")
     warn_on_startup_issues()
 
     pipeline_name, monitoring_pipeline = get_monitoring_pipeline(
-        pipeline_key=pipeline, logger=logger)
-    logger.debug("Running monitoring pipeline %s", pipeline_name)
+        pipeline_key=pipeline,
+        output_override=output_override,
+        logger=logger,
+        )
+    logger.debug("Getting status from monitoring pipeline %s", pipeline_name)
 
     monitoring_pipeline.execute()
 
 
 @brokkr.utils.log.basic_logging
-def start_monitoring(pipeline=None, period_s=1):
+def start_monitoring(pipeline=None, output_override=True, period_s=1):
     logger = logging.getLogger(__name__)
     logger.debug("Printing monitoring data")
     warn_on_startup_issues()
 
     pipeline_name, monitoring_pipeline = get_monitoring_pipeline(
-        pipeline_key=pipeline, period_s=period_s, logger=logger)
+        pipeline_key=pipeline,
+        output_override=output_override,
+        period_s=period_s,
+        logger=logger,
+        )
     logger.debug("Running monitoring pipeline %s", pipeline_name)
 
     monitoring_pipeline.execute_forever()
