@@ -9,9 +9,13 @@ import brokkr.pipeline.utils
 
 class BinaryFileOutput(brokkr.pipeline.baseoutput.FileOutputStep):
     def __init__(
-            self, extension="bin", str_encoding="utf-8", **file_kwargs):
+            self,
+            str_encoding="utf-8",
+            extension="bin",
+            skip_na=True,
+            **file_kwargs):
         super().__init__(
-            extension=extension, **file_kwargs)
+            extension=extension, skip_na=skip_na, **file_kwargs)
         self._str_encoding = str_encoding
 
     def write_file(self, input_data, output_file_path):

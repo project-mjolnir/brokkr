@@ -24,6 +24,7 @@ class Executable(brokkr.utils.misc.AutoReprMixin, metaclass=abc.ABCMeta):
         self.name = name
         self.input_data = input_data
         self.exit_event = exit_event
+
         self.logger = logging.getLogger(
             brokkr.utils.misc.get_full_class_name(self))
         self.log_helper = brokkr.utils.log.LogHelper(self.logger)

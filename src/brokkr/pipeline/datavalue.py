@@ -1,5 +1,5 @@
 """
-Reprisent of each measurement/observation/variable as a standard DataValue.
+Represent each measurement/observation/variable as a standard DataValue.
 """
 
 # Local imports
@@ -61,10 +61,18 @@ class DataValue(brokkr.utils.misc.AutoReprMixin):
         self.raw_value = self.value if raw_value is None else raw_value
         self.uncertainty = (
             self.data_type.uncertainty if uncertainty is None else uncertainty)
+        self._is_na = is_na
 
+    @property
+    def is_na(self):
+        is_na = self._is_na
         if is_na is None:
             is_na = (self.value == self.data_type.na_marker)
-        self.is_na = is_na
+        return is_na
+
+    @is_na.setter
+    def is_na(self, value):
+        self._is_na = value
 
     def __str__(self):
         return str(self.value)
