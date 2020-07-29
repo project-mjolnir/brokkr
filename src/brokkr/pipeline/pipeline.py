@@ -34,7 +34,6 @@ class Pipeline(brokkr.pipeline.base.Executable, metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def execute(self, input_data=None):
-        input_data = super().execute(input_data=input_data)
         self.logger.debug(
             "Executing %s (%s)", self.name,
             brokkr.utils.misc.get_full_class_name(self))
@@ -46,15 +45,14 @@ class Pipeline(brokkr.pipeline.base.Executable, metaclass=abc.ABCMeta):
     def execute_forever(self, input_data=None, exit_event=None):
         if exit_event is not None:
             self.exit_event = exit_event
-        input_data = super().execute(input_data=input_data)
         self.logger.info(
             "Beginning execution of %s (%s)", self.name,
             brokkr.utils.misc.get_full_class_name(self))
         if self.na_on_start:
             self.logger.debug("Injecting NA values on start")
-            self.execute(input_data=brokkr.pipeline.base.NASentinel())
+            self.execute_(input_data=brokkr.pipeline.base.NASentinel())
         brokkr.utils.misc.run_periodic(
-            type(self).execute,
+            type(self).execute_,
             period_s=self.period_s,
             exit_event=self.exit_event,
             outer_exit_event=self.outer_exit_event,

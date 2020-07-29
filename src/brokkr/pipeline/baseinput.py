@@ -70,7 +70,6 @@ class ValueInputStep(brokkr.pipeline.base.InputStep, metaclass=abc.ABCMeta):
         return decoded_data
 
     def execute(self, input_data=None):
-        input_data = super().execute(input_data=input_data)
         # Handle when the pipeline signals an NA data block should be sent
         if (isinstance(input_data, brokkr.pipeline.base.NASentinel)
                 and not self.ignore_na_on_start):

@@ -18,7 +18,6 @@ class MultiStep(brokkr.pipeline.base.PipelineStep, metaclass=abc.ABCMeta):
 
 class SequentialMultiStep(MultiStep, brokkr.pipeline.base.SequentialMixin):
     def execute(self, input_data=None):
-        input_data = super().execute(input_data=input_data)
         output_data = []
         for idx, step in enumerate(self.steps):
             step_output = self.execute_step(

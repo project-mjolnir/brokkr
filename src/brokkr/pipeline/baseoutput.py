@@ -9,7 +9,6 @@ from pathlib import Path
 
 # Local imports
 import brokkr.pipeline.base
-import brokkr.pipeline.utils
 import brokkr.utils.output
 
 
@@ -20,7 +19,6 @@ class FileOutputStep(brokkr.pipeline.base.OutputStep, metaclass=abc.ABCMeta):
             filename_template=None,
             extension=None,
             filename_kwargs=None,
-            skip_na=False,
             **pipeline_step_kwargs):
         super().__init__(**pipeline_step_kwargs)
 
@@ -29,18 +27,12 @@ class FileOutputStep(brokkr.pipeline.base.OutputStep, metaclass=abc.ABCMeta):
         self.extension = extension
         self.filename_kwargs = (
             {} if filename_kwargs is None else filename_kwargs)
-        self.skip_na = skip_na
 
     @abc.abstractmethod
     def write_file(self, input_data, output_file_path):
         pass
 
     def execute(self, input_data=None):
-        input_data = super().execute(input_data=input_data)
-        if self.skip_na and brokkr.pipeline.utils.is_all_na(input_data):
-            self.logger.debug("Input data is None/NA, skipping output")
-            return input_data
-
         output_file_path = brokkr.utils.output.render_output_filename(
             output_path=self.output_path,
             filename_template=self.filename_template,

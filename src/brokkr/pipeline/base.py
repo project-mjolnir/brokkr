@@ -7,6 +7,7 @@ import abc
 import logging
 
 # Local imports
+import brokkr.pipeline.utils
 import brokkr.utils.log
 import brokkr.utils.misc
 
@@ -20,10 +21,17 @@ class NASentinel:
 # --- Common base classes --- #
 
 class Executable(brokkr.utils.misc.AutoReprMixin, metaclass=abc.ABCMeta):
-    def __init__(self, name="Unnamed", input_data=None, exit_event=None):
+    def __init__(
+            self,
+            name="Unnamed",
+            input_data=None,
+            exit_event=None,
+            skip_na=False,
+                ):
         self.name = name
         self.input_data = input_data
         self.exit_event = exit_event
+        self.skip_na = skip_na
 
         self.logger = logging.getLogger(
             brokkr.utils.misc.get_full_class_name(self))
@@ -31,9 +39,18 @@ class Executable(brokkr.utils.misc.AutoReprMixin, metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def execute(self, input_data=None):
+        pass
+
+    def execute_(self, input_data=None):
         if input_data is None:
             input_data = self.input_data
-        return input_data
+
+        if self.skip_na and brokkr.pipeline.utils.is_all_na(input_data):
+            self.logger.debug("Input data is None/NA, skipping output")
+            return input_data
+
+        output_data = self.execute(input_data=input_data)
+        return output_data
 
 
 # --- Common mixin classes --- #
@@ -46,7 +63,7 @@ class SequentialMixin:
             brokkr.utils.misc.get_full_class_name(step),
             self.name, brokkr.utils.misc.get_full_class_name(self))
         try:
-            output_data = step.execute(input_data=input_data)
+            output_data = step.execute_(input_data=input_data)
         except Exception as e:
             self.logger.critical(
                 "%s caught at main level on step %s of %s - %s (%s) in "

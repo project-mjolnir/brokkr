@@ -264,7 +264,7 @@ def print_status(pipeline=None, output_override=True):
         )
     logger.debug("Getting status from monitoring pipeline %s", pipeline_name)
 
-    monitoring_pipeline.execute()
+    monitoring_pipeline.execute_()
 
 
 @brokkr.utils.log.basic_logging
