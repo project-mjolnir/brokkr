@@ -109,16 +109,20 @@ def setup_socket(  # pylint: disable=dangerous-default-value
         sock.settimeout(timeout_s)
         if action is not None:
             getattr(sock, action)(address_tuple)
-        LOGGER.debug("Listening on socket %r", sock)
     except Exception as e:
         if isinstance(e, OSError):
             # pylint: disable=no-member
-            if (e.errno and error_codes_suppress
-                    and e.errno in error_codes_suppress):
+            if error_codes_suppress and (
+                    isinstance(e, socket.timeout)
+                    or (e.errno
+                        and e.errno in error_codes_suppress)):
                 errors = Errors.IGNORE
         handle_socket_error(e, errors=errors, socket=sock,
                             address=address_tuple, action=action)
         return None
+    else:
+        LOGGER.debug("Listening on socket %r", sock)
+
     return sock
 
 
