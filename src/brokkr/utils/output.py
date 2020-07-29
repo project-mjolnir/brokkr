@@ -94,6 +94,7 @@ def render_output_filename(
         "local_datetime": datetime.datetime.now().date(),
         "local_date": datetime.datetime.now().date(),
         "local_time": datetime.datetime.now().time(),
+        "milliseconds": datetime.datetime.utcnow().microsecond // 1000,
         "output_type": "data",
         }
     if extension:
@@ -107,4 +108,5 @@ def render_output_filename(
     # Add file extension if it has not yet been affixed and is passed
     if extension is not None and not output_path.suffix:
         output_path = output_path.with_suffix("." + extension)
+
     return output_path

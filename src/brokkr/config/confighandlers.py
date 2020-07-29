@@ -114,7 +114,7 @@ DEFAULT_CONFIG_MAIN = {
         "monitoring_pipeline_default": "",
         "na_marker": "NA",
         "output_filename_client":
-            "{output_type}_{system_name}_{unit_number:0>4}_{utc_date!s}.csv",
+            "{output_type}_{system_name}_{unit_number:0>4}_{utc_date!s}",
         "output_path_client": OUTPUT_PATH_DEFAULT.as_posix(),
         "system_prefix": "",
         "worker_shutdown_wait_s": 10,
