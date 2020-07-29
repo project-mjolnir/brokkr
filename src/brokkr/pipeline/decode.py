@@ -183,14 +183,16 @@ class DataDecoder(brokkr.utils.misc.AutoReprMixin):
             na_marker=None,
             conversion_functions=None,
             include_all_data_each=False,
+            passthrough_none=False,
                 ):
         self.data_types = data_types
-        self.include_all_data_each = include_all_data_each
+        self.na_marker = NA_MARKER_DEFAULT if na_marker is None else na_marker
         if conversion_functions is None:
             conversion_functions = {}
         conversion_functions = {
             **self.conversion_functions, **conversion_functions}
-        self.na_marker = NA_MARKER_DEFAULT if na_marker is None else na_marker
+        self.include_all_data_each = include_all_data_each
+        self.passthrough_none = passthrough_none
 
     def __len__(self):
         return len(self.data_types)
@@ -280,11 +282,15 @@ class DataDecoder(brokkr.utils.misc.AutoReprMixin):
 
     def decode_data(self, data):
         if data is None:
-            output_data = self.output_na_values()
-            LOGGER.debug(
-                "No data to decode, returning NAs: %r",
-                brokkr.utils.output.format_data(
-                    data=output_data, seperator=", ", include_raw=False))
+            if self.passthrough_none:
+                output_data = data
+                LOGGER.debug("Data is None, passing through to pipeline")
+            else:
+                output_data = self.output_na_values()
+                LOGGER.debug(
+                    "No data to decode, returning NAs: %r",
+                    brokkr.utils.output.format_data(
+                        data=output_data, seperator=", ", include_raw=False))
         else:
             output_data = self.convert_data(data)
         return output_data

@@ -23,6 +23,7 @@ class ValueInputStep(brokkr.pipeline.base.InputStep, metaclass=abc.ABCMeta):
             conversion_functions=None,
             na_marker=None,
             include_all_data_each=False,
+            passthrough_none=False,
             name_suffix="",
             ignore_na_on_start=False,
             **pipeline_step_kwargs):
@@ -58,6 +59,7 @@ class ValueInputStep(brokkr.pipeline.base.InputStep, metaclass=abc.ABCMeta):
             conversion_functions=conversion_functions,
             na_marker=na_marker,
             include_all_data_each=include_all_data_each,
+            passthrough_none=passthrough_none,
             )
 
     @abc.abstractmethod
