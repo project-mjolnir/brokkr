@@ -2,6 +2,18 @@
 General utility functions for the pipeline module.
 """
 
+# Standard library imports
+import unittest.mock
+
+
+# --- Sentinels and constants --- #
+
+NASentinel = unittest.mock.sentinel.NASentinel
+
+ShutdownSentinel = unittest.mock.sentinel.ShutdownSentinel
+
+
+# --- Utility functions --- #
 
 def get_data_objects(input_data):
     try:

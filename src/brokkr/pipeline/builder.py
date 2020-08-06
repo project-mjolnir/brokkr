@@ -9,8 +9,11 @@ import importlib.util
 import logging
 
 # Local imports
+import brokkr.pipeline.baseinput
 import brokkr.utils.misc
 
+
+# Module-level constants
 
 PERIOD_S_DEFAULT = 60
 
@@ -22,6 +25,28 @@ PLUGIN_SUFFIX_DEFAULT = ".py"
 LOGGER = logging.getLogger(__name__)
 
 
+# --- Utility functions --- #
+
+def build_queue(
+        _module_path="multiprocessing",
+        _class_name="Queue",
+        **queue_kwargs):
+    module_object = importlib.import_module(_module_path)
+    obj_class = getattr(module_object, _class_name)
+    queue_object = obj_class(**queue_kwargs)
+    return queue_object
+
+
+def build_queues(input_dict, output_dict=None):
+    if output_dict is None:
+        output_dict = {}
+    for queue_name, queue_kwargs in input_dict.items():
+        output_dict[queue_name] = build_queue(**queue_kwargs)
+    return output_dict
+
+
+# --- Helper classes --- #
+
 class BuildContext(brokkr.utils.misc.AutoReprMixin):
     def __init__(
             self,
@@ -32,6 +57,8 @@ class BuildContext(brokkr.utils.misc.AutoReprMixin):
             na_marker=None,
             preset_fill_mappings=None,
             only_enabled=True,
+            queue_specs=None,
+            queues=None,
                 ):
         self.exit_event = exit_event
         self.subobject_lookup = (
@@ -47,6 +74,27 @@ class BuildContext(brokkr.utils.misc.AutoReprMixin):
         self.preset_fill_mappings = (
             [] if preset_fill_mappings is None else preset_fill_mappings)
         self.only_enabled = only_enabled
+        self.queue_specs = {} if queue_specs is None else queue_specs
+        self.queues = {} if queues is None else queues
+
+    def build_queues(self):
+        build_queues(input_dict=self.queue_specs, output_dict=self.queues)
+
+    def shutdown_queues(self):
+        for queue_name, queue_obj in self.queues.items():
+            LOGGER.info("Shutting down queue %s: %r", queue_name, queue_obj)
+            try:
+                queue_obj.close()
+            except (NotImplementedError, AttributeError) as e:
+                LOGGER.debug("%s closing queue %s (%r): %s",
+                             type(e).__name__, queue_name, queue_obj, e)
+            try:
+                queue_obj.join_thread()
+            except (NotImplementedError, AttributeError) as e:
+                LOGGER.debug("%s joining thread on queue %s (%r): %s",
+                             type(e).__name__, queue_name, queue_obj, e)
+            del queue_obj
+        self.queues.clear()
 
     def merge(self, build_context):
         if build_context is None:
@@ -56,6 +104,8 @@ class BuildContext(brokkr.utils.misc.AutoReprMixin):
         build_context = BuildContext(**{**vars(self), **build_context_kwargs})
         return build_context
 
+
+# --- Core classes --- #
 
 class Builder(brokkr.utils.misc.AutoReprMixin):
     def __init__(
@@ -79,7 +129,7 @@ class Builder(brokkr.utils.misc.AutoReprMixin):
             preset = brokkr.utils.misc.get_inner_dict(
                 obj=build_context.subobject_presets, keys=key_parts)
         except KeyError as e:
-            LOGGER.error(
+            LOGGER.critical(
                 "%s finding object %s of preset %r in pipeline %r",
                 type(e).__name__, e, subobject[PRESET_KEY], self.name)
             LOGGER.info("Error details:", exc_info=True)
@@ -114,7 +164,7 @@ class Builder(brokkr.utils.misc.AutoReprMixin):
                             preset_filled[inner_key] = (
                                 preset_fill_lookup[inner_key])
                         except KeyError as e:
-                            LOGGER.error(
+                            LOGGER.critical(
                                 "%s inserting value for preset %r: "
                                 "Can't find inner key %s in key %r to insert "
                                 "into step %s",
@@ -166,7 +216,7 @@ class Builder(brokkr.utils.misc.AutoReprMixin):
             try:
                 builder = BUILDERS[subobject.get("_builder", "")]
             except KeyError as e:
-                LOGGER.error(
+                LOGGER.critical(
                     "%s finding builder %s for subobject %s of pipeline %s",
                     type(e).__name__, e, subobject.get("name", "Unnamed"),
                     self.name)
@@ -299,6 +349,43 @@ class ObjectBuilder(Builder):
         return built_object
 
 
+class QueueBuilder(ObjectBuilder):
+    def __init__(
+            self,
+            _queue_name,
+            _module_path="brokkr.pipeline.queuesteps",
+            **object_kwargs):
+        super().__init__(_module_path=_module_path, **object_kwargs)
+        self.queue_name = _queue_name
+
+        # Get queue and add to init kwargs
+        queues = self.build_context.queues
+        if not queues:
+            queues = self.build_context.queue_specs
+            LOGGER.debug(
+                "Queues not built but queue specs found for %s (%s)",
+                self.name, type(self))
+        try:
+            queues[self.queue_name]
+        except KeyError as e:
+            LOGGER.critical(
+                "%s finding queue %s for object %s",
+                type(e).__name__, e, self.name)
+            LOGGER.info("Error details:", exc_info=True)
+            LOGGER.info("Valid queues: %s", set(queues.keys()))
+            raise SystemExit(1)
+
+    def build(self, build_context=None):
+        if build_context is not None:
+            build_context = self.build_context.merge(build_context)
+
+        data_queue = self.build_context.queues[self.queue_name]
+        self.init_kwargs["data_queue"] = data_queue
+
+        obj_instance = super().build(build_context=build_context)
+        return obj_instance
+
+
 class PipelineBuilder(ObjectBuilder):
     def __init__(
             self,
@@ -381,6 +468,7 @@ class TopLevelBuilder(Builder):
 BUILDERS = {
     "": ObjectBuilder,
     "object": ObjectBuilder,
+    "queue": QueueBuilder,
     "pipeline": PipelineBuilder,
     "monitor": MonitorBuilder,
     "toplevel": TopLevelBuilder,

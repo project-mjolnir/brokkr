@@ -5,6 +5,7 @@ Base classes for the Pipeline archtecture.
 # Standard library imports
 import abc
 import logging
+import time
 
 # Local imports
 import brokkr.pipeline.utils
@@ -12,13 +13,8 @@ import brokkr.utils.log
 import brokkr.utils.misc
 
 
-# --- Utility functions and classes --- #
+ERROR_TIMEOUT_S = 1
 
-class NASentinel:
-    pass
-
-
-# --- Common base classes --- #
 
 class Executable(brokkr.utils.misc.AutoReprMixin, metaclass=abc.ABCMeta):
     def __init__(
@@ -59,7 +55,7 @@ class SequentialMixin:
     def execute_step(self, idx, step, input_data=None):
         self.logger.debug(
             "Executing step %s of %s - %s (%s) in %s (%s)",
-            idx + 1, len(self.steps), step.name,
+            idx + 1, len(self.steps), getattr(step, "name", None),
             brokkr.utils.misc.get_full_class_name(step),
             self.name, brokkr.utils.misc.get_full_class_name(self))
         try:
@@ -68,10 +64,13 @@ class SequentialMixin:
             self.logger.critical(
                 "%s caught at main level on step %s of %s - %s (%s) in "
                 "%s (%s): %s",
-                type(e).__name__, idx + 1, len(self.steps), step.name,
+                type(e).__name__, idx + 1, len(self.steps),
+                getattr(step, "name", None),
                 brokkr.utils.misc.get_full_class_name(step),
                 self.name, brokkr.utils.misc.get_full_class_name(self), e)
             self.logger.info("Error details:", exc_info=True)
+            self.logger.debug("Pausing execution for %s s", ERROR_TIMEOUT_S)
+            time.sleep(ERROR_TIMEOUT_S)
             return None
         else:
             return output_data

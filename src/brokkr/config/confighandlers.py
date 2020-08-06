@@ -126,6 +126,8 @@ DEFAULT_CONFIG_MAIN = {
         "server_username": "",
         "tunnel_port_offset": 10000,
         },
+    "queues": {},
+    "data_types": {},
     "steps": {},
     "pipelines": {},
     }
@@ -152,6 +154,11 @@ DEFAULT_CONFIG_PRESETS = {
                 "_module_path": "brokkr.inputs.currenttime",
                 "_class_name": "CurrentTimeInput",
                 },
+            "queue": {
+                "_builder": "queue",
+                "_module_path": "brokkr.pipeline.queuesteps",
+                "_class_name": "QueueInputStep",
+                },
             "run_time": {
                 "_module_path": "brokkr.inputs.runtime",
                 "_class_name": "RunTimeInput",
@@ -167,6 +174,11 @@ DEFAULT_CONFIG_PRESETS = {
                 "_module_path": "brokkr.outputs.binaryfile",
                 "_class_name": "BinaryFileOutput",
                 "output_path": "data",
+                },
+            "queue": {
+                "_builder": "queue",
+                "_module_path": "brokkr.pipeline.queuesteps",
+                "_class_name": "QueueOutputStep",
                 },
             "pretty_print": {
                 "_module_path": "brokkr.outputs.print",

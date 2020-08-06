@@ -110,6 +110,8 @@ class MultiprocessHandler(brokkr.utils.misc.AutoReprMixin):
             logging_startup_wait_s=LOGGING_STARTUP_WAIT_S,
             logging_shutdown_wait_s=LOGGING_SHUTDOWN_WAIT_S,
             exit_event=None,
+            before_startup=None,
+            after_shutdown=None,
                 ):
         if worker_configs is None:
             worker_configs = []
@@ -128,6 +130,9 @@ class MultiprocessHandler(brokkr.utils.misc.AutoReprMixin):
         if exit_event is None:
             exit_event = multiprocessing.Event()
         self.exit_event = exit_event
+
+        self.before_startup = before_startup
+        self.after_shutdown = after_shutdown
 
     def start_logger(self, ignore_started=False):
         # If logging already started, don't start another
@@ -171,6 +176,12 @@ class MultiprocessHandler(brokkr.utils.misc.AutoReprMixin):
                 self.logger.debug("Process details: %r", self.workers)
                 return
             raise RuntimeError("Workers are already started")
+
+        # Run before startup callback
+        if self.before_startup is not None:
+            self.logger.debug(
+                "Running before startup callback %r", self.before_startup)
+            self.before_startup()
 
         # Setup processes
         self.workers = []
@@ -261,6 +272,14 @@ class MultiprocessHandler(brokkr.utils.misc.AutoReprMixin):
                 else:
                     self.logger.info("Worker %s killed", worker)
 
+        # Run after shutdown callback
+        if self.after_shutdown is not None:
+            self.logger.debug("Running after shutdown callback %s %s",
+                              type(self.after_shutdown),
+                              self.after_shutdown.__name__,
+                              )
+            self.after_shutdown()
+
         # Final cleanup
         self.exit_event.clear()
         self.workers = None
@@ -278,7 +297,7 @@ class MultiprocessHandler(brokkr.utils.misc.AutoReprMixin):
 
         # Command logger and queue to shut down
         self.log_queue.put_nowait(
-            brokkr.multiprocess.loglistener.LOG_RECORD_SENTINEL)
+            brokkr.multiprocess.loglistener.LogShutdownSentinel)
         self.log_queue.close()
         self.log_queue.join_thread()
         self.log_queue = None

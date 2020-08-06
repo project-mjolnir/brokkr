@@ -190,7 +190,8 @@ def create_build_context(exit_event=None, mp_handler=None):
         plugin_root_path=(brokkr.utils.misc.get_system_path(SYSTEMPATH_CONFIG)
                           / SYSTEM_SUBPATH_PLUGINS),
         na_marker=CONFIG["general"]["na_marker"],
-        preset_fill_mappings=[("data_types", CONFIG.get("data_types", {}))],
+        preset_fill_mappings=[("data_types", CONFIG["data_types"])],
+        queue_specs=CONFIG["queues"],
         )
     return build_context
 
@@ -340,10 +341,14 @@ def start_brokkr(log_level_file=None, log_level_console=None):
         logger.info("No pipelines defined; falling back to default")
         pipelines = {"default": DEFAULT_PIPELINE}
 
-    # Build system pipelines
+    # Create build context and setup queue callbacks
     logger.debug("Building pipelines")
     build_context = create_build_context(
         exit_event=exit_event, mp_handler=mp_handler)
+    mp_handler.before_startup = build_context.build_queues
+    mp_handler.after_shutdown = build_context.shutdown_queues
+
+    # Build system pipelines
     pipeline_builders = brokkr.pipeline.builder.TopLevelBuilder(
         pipelines, build_context=build_context)
     try:

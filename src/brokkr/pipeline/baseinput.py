@@ -8,8 +8,9 @@ import importlib
 
 # Local imports
 import brokkr.pipeline.base
-import brokkr.pipeline.decode
 import brokkr.pipeline.datavalue
+import brokkr.pipeline.decode
+import brokkr.pipeline.utils
 
 
 # --- Core base classes --- #
@@ -73,8 +74,8 @@ class ValueInputStep(brokkr.pipeline.base.InputStep, metaclass=abc.ABCMeta):
 
     def execute(self, input_data=None):
         # Handle when the pipeline signals an NA data block should be sent
-        if (isinstance(input_data, brokkr.pipeline.base.NASentinel)
-                and not self.ignore_na_on_start):
+        if (not self.ignore_na_on_start
+                and input_data is brokkr.pipeline.utils.NASentinel):
             return self.decode_data(raw_data=None)
         raw_data = self.read_raw_data(input_data=input_data)
         output_data = self.decode_data(raw_data)

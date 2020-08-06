@@ -9,6 +9,7 @@ import logging.handlers
 import multiprocessing
 import queue
 import time
+import unittest.mock
 
 # Local imports
 from brokkr.constants import SLEEP_TICK_S
@@ -16,7 +17,7 @@ import brokkr.utils.misc
 
 
 # Value to use to shut down the logging system
-LOG_RECORD_SENTINEL = None
+LogShutdownSentinel = unittest.mock.sentinel.LogShutdownSentinel
 
 
 # --- Logging setup functions --- #
@@ -75,7 +76,7 @@ def handle_queued_log_record(log_queue, outer_exit_event=None):
                      type(e).__name__, log_queue, e)
         logger.info("Error details:", exc_info=True)
     else:
-        if log_record == LOG_RECORD_SENTINEL:
+        if log_record is LogShutdownSentinel:
             if outer_exit_event is not None:
                 outer_exit_event.set()
 
