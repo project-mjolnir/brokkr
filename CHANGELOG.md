@@ -1,6 +1,31 @@
 # Brokkr Changelog
 
 
+## Version 0.4.0 Alpha 1 (2020-08-13)
+
+Alpha release with the following changes:
+
+Core features:
+* Add input and output queues to tie together multiple pipelines
+* Add support for TCP and arbitrary network packets as inputs
+* Add binary file writing for output
+* Add external drive discovery, mounting and selection
+* Add netcat command to send commands and receive simple network data
+
+Infrastructure:
+* Greatly enhance functionality of FileOutputStep and filename/path gen
+* Add CLI option to select pipeline to run with `brokkr status`/`monitor`
+* Enable ability to enable/disable specific pipelines with config option
+* Add smart repr for large/binary objects in pretty printer
+
+Under the hood:
+* Refactor network code for enhanced functionality, robustness and perf.
+* Improve error handling and debug logging package-wide
+* Improve error/NA/exit sentinels, shutdown and pipeline handling
+* Further general refactoring, cleanup and commenting
+
+
+
 ## Version 0.3.0 Final (2020-06-18)
 
 Stable release with the following changes:
