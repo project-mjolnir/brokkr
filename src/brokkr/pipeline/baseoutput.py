@@ -19,6 +19,7 @@ class FileOutputStep(brokkr.pipeline.base.OutputStep, metaclass=abc.ABCMeta):
             filename_template=None,
             extension=None,
             filename_kwargs=None,
+            drive_kwargs=None,
             **pipeline_step_kwargs):
         super().__init__(**pipeline_step_kwargs)
 
@@ -27,18 +28,27 @@ class FileOutputStep(brokkr.pipeline.base.OutputStep, metaclass=abc.ABCMeta):
         self.extension = extension
         self.filename_kwargs = (
             {} if filename_kwargs is None else filename_kwargs)
+        self.drive_kwargs = {} if drive_kwargs is None else drive_kwargs
 
     @abc.abstractmethod
     def write_file(self, input_data, output_file_path):
         pass
 
     def execute(self, input_data=None):
-        output_file_path = brokkr.utils.output.render_output_filename(
-            output_path=self.output_path,
-            filename_template=self.filename_template,
-            extension=self.extension,
-            **self.filename_kwargs)
-
+        try:
+            output_file_path = brokkr.utils.output.render_output_filename(
+                output_path=self.output_path,
+                filename_template=self.filename_template,
+                extension=self.extension,
+                drive_kwargs=self.drive_kwargs,
+                **self.filename_kwargs,
+                )
+        except Exception as e:
+            self.logger.error(
+                "%s finding output directory %r: %s",
+                type(e).__name__, self.output_path, e)
+            self.logger.info("Error details:", exc_info=True)
+            return input_data
         self.logger.debug("Ensuring output directory at %r",
                           output_file_path.parent.as_posix())
         os.makedirs(output_file_path.parent, exist_ok=True)
