@@ -22,6 +22,14 @@ LOGGER = logging.getLogger(__name__)
 MOUNT_TIMEOUT_S = 10
 
 
+def apply_item_limit(value, item_limit):
+    try:
+        value = str(value[:item_limit])
+    except TypeError:
+        value = str(value)[:item_limit]
+    return value
+
+
 def format_data(
         data=None,
         seperator="\n",
@@ -31,10 +39,11 @@ def format_data(
     output_data_list = []
     for data_name, data_value in data.items():
         # Get key attributes to pretty-print
-        value = str(getattr(data_value, "value", data_value))
-        if item_limit is not None:
-            value = value[:item_limit]
+        value = getattr(data_value, "value", data_value)
         raw_value = getattr(data_value, "raw_value", None)
+        if item_limit is not None:
+            value = apply_item_limit(value, item_limit)
+            raw_value = apply_item_limit(raw_value, item_limit)
         uncertainty = getattr(data_value, "uncertainty", None)
         if getattr(data_value, "data_type", None):
             name = data_value.data_type.full_name

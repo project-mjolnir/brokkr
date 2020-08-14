@@ -18,7 +18,7 @@ import brokkr.utils.misc
 BUFFER_SIZE_DEFAULT = 4096
 MAX_DATA_SIZE = 2**31 - 2
 
-MAX_DATA_PRINT_LENGTH = 4096
+MAX_DATA_PRINT_LENGTH = 1024
 
 TIMEOUT_S_DEFAULT = 2
 SUBPROCESS_TIMEOUT_EXTRA = 2
@@ -146,7 +146,12 @@ def recieve_all(
         try:
             chunk = sock.recv(buffer_size)
             if len(chunks) == 0:
-                LOGGER.debug("First chunk of network data recieved: %r", chunk)
+                LOGGER.debug(
+                    "First chunk of network data recieved of length %s bytes",
+                    len(chunk))
+                LOGGER.debug(
+                    "First %s bytes of first chunk: %r",
+                    MAX_DATA_PRINT_LENGTH, chunk[:MAX_DATA_PRINT_LENGTH])
         except socket.timeout as e:
             LOGGER.debug("Socket timed out in %s s while waiting for data",
                          timeout_s)

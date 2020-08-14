@@ -277,7 +277,11 @@ class DataDecoder(brokkr.utils.misc.AutoReprMixin):
                            error_count - 1)
 
         LOGGER.debug("Converted data: {%s}", brokkr.utils.output.format_data(
-            data=output_data, seperator=", ", include_raw=True))
+            data=output_data,
+            seperator=", ",
+            include_raw=True,
+            item_limit=128,
+            ))
         return output_data
 
     def decode_data(self, data):
