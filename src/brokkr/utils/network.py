@@ -208,6 +208,7 @@ def read_socket_data(
         socket_type=socket.SOCK_STREAM,
         timeout_s=TIMEOUT_S_DEFAULT,
         errors=Errors.RAISE,
+        shutdown=False,
         **recieve_kwargs,
         ):
     address_tuple = (host, port)
@@ -230,6 +231,14 @@ def read_socket_data(
                 sock, timeout_s=timeout_s, errors=errors, **recieve_kwargs)
         else:
             data = None
+
+        if shutdown:
+            try:
+                LOGGER.debug("Shutting down socket %r", sock)
+                sock.shutdown(socket.SHUT_RDWR)
+            except Exception as e:
+                handle_socket_error(e, errors=Errors.IGNORE, socket=sock,
+                                    address=address_tuple, action=action)
 
     return data
 
