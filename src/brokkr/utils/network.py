@@ -225,7 +225,7 @@ def read_socket_data(
         if setup_sock is not None:
             sock = setup_sock
             LOGGER.debug(
-                "Recieving data from socket %r with kwargs %r",
+                "Waiting for data from socket %r with kwargs %r",
                 sock, recieve_kwargs)
             data = recieve_all(
                 sock, timeout_s=timeout_s, errors=errors, **recieve_kwargs)
