@@ -4,6 +4,7 @@ General utility functions for Brokkr.
 
 # Standard library imports
 import collections.abc
+import copy
 import functools
 import getpass
 import logging
@@ -70,7 +71,22 @@ def get_full_class_name(obj):
         return type(obj)
 
 
-def update_dict_recursive(base, update):
+def safe_deepcopy(obj):
+    try:
+        obj = copy.deepcopy(obj)
+    except Exception:
+        try:
+            obj = copy.copy(obj)
+        except Exception:
+            pass
+    return obj
+
+
+def update_dict_recursive(base, update, inplace=None):
+    if inplace is None:
+        base = safe_deepcopy(base)
+    elif not inplace:
+        base = copy.deepcopy(base)
     for update_key, update_value in update.items():
         base_value = base.get(update_key, {})
         if not isinstance(base_value, collections.abc.Mapping):
