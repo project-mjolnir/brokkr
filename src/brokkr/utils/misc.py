@@ -157,8 +157,9 @@ def get_system_path(systempath_config, allow_default=True):
 
     try:
         system_path = system_paths[default_system]
-    except KeyError:
-        raise KeyError(f"System {default_system} not in {system_paths!r}")
+    except KeyError as e:
+        wrapper = KeyError(f"System {default_system} not in {system_paths!r}")
+        raise wrapper from e
 
     return convert_path(system_path)
 

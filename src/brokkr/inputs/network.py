@@ -55,12 +55,12 @@ class NetworkInput(brokkr.pipeline.baseinput.ValueInputStep):
             if attr_value is None:
                 try:
                     attr_value = getattr(socket, f"{prefix}{input_value}")
-                except AttributeError:
+                except AttributeError as e:
                     raise ValueError(
                         f"{attr_name} must be either value in "
                         f"{type(self).__name__}.{attr_name.upper()}_LOOKUP "
                         f"{set(lookup_table.keys())} or in socket.{prefix}*, "
-                        f"not {input_value}")
+                        f"not {input_value}") from e
             setattr(self, f"_{attr_name}", attr_value)
 
         # Set up additional arguments to recieve data function

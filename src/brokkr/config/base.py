@@ -87,7 +87,7 @@ def read_config_file(path, extension=None, logger=None):
                 logger.error("%s reading TOML config file %r: %s",
                              type(e).__name__, path.as_posix(), e)
                 logger.info("Error details:", exc_info=True)
-                raise SystemExit(1)
+                raise SystemExit(1) from e
             raise
     elif extension == EXTENSION_JSON:
         with open(path, "r", encoding="utf-8") as config_file:
@@ -98,7 +98,7 @@ def read_config_file(path, extension=None, logger=None):
                     logger.error("%s reading JSON config file %r: %s",
                                  type(e).__name__, path.as_posix(), e)
                     logger.info("Error details:", exc_info=True)
-                    raise SystemExit(1)
+                    raise SystemExit(1) from e
                 raise
 
     return config_data
@@ -180,7 +180,7 @@ def insert_values(config_data, insert_items, logger=None):
                     logger.info("Error details:", exc_info=True)
                     logger.info("Possible keys: %r",
                                 list(preset_data[target_key].keys()))
-                    raise SystemExit(1)
+                    raise SystemExit(1) from e
 
     return config_data
 

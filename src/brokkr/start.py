@@ -103,7 +103,7 @@ def log_config_info(log_config=None, logger=None):
             "Log": (log_config, LOG_CONFIGS),
             "Main": (CONFIG, CONFIGS),
             "Presets": (list(PRESETS.keys()), PRESET_CONFIGS),
-            }.items():  # pylint: disable=bad-continuation
+            }.items():
         if config_data[0] is not None:
             logger.info("%s config: %s", config_name, config_data[0])
         if config_data[1] is not None:

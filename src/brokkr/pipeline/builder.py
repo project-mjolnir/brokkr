@@ -143,7 +143,7 @@ class Builder(brokkr.utils.misc.AutoReprMixin):
                 sub_dict = sub_dict.get(next_part, None)
                 if sub_dict is None:
                     break
-            raise SystemExit(1)
+            raise SystemExit(1) from e
 
         # Fill data types defined in steps table with data type presets
         device_preset = (
@@ -173,7 +173,7 @@ class Builder(brokkr.utils.misc.AutoReprMixin):
                             LOGGER.info("Error details:", exc_info=True)
                             LOGGER.info("Possible keys: %r",
                                         list(preset_fill_lookup.keys()))
-                            raise SystemExit(1)
+                            raise SystemExit(1) from e
                         else:
                             preset.pop(preset_fill_key, None)
                     else:
@@ -222,7 +222,7 @@ class Builder(brokkr.utils.misc.AutoReprMixin):
                     self.name)
                 LOGGER.info("Error details:", exc_info=True)
                 LOGGER.info("Valid builders: %r", BUILDERS)
-                raise SystemExit(1)
+                raise SystemExit(1) from e
 
             subobject.pop("_builder", None)
             subobject = builder(build_context=build_context, **subobject)
@@ -373,7 +373,7 @@ class QueueBuilder(ObjectBuilder):
                 type(e).__name__, e, self.name)
             LOGGER.info("Error details:", exc_info=True)
             LOGGER.info("Valid queues: %s", set(queues.keys()))
-            raise SystemExit(1)
+            raise SystemExit(1) from e
 
     def build(self, build_context=None):
         if build_context is not None:
