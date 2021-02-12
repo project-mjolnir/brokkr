@@ -27,11 +27,13 @@ class ValueInputStep(brokkr.pipeline.base.InputStep, metaclass=abc.ABCMeta):
             passthrough_none=False,
             name_suffix="",
             ignore_na_on_start=False,
+            truncate_after=False,
             **pipeline_step_kwargs):
         super().__init__(**pipeline_step_kwargs)
         self.ignore_na_on_start = ignore_na_on_start
         if datatype_default_kwargs is None:
             datatype_default_kwargs = {}
+        self.truncate_after = truncate_after
 
         self.data_types = []
         for data_type in data_types:
@@ -78,6 +80,8 @@ class ValueInputStep(brokkr.pipeline.base.InputStep, metaclass=abc.ABCMeta):
                 and input_data is brokkr.pipeline.utils.NASentinel):
             return self.decode_data(raw_data=None)
         raw_data = self.read_raw_data(input_data=input_data)
+        if self.truncate_after:
+            raw_data = raw_data[:self.truncate_after]
         output_data = self.decode_data(raw_data)
         return output_data
 
