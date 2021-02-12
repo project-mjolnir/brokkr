@@ -17,7 +17,6 @@ except ModuleNotFoundError:  # If its not installed, eg. on non-Linux platforms
     serviceinstaller = None
 
 # Local imports
-import brokkr.config.base
 import brokkr.pipeline.builder
 import brokkr.start
 import brokkr.utils.log
@@ -27,6 +26,8 @@ import brokkr.utils.services
 
 # General constants
 COMMAND_TIMEOUT = 30
+
+SCRIPT_INSTALL_PATH = Path("/usr/local/bin/")
 
 DISTRO_INSTALL_COMMANDS = (
     lambda package_name: ("apt-get", "-y", "install", package_name),
@@ -231,6 +232,69 @@ def install_firewall(ports_to_open=PORTS_TO_OPEN):
 
 
 @brokkr.utils.log.basic_logging
+def install_scripts(
+        install_path=SCRIPT_INSTALL_PATH,
+        set_executable=True,
+        continue_on_script_error=True,
+        ):
+    install_path = Path(install_path)
+    logging.debug("Installing script symlinks in %s ...",
+                  install_path)
+    if not install_path.exists():
+        raise RuntimeError(
+            f"Script install path '{install_path.as_posix()}' "
+            "doesn't exist")
+
+    # pylint: disable=import-outside-toplevel
+    from brokkr.config.systempath import SYSTEMPATH_CONFIG
+    system_path = brokkr.utils.misc.get_system_path(
+        SYSTEMPATH_CONFIG, allow_default=False)
+    script_dir = system_path / "scripts"
+    if not (script_dir.exists() and any(script_dir.iterdir())):
+        raise RuntimeError(
+            f"No scripts found at '{script_dir.as_posix()}'")
+
+    for script_path in script_dir.iterdir():
+        if script_path.name[0] == ".":
+            logging.debug("Skipping invisible file '%s'",
+                          script_path.as_posix())
+            continue
+        if set_executable:
+            try:
+                logging.debug("Setting execute bit for script '%s'",
+                              script_path.as_posix())
+                chmod_command = ("chmod", "+x", script_path)
+                subprocess.run(
+                    chmod_command, timeout=COMMAND_TIMEOUT, check=True)
+            except Exception as e:
+                logging.error("%s setting execute bit on script '%s': %s",
+                              type(e).__name__, script_path.as_posix(), e)
+                logging.debug("Error details:", exc_info=True)
+                logging.debug("Command invocation: %s",
+                              " ".join(chmod_command))
+                if not continue_on_script_error:
+                    raise
+        try:
+            script_install_path = install_path / script_path.name
+            logging.debug(
+                "Installing script '%s' to '%s'",
+                script_path.as_posix(), script_install_path.as_posix())
+            ln_command = ("ln", "--symbolic", "--force", str(script_path),
+                          str(install_path / script_path.name))
+            subprocess.run(ln_command, timeout=COMMAND_TIMEOUT, check=True)
+        except Exception as e:
+            logging.error("%s installing script '%s': %s",
+                          type(e).__name__, script_path.as_posix(), e)
+            logging.debug("Error details:", exc_info=True)
+            logging.debug("Command invocation: %s", " ".join(ln_command))
+            if not continue_on_script_error:
+                raise
+
+    logging.info("Installed script symlinks in '%s'",
+                 install_path.as_posix())
+
+
+@brokkr.utils.log.basic_logging
 def install_udev(
         udev_rules=UDEV_RULES,
         udev_filename=UDEV_FILENAME,
@@ -249,10 +313,19 @@ def install_udev(
     subprocess.run(
         ["udevadm", "trigger"], timeout=COMMAND_TIMEOUT, check=True)
 
+    logging.info("Installed udev rules for USB access")
+
 
 @brokkr.utils.log.basic_logging
 def install_all(no_install_services=False):
     logging.debug("Installing all Brokkr external componenets...")
+
+    try:
+        install_scripts()
+    except RuntimeError as e:
+        logging.info(
+            "Script directory not found or no scripts to install, skipping...")
+        logging.debug("%s running script install: %s", type(e).__name__, e)
 
     if sys.platform.startswith("linux") or sys.platform.startswith("win"):
         install_firewall()

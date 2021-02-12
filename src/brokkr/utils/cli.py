@@ -134,6 +134,15 @@ def generate_argparser_main():
         description=desc_install_firewall, argument_default=argparse.SUPPRESS)
     verbose_parsers.append(parser_install_firewall)
 
+    # Parser for the install-scripts subcommand
+    desc_install_scripts = "Install the system's scripts as symlinks"
+    parser_install_scripts = subparsers.add_parser(
+        "install-scripts", help=desc_install_scripts,
+        description=desc_install_scripts, argument_default=argparse.SUPPRESS)
+    parser_install_scripts.add_argument(
+        "--install-path", help="Path to install the script symlinks to")
+    verbose_parsers.append(parser_install_scripts)
+
     # Parser for the install-service subcommand
     desc_install_service = "Install Brokkr as a Systemd service (Linux)"
     parser_install_service = subparsers.add_parser(
