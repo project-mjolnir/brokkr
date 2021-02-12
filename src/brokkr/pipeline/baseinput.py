@@ -82,6 +82,47 @@ class ValueInputStep(brokkr.pipeline.base.InputStep, metaclass=abc.ABCMeta):
         return output_data
 
 
+class DecodeInputStep(ValueInputStep):
+    def __init__(
+            self,
+            key_name=None,
+            binary_decoder=True,
+            **value_input_kwargs):
+        super().__init__(binary_decoder=binary_decoder, **value_input_kwargs)
+        self.key_name = key_name
+
+    def read_raw_data(self, input_data=None):
+        if not input_data:
+            return input_data
+        if self.key_name:
+            try:
+                output_data_obj = input_data[self.key_name]
+            except TypeError:
+                for data_obj in input_data:
+                    data_obj_name = getattr(data_obj, "name", None)
+                    if data_obj_name == self.key_name:
+                        output_data_obj = data_obj
+                        break
+                else:
+                    self.logger.debug("Input data: %r", input_data)
+                    error_message = (
+                        f"Could not find key '{self.key_name}' in input data")
+                    raise KeyError(error_message) from None
+        else:
+            if len(input_data) == 1:
+                try:
+                    input_data = list(input_data.values())
+                except AttributeError:  # Input data isn't a dict
+                    pass
+                output_data_obj = input_data[0]
+            else:
+                output_data_obj = input_data
+
+        output_data_value = getattr(
+            output_data_obj, "value", output_data_obj)
+        return output_data_value
+
+
 class SensorInputStep(ValueInputStep, metaclass=abc.ABCMeta):
     def __init__(
             self,
