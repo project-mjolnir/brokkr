@@ -304,11 +304,12 @@ class BinaryDataDecoder(DataDecoder):
     def __init__(
             self,
             struct_format=None,
+            byte_order="!",
             **data_decoder_kwargs,
                 ):
         super().__init__(**data_decoder_kwargs)
         if struct_format is None:
-            struct_format = "!" + "".join(
+            struct_format = byte_order + "".join(
                 [data_type.input_type for data_type in self.data_types])
         self.struct_format = struct_format
         self.packet_size = struct.calcsize(self.struct_format)

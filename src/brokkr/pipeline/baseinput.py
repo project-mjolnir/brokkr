@@ -28,12 +28,15 @@ class ValueInputStep(brokkr.pipeline.base.InputStep, metaclass=abc.ABCMeta):
             name_suffix="",
             ignore_na_on_start=False,
             truncate_after=False,
+            decode_kwargs=None,
             **pipeline_step_kwargs):
         super().__init__(**pipeline_step_kwargs)
         self.ignore_na_on_start = ignore_na_on_start
         if datatype_default_kwargs is None:
             datatype_default_kwargs = {}
         self.truncate_after = truncate_after
+        if decode_kwargs is None:
+            decode_kwargs = {}
 
         self.data_types = []
         for data_type in data_types:
@@ -63,6 +66,7 @@ class ValueInputStep(brokkr.pipeline.base.InputStep, metaclass=abc.ABCMeta):
             na_marker=na_marker,
             include_all_data_each=include_all_data_each,
             passthrough_none=passthrough_none,
+            **decode_kwargs,
             )
 
     @abc.abstractmethod
