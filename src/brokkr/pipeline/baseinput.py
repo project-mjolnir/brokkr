@@ -11,6 +11,7 @@ import brokkr.pipeline.base
 import brokkr.pipeline.datavalue
 import brokkr.pipeline.decode
 import brokkr.pipeline.utils
+import brokkr.utils.misc
 
 
 # --- Core base classes --- #
@@ -28,6 +29,7 @@ class ValueInputStep(brokkr.pipeline.base.InputStep, metaclass=abc.ABCMeta):
             name_suffix="",
             ignore_na_on_start=False,
             truncate_after=False,
+            merge_existing=True,
             decode_kwargs=None,
             **pipeline_step_kwargs):
         super().__init__(**pipeline_step_kwargs)
@@ -35,6 +37,7 @@ class ValueInputStep(brokkr.pipeline.base.InputStep, metaclass=abc.ABCMeta):
         if datatype_default_kwargs is None:
             datatype_default_kwargs = {}
         self.truncate_after = truncate_after
+        self.merge_existing = merge_existing
         if decode_kwargs is None:
             decode_kwargs = {}
 
@@ -83,10 +86,15 @@ class ValueInputStep(brokkr.pipeline.base.InputStep, metaclass=abc.ABCMeta):
         if (not self.ignore_na_on_start
                 and input_data is brokkr.pipeline.utils.NASentinel):
             return self.decode_data(raw_data=None)
+        if input_data:
+            input_data = brokkr.utils.misc.safe_deepcopy(input_data)
         raw_data = self.read_raw_data(input_data=input_data)
         if self.truncate_after:
             raw_data = raw_data[:self.truncate_after]
         output_data = self.decode_data(raw_data)
+        if (self.merge_existing and input_data
+                and input_data is not brokkr.pipeline.utils.NASentinel):
+            output_data = {**input_data, **output_data}
         return output_data
 
 
@@ -104,7 +112,7 @@ class DecodeInputStep(ValueInputStep):
             return input_data
         if self.key_name:
             try:
-                output_data_obj = input_data[self.key_name]
+                output_data_obj = input_data.pop(self.key_name)
             except TypeError:
                 for data_obj in input_data:
                     data_obj_name = getattr(data_obj, "name", None)
@@ -116,6 +124,7 @@ class DecodeInputStep(ValueInputStep):
                     error_message = (
                         f"Could not find key '{self.key_name}' in input data")
                     raise KeyError(error_message) from None
+                input_data.remove(output_data_obj)
         else:
             if len(input_data) == 1:
                 try:
@@ -123,6 +132,7 @@ class DecodeInputStep(ValueInputStep):
                 except AttributeError:  # Input data isn't a dict
                     pass
                 output_data_obj = input_data[0]
+                input_data.clear()
             else:
                 output_data_obj = input_data
 
