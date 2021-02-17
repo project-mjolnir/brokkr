@@ -37,6 +37,12 @@ class FileOutputStep(brokkr.pipeline.base.OutputStep, metaclass=abc.ABCMeta):
         pass
 
     def execute(self, input_data=None):
+        if self.key_name:
+            data_obj = brokkr.pipeline.utils.get_data_object(
+                input_data, key_name=self.key_name)
+            self.filename_kwargs["created_datetime"] = data_obj.timestamp
+            self.filename_kwargs["created_ms"] = (
+                data_obj.timestamp.microsecond // 1000)
         try:
             output_file_path = brokkr.utils.output.render_output_filename(
                 output_path=self.output_path,

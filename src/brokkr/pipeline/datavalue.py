@@ -2,6 +2,9 @@
 Represent each measurement/observation/variable as a standard DataValue.
 """
 
+# Standard library imports
+import datetime
+
 # Local imports
 import brokkr.utils.misc
 
@@ -62,6 +65,8 @@ class DataValue(brokkr.utils.misc.AutoReprMixin):
         self.uncertainty = (
             self.data_type.uncertainty if uncertainty is None else uncertainty)
         self._is_na = is_na
+        self.timestamp = datetime.datetime.now(
+            tz=datetime.timezone.utc)
 
     @property
     def is_na(self):
