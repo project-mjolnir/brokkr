@@ -108,36 +108,8 @@ class DecodeInputStep(ValueInputStep):
         self.key_name = key_name
 
     def read_raw_data(self, input_data=None):
-        if not input_data:
-            return input_data
-        if self.key_name:
-            try:
-                output_data_obj = input_data.pop(self.key_name)
-            except TypeError:
-                for data_obj in input_data:
-                    data_obj_name = getattr(data_obj, "name", None)
-                    if data_obj_name == self.key_name:
-                        output_data_obj = data_obj
-                        break
-                else:
-                    self.logger.debug("Input data: %r", input_data)
-                    error_message = (
-                        f"Could not find key '{self.key_name}' in input data")
-                    raise KeyError(error_message) from None
-                input_data.remove(output_data_obj)
-        else:
-            if len(input_data) == 1:
-                try:
-                    input_data = list(input_data.values())
-                except AttributeError:  # Input data isn't a dict
-                    pass
-                output_data_obj = input_data[0]
-                input_data.clear()
-            else:
-                output_data_obj = input_data
-
-        output_data_value = getattr(
-            output_data_obj, "value", output_data_obj)
+        output_data_value = brokkr.pipeline.utils.get_data_value(
+            input_data=input_data, key_name=self.key_name, pop_input=True)
         return output_data_value
 
 

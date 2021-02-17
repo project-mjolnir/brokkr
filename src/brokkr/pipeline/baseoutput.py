@@ -15,6 +15,7 @@ import brokkr.utils.output
 class FileOutputStep(brokkr.pipeline.base.OutputStep, metaclass=abc.ABCMeta):
     def __init__(
             self,
+            key_name=None,
             output_path=Path(),
             filename_template=None,
             extension=None,
@@ -23,6 +24,7 @@ class FileOutputStep(brokkr.pipeline.base.OutputStep, metaclass=abc.ABCMeta):
             **pipeline_step_kwargs):
         super().__init__(**pipeline_step_kwargs)
 
+        self.key_name = key_name
         self.output_path = output_path
         self.filename_template = filename_template
         self.extension = extension
@@ -54,8 +56,15 @@ class FileOutputStep(brokkr.pipeline.base.OutputStep, metaclass=abc.ABCMeta):
         os.makedirs(output_file_path.parent, exist_ok=True)
         self.logger.debug("Writing data to file at %r",
                           output_file_path.as_posix())
+        if self.key_name:
+            input_data_values = brokkr.pipeline.utils.get_data_value(
+                input_data=input_data, key_name=self.key_name)
+        else:
+            input_data_values = input_data
+
         try:
-            self.write_file(input_data, output_file_path=output_file_path)
+            self.write_file(
+                input_data_values, output_file_path=output_file_path)
             self.logger.debug("Data successfully written to file at %r",
                               output_file_path.as_posix())
             return input_data
