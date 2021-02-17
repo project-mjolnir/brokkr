@@ -4,6 +4,7 @@ Base classes for pipeline output steps.
 
 # Standard library imports
 import abc
+import datetime
 import os
 from pathlib import Path
 
@@ -19,6 +20,7 @@ class FileOutputStep(brokkr.pipeline.base.OutputStep, metaclass=abc.ABCMeta):
             output_path=Path(),
             filename_template=None,
             extension=None,
+            filename_datavalues=(),
             filename_kwargs=None,
             drive_kwargs=None,
             **pipeline_step_kwargs):
@@ -28,6 +30,7 @@ class FileOutputStep(brokkr.pipeline.base.OutputStep, metaclass=abc.ABCMeta):
         self.output_path = output_path
         self.filename_template = filename_template
         self.extension = extension
+        self.filename_datavalues = filename_datavalues
         self.filename_kwargs = (
             {} if filename_kwargs is None else filename_kwargs)
         self.drive_kwargs = {} if drive_kwargs is None else drive_kwargs
@@ -40,9 +43,20 @@ class FileOutputStep(brokkr.pipeline.base.OutputStep, metaclass=abc.ABCMeta):
         if self.key_name:
             data_obj = brokkr.pipeline.utils.get_data_object(
                 input_data, key_name=self.key_name)
-            self.filename_kwargs["created_datetime"] = data_obj.timestamp
-            self.filename_kwargs["created_ms"] = (
-                data_obj.timestamp.microsecond // 1000)
+            timestamp = getattr(
+                data_obj, "timestamp", datetime.datetime.utcnow())
+            self.filename_kwargs["created_datetime"] = timestamp
+            self.filename_kwargs["created_ms"] = timestamp.microsecond // 1000
+        for datavalue_key in self.filename_datavalues:
+            data_value = brokkr.pipeline.utils.get_data_value(
+                input_data, key_name=datavalue_key)
+            self.filename_kwargs[datavalue_key] = data_value
+            try:
+                self.filename_kwargs[datavalue_key + "_ms"] = (
+                    data_value.microsecond // 1000)
+            except AttributeError:
+                pass  # If data_value is not a timestamp
+
         try:
             output_file_path = brokkr.utils.output.render_output_filename(
                 output_path=self.output_path,
