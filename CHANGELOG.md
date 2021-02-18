@@ -1,6 +1,30 @@
 # Brokkr Changelog
 
 
+## Version 0.4.0 Alpha 2 (2020-02-17)
+
+Alpha release with the following changes:
+
+Core features:
+* Add Decode InputStep for standalone binary value decoding from any source
+* Add new ``install-scripts`` command to install symlinks to system scripts
+* Enable ValueInputs adding DataValues to existing dicts/lists
+* Add timestamp to all datavalues, and support filling as filename args
+* Fill arbitrary DataValues as filename args if specified
+* Add ability to truncate data to just headers when putting to queue
+* Allow file outputsteps to select a specific key to output
+* Add ``truncate_after`` option to ValueInput and improve input handling
+
+Under the hood:
+* Avoid class of bugs with inplace update of system presets
+* Upgrade pylint configuration and fix linting issues
+* Upgrade gitattributes configuration to current version
+* Improve error handling in numerous places
+* Further refactoring and code cleanup
+* Fix a number of minor bugs, inconsistencies and textual/doc issues
+
+
+
 ## Version 0.4.0 Alpha 1 (2020-08-13)
 
 Alpha release with the following changes:
