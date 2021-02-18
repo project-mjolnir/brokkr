@@ -49,10 +49,12 @@ class QueueOutputStep(brokkr.pipeline.base.OutputStep):
             self,
             data_queue,
             shutdown_timeout_s=SHUTDOWN_TIMEOUT_DEFAULT_S,
+            truncate_to_headers=False,
             **pipeline_step_kwargs):
         super().__init__(**pipeline_step_kwargs)
         self.data_queue = data_queue
         self.shutdown_timeout_s = shutdown_timeout_s
+        self.truncate_to_headers = truncate_to_headers
 
     def safe_put(self, input_data, **put_kwargs):
         try:
@@ -77,6 +79,8 @@ class QueueOutputStep(brokkr.pipeline.base.OutputStep):
             return False
 
     def execute(self, input_data=None):
+        if self.truncate_to_headers:
+            input_data = brokkr.pipeline.utils.truncate_to_headers(input_data)
         try:
             self.safe_put(input_data=input_data, block=False)
         except InterruptedError:

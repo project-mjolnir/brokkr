@@ -5,6 +5,9 @@ General utility functions for the pipeline module.
 # Standard library imports
 import unittest.mock
 
+# Local imports
+import brokkr.utils.misc
+
 
 # --- Sentinels and constants --- #
 
@@ -79,3 +82,15 @@ def is_all_na(input_data, na_values=None):
     all_na = all([getattr(data_object, "is_na", data_object in na_values)
                   for data_object in data_objects])
     return all_na
+
+
+def truncate_to_headers(input_data=None):
+    if not input_data:
+        return input_data
+    input_data = brokkr.utils.misc.safe_deepcopy(input_data)
+    data_objects = get_data_objects(input_data)
+    for data_object in data_objects:
+        header_bytes = getattr(data_object, "header_bytes", None)
+        if header_bytes:
+            data_object.value = data_object.value[:header_bytes]
+    return input_data
