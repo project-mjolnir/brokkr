@@ -70,20 +70,7 @@ source ENV_DIR/bin/activate
 pip install brokkr[EXTRA1,EXTRA2...]
 ```
 
-or, to install a development version:
-
-```bash
-python3 -m venv ENV_NAME
-source ENV_NAME/bin/activate
-git clone https://github.com/hamma-dev/serviceinstaller.git
-cd serviceinstaller
-pip install -e .
-cd ..
-git clone https://github.com/hamma-dev/brokkr.git
-cd brokkr
-pip install -e .[EXTRA1,EXTRA2...]
-cd ..
-```
+For information on installing a development version, see the contributing guide:
 
 On Windows and Mac, use of Anaconda/Miniconda is recommended, substituting conda environments for venvs. While these platforms are supported for development, some functionality specific to running Brokkr in production may be unavailable.
 
@@ -91,23 +78,31 @@ Then, you need to take a few more steps to get your environment set up: clone th
 ``SYSTEM_SHORTNAME`` is whatever name you want to register the system with in the system file, and ``UNIT_NUMBER`` is the integer number (arbitrary, but should be unique) you want to designate the device you're installing on.
 
 ```
-git clone https://github.com/hamma-dev/mjolnir-config-template.git
+git clone https://github.com/project-mjolnir/mjolnir-config-template.git
 brokkr configure-system SYSTEM_SHORTNAME /path/to/system/mjolnir-config-template
 brokkr configure-init
 brokkr configure-unit UNIT_NUMBER
 ```
 
 Finally, you can run the post-installation setup steps as needed for your system.
-For a simple system, to just install the systemd service unit to run Brokkr on startup and restart it if it fails,
+First, you'll want to install any system-specific dependencies,
+
+```bash
+brokkr install-dependencies
+```
+
+Then, to just install the systemd service unit to run Brokkr on startup:
 
 ```bash
 sudo /path/to/virtual/environment/ENV_DIR/bin/python -m brokkr install-service``
+brokkr install-dependencies
 ```
 
-or for a full install of all post-setup tasks, including the config files, firewall access, and (on Linux) serial port access, Brokkr systemd service, and SSH/AutoSSH service and configuration:
+or, for a full install of all post-setup tasks, including the config files, scripts, system-specific dependencies, firewall access, and (on Linux) serial port access, Brokkr systemd service, and SSH/AutoSSH service and configuration:
 
 ```
 sudo /path/to/virtual/environment/ENV_DIR/bin/python -m brokkr install-all
+brokkr install-dependencies
 ```
 
 Finally, you can check that Brokkr is working with ``brokkr --version``, ``brokkr status`` and the other commands detailed in ``brokkr --help``.
@@ -193,7 +188,6 @@ Then:
 
 
 ## Configuration
-
 
 A major design goal of Brokkr and the Mjolnir system is extensive, flexible and straightforward reconfiguration for different sensor networks and changing needs.
 All the system configuration is normally handled through the Mjolnir-HAMMA system config package in the standard Mjolnir config schema developed for this system (located at ~/dev/mjolnir-hamma), aside from a few high-level elements specific to each unit which all have interactive configuration commands as below.
