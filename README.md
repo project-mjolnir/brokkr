@@ -29,32 +29,9 @@ Works best on Linux, but is tested to be fully functional (aside from service fe
 
 ## License
 
-Copyright © 2019-2020 C.A.M. Gerlach, the UAH HAMMA Group and the Project Mjolnir Contributors
+Copyright (c) 2019-2021 C.A.M. Gerlach, the UAH HAMMA Group and the Project Mjolnir Contributors
 
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU Lesser General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU Lesser General Public License for more details.
-
-You should have received a copy of the GNU Lesser General Public License
-along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
-For the avoidance of doubt, per the terms of the LGPL, plugins, presets and configuration packages are not considered integral parts of the covered work, and may be released under any license, free or proprietary.
-
-The code at the following paths are released under the MIT (Expat) License, Copyright © C.A.M. Gerlach 2019-2020, and subject to future independent release:
-
-```
-brokkr/src/brokkr/config/base.py
-brokkr/src/brokkr/multiprocess/
-brokkr/src/brokkr/pipeline/
-brokkr/src/brokkr/utils/log.py
-brokkr/src/brokkr/utils/misc.py
-```
+This project is released under the terms of the MIT (Expat) License; see LICENSE.txt for more details.
 
 
 ## Installation and Setup

@@ -1,5 +1,4 @@
 include CHANGELOG.md
-include GPL.txt
 include LICENSE.txt
 include README.md
 include ROADMAP.md
