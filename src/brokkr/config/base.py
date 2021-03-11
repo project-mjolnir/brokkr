@@ -453,8 +453,8 @@ class ConfigHandler(brokkr.utils.misc.AutoReprMixin):
         config_levels = [] if config_levels is None else config_levels
         self.config_levels = {}
         if (self.config_type.defaults is not None
-                and not any([isinstance(config_level, DefaultsConfigLevel)
-                             for config_level in config_levels])):
+                and not any((isinstance(config_level, DefaultsConfigLevel)
+                             for config_level in config_levels))):
             defaults_config_level = DefaultsConfigLevel(
                 config_type=self.config_type)
             config_levels = [defaults_config_level, *config_levels]
