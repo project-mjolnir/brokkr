@@ -218,7 +218,7 @@ def check_system_version(metadata, logger):
             logger(
                 "%s supported Brokkr version %s of system %s "
                 "is %s current Brokkr version %s",
-                key_name.split("_")[-1].title(),
+                key_name.rsplit('_', maxsplit=1)[-1].title(),
                 metadata[key_name],
                 metadata["name"],
                 long_name,

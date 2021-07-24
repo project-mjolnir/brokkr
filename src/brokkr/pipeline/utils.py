@@ -77,7 +77,7 @@ def get_data_value(input_data, key_name=None, pop_input=False):
 
 
 def is_all_na(input_data, na_values=None):
-    na_values = {None} if na_values is None else na_values
+    na_values = [None] if na_values is None else list(na_values)
     data_objects = get_data_objects(input_data)
     all_na = all((getattr(data_object, "is_na", data_object in na_values)
                   for data_object in data_objects))
