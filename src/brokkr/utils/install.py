@@ -3,6 +3,7 @@ Installation commands and utilities for Brokkr.
 """
 
 # Standard library imports
+import copy
 import logging
 import os
 from pathlib import Path
@@ -99,12 +100,19 @@ def _write_os_config_file(file_contents, filename, output_path):
     return output_path
 
 
-@brokkr.utils.log.basic_logging
-def install_autossh(skip_package_install=False, platform=None):
-    # pylint: disable=import-outside-toplevel
-    from brokkr.config.main import CONFIG
+def _install_service(service_kwargs, platform=None, user_account=None):
     if serviceinstaller is None:
         raise ModuleNotFoundError("Serviceinstaller must be installed.")
+    if user_account is not None:
+        service_kwargs = copy.deepcopy(service_kwargs)
+        service_kwargs["service_settings"]["Service"]["User"] = user_account
+    serviceinstaller.install_service(**service_kwargs, platform=platform)
+
+
+@brokkr.utils.log.basic_logging
+def install_autossh(skip_package_install=False, **install_kwargs):
+    # pylint: disable=import-outside-toplevel
+    from brokkr.config.main import CONFIG
     if not CONFIG["autossh"]["server_hostname"]:
         raise RuntimeError(
             "Cannot install autossh: Hostname not provided in config. "
@@ -117,17 +125,9 @@ def install_autossh(skip_package_install=False, platform=None):
         if not install_succeeded:
             return install_succeeded
 
-    serviceinstaller.install_service(
-        **brokkr.utils.services.AUTOSSH_SERVICE_KWARGS, platform=platform)
+    _install_service(
+        brokkr.utils.services.AUTOSSH_SERVICE_KWARGS, **install_kwargs)
     return True
-
-
-@brokkr.utils.log.basic_logging
-def install_service(platform=None):
-    if serviceinstaller is None:
-        raise ModuleNotFoundError("Serviceinstaller must be installed.")
-    serviceinstaller.install_service(
-        **brokkr.utils.services.BROKKR_SERVICE_KWARGS, platform=platform)
 
 
 @brokkr.utils.log.basic_logging
@@ -292,6 +292,12 @@ def install_scripts(
 
     logging.info("Installed script symlinks in '%s'",
                  install_path.as_posix())
+
+
+@brokkr.utils.log.basic_logging
+def install_service(**install_kwargs):
+    _install_service(
+        brokkr.utils.services.BROKKR_SERVICE_KWARGS, **install_kwargs)
 
 
 @brokkr.utils.log.basic_logging

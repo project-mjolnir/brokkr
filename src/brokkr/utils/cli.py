@@ -45,6 +45,7 @@ def generate_argparser_main():
         metavar="Subcommand", dest=SUBCOMMAND_PARAM)
 
     verbose_parsers = []
+    service_parsers = []
     pipeline_parsers = []
 
     # Parser for the version subcommand
@@ -104,10 +105,8 @@ def generate_argparser_main():
     parser_install_autossh.add_argument(
         "--skip-package-install", action="store_true",
         help="Don't attempt to install distro package, just service unit")
-    parser_install_autossh.add_argument(
-        "--platform", choices={"linux", },
-        help="Manually override automatic platform detection")
     verbose_parsers.append(parser_install_autossh)
+    service_parsers.append(parser_install_autossh)
 
     # Parser for the install-dependencies subcommand
     desc_install_dependencies = "Install dependencies of the enabled plugins"
@@ -148,10 +147,8 @@ def generate_argparser_main():
     parser_install_service = subparsers.add_parser(
         "install-service", help=desc_install_service,
         description=desc_install_service, argument_default=argparse.SUPPRESS)
-    parser_install_service.add_argument(
-        "--platform", choices={"linux", },
-        help="Manually override automatic platform detection")
     verbose_parsers.append(parser_install_service)
+    service_parsers.append(parser_install_service)
 
     # Parser for the install-udev subcommand
     desc_install_udev = "Enable full access to USB ports via udev rules"
@@ -265,6 +262,14 @@ def generate_argparser_main():
             "--no-output-override", dest="output_override",
             action="store_false",
             help="If passed, runs the pipeline with its original output(s)")
+
+    for service_parser in service_parsers:
+        service_parser.add_argument(
+            "--user-account",
+            help="User to run the installed service as, if not the current")
+        service_parser.add_argument(
+            "--platform", choices={"linux", },
+            help="Manually override automatic platform detection")
 
     return parser_main
 
