@@ -55,6 +55,7 @@ def format_data(
         # Build list of values to print per data object
         data_componets = [f"{name}:", f"{value}"]
         if not getattr(data_value, "is_na", data_value == "NA"):
+            # Add details for data that is not NA
             if unit:
                 data_componets.append(f"{unit}")
             if (uncertainty not in (None, False)
@@ -65,7 +66,9 @@ def format_data(
                     data_componets.append(f"{unit}")
             if raw_value is not None and include_raw:
                 data_componets.append(f"(Raw: {raw_value!r})")
+        # pylint: disable-next=confusing-consecutive-elif
         elif getattr(data_value, "value", data_value) != "NA":
+            # Mark data as NA if is_na set but doesn't have a value of NA
             data_componets.append("(NA)")
         data_item = " ".join(data_componets)
         output_data_list.append(data_item)

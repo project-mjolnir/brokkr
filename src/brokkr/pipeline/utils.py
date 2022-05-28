@@ -52,17 +52,16 @@ def get_data_object(input_data, key_name=None, pop_input=False):
                 raise KeyError(error_message) from None
             if pop_input:
                 input_data.remove(output_data_object)
+    elif len(input_data) == 1:
+        try:
+            input_data = list(input_data.values())
+        except AttributeError:  # Input data isn't a dict
+            pass
+        output_data_object = input_data[0]
+        if pop_input:
+            input_data.clear()
     else:
-        if len(input_data) == 1:
-            try:
-                input_data = list(input_data.values())
-            except AttributeError:  # Input data isn't a dict
-                pass
-            output_data_object = input_data[0]
-            if pop_input:
-                input_data.clear()
-        else:
-            output_data_object = input_data
+        output_data_object = input_data
     return output_data_object
 
 

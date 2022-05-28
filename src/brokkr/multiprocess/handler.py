@@ -247,12 +247,11 @@ class MultiprocessHandler(brokkr.utils.misc.AutoReprMixin):
                 worker.terminate()
                 self.logger.info("Terminated worker %s", worker)
                 n_terminated += 1
-            else:
-                if worker.exitcode:
-                    self.logger.error("Worker %s failed with exitcode %s",
-                                      worker, worker.exitcode)
-                    self.logger.info("Process info %r", worker)
-                    n_failed += 1
+            elif worker.exitcode:
+                self.logger.error("Worker %s failed with exitcode %s",
+                                  worker, worker.exitcode)
+                self.logger.info("Process info %r", worker)
+                n_failed += 1
             self.logger.debug("Worker %s shut down successfully", worker)
             try:
                 worker.close()

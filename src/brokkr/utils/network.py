@@ -145,7 +145,7 @@ def recieve_all(
                 <= (timeout_s * brokkr.utils.misc.NS_IN_S))):
         try:
             chunk = sock.recv(buffer_size)
-            if len(chunks) == 0:
+            if not chunks:
                 LOGGER.debug(
                     "First chunk of network data recieved of length %s bytes",
                     len(chunk))
