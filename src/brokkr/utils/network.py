@@ -111,7 +111,7 @@ def setup_socket(  # pylint: disable=dangerous-default-value
             getattr(sock, action)(address_tuple)
     except Exception as e:
         if isinstance(e, OSError):
-            # pylint: disable=no-member
+            # pylint: disable=no-member, useless-suppression
             if error_codes_suppress and (
                     isinstance(e, socket.timeout)
                     or (e.errno

@@ -29,7 +29,7 @@ from brokkr.constants import (
 
 # Constants for run periodic
 NS_IN_S = int(1e9)
-SIGNALS_SET = ["SIG" + signame for signame in {"TERM", "HUP", "INT", "BREAK"}]
+SIGNALS_SET = ["SIG" + signame for signame in ["TERM", "HUP", "INT", "BREAK"]]
 
 
 # --- Time functions --- #

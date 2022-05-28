@@ -16,9 +16,8 @@ from brokkr.constants import PACKAGE_NAME
 AUTOSSH_REMOTE_PORT = (
     CONFIG["autossh"]["tunnel_port_offset"] + UNIT_CONFIG["number"])
 
-AUTOSSH_SERVICE_NAME = "autossh-{}.service".format(METADATA["name"])
-BROKKR_SERVICE_NAME = "{package_name}-{system_name}.service".format(
-    package_name=PACKAGE_NAME, system_name=METADATA["name"])
+AUTOSSH_SERVICE_NAME = f'autossh-{METADATA["name"]}.service'
+BROKKR_SERVICE_NAME = f'{PACKAGE_NAME}-{METADATA["name"]}.service'
 
 # Get system fullname
 if METADATA["name_full"]:

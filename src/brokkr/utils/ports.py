@@ -62,9 +62,11 @@ def reset_usb_port(port_object):
                       "r", encoding="utf-8") as num_file:
                 num_raw = num_file.readline()
             usb_num_parts[usb_num_part] = num_raw.strip().zfill(3)
+        # pylint: disable-next=consider-using-f-string
         usb_device_path = "/dev/bus/usb/{busnum}/{devnum}".format(
             **usb_num_parts)
         LOGGER.debug("Resetting USB device at %r", usb_device_path)
+        # pylint: disable-next=unspecified-encoding
         with open(usb_device_path, "w", os.O_WRONLY) as device_file:
             fcntl.ioctl(device_file, USBDEVFS_RESET, 0)
     # Ignore error loading fcntl if on Windows as it isn't present
