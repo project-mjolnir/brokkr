@@ -27,6 +27,7 @@ def start_worker_process(
         log_configurator=None,
         configurator_kwargs=None,
         exit_event=None,
+        on_startup=None,
         ):
     if log_configurator is not None:
         if configurator_kwargs is None:
@@ -35,6 +36,11 @@ def start_worker_process(
 
     logger = logging.getLogger(__name__)
     logger.info("Started worker process %s", worker_config.name)
+
+    if on_startup is not None:
+        logger.debug("Running on-startup callback %r", on_startup)
+        on_startup()
+
     executor = worker_config.executor
     if worker_config.build_method:
         try:
@@ -111,6 +117,7 @@ class MultiprocessHandler(brokkr.utils.misc.AutoReprMixin):
             logging_shutdown_wait_s=LOGGING_SHUTDOWN_WAIT_S,
             exit_event=None,
             before_startup=None,
+            on_startup=None,
             after_shutdown=None,
                 ):
         if worker_configs is None:
@@ -132,6 +139,7 @@ class MultiprocessHandler(brokkr.utils.misc.AutoReprMixin):
         self.exit_event = exit_event
 
         self.before_startup = before_startup
+        self.on_startup = on_startup
         self.after_shutdown = after_shutdown
 
     def start_logger(self, ignore_started=False):
@@ -198,6 +206,7 @@ class MultiprocessHandler(brokkr.utils.misc.AutoReprMixin):
                         "filter_level": self.log_filter_level,
                         },
                     "exit_event": self.exit_event,
+                    "on_startup": self.on_startup,
                     },
                 )
             self.workers.append(worker)
