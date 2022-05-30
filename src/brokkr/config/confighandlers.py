@@ -41,6 +41,7 @@ CONFIG_HANDLER_FACTORY = brokkr.config.base.ConfigHandlerFactory(
     local_config_path=CONFIG_PATH_LOCAL / METADATA["name"],
     preset_config_path=SYSTEM_BASE_PATH / SYSTEM_SUBPATH_CONFIG,
     config_version=CONFIG_VERSION,
+    ignore_cli_args=(not brokkr.utils.misc.get_cli_invoked()),
     )
 
 DEFAULT_CONFIG_UNIT = {

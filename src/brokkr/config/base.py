@@ -503,11 +503,13 @@ class ConfigHandlerFactory(brokkr.utils.misc.AutoReprMixin):
             self,
             level_presets=None,
             overlays=None,
+            ignore_cli_args=False,
             **default_type_kwargs,
                 ):
-        self.level_presets = (CONFIG_LEVEL_PRESETS if level_presets is None
-                              else level_presets)
+        self.level_presets = (
+            CONFIG_LEVEL_PRESETS if level_presets is None else level_presets)
         self.overlays = overlays
+        self.ignore_cli_args = ignore_cli_args
         self.default_type_kwargs = default_type_kwargs
 
     def create_config_handler(self, name, config_levels, **type_kwargs):
@@ -534,6 +536,9 @@ class ConfigHandlerFactory(brokkr.utils.misc.AutoReprMixin):
                     level_args["name"] = level_args.get("name", config_level)
                 config_level = level_class(
                     config_type=config_type, **level_args)
+            if (self.ignore_cli_args
+                    and isinstance(config_level, CLIArgsConfigLevel)):
+                continue
             rendered_config_levels.append(config_level)
 
         config_handler = ConfigHandler(config_type=config_type,

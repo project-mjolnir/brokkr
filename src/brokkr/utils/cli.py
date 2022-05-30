@@ -334,6 +334,8 @@ def dispatch_command(subcommand, parsed_args):
 
 
 def main():
+    import brokkr.utils.misc  # pylint: disable=import-outside-toplevel
+    brokkr.utils.misc.set_cli_invoked(True)
     subcommand, parsed_args = parse_args()
     dispatch_command(subcommand, vars(parsed_args))
 
