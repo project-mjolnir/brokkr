@@ -13,8 +13,8 @@ import os
 from pathlib import Path
 
 # Third party imports
-import toml
-import toml.decoder
+import tomli
+import tomli_w
 
 # Local imports
 from brokkr.constants import (
@@ -81,8 +81,9 @@ def read_config_file(path, extension=None, logger=None):
     check_extension_supported(extension)
     if extension == EXTENSION_TOML:
         try:
-            config_data = toml.load(path)
-        except toml.decoder.TomlDecodeError as e:
+            with open(path, mode="rb") as toml_file:
+                config_data = tomli.load(toml_file)
+        except tomli.TOMLDecodeError as e:
             if logger is not None:
                 logger.error("%s reading TOML config file %r: %s",
                              type(e).__name__, path.as_posix(), e)
@@ -110,10 +111,11 @@ def write_config_file(config_data, path, extension=None):
         extension = Path(path).suffix.strip(".")
     check_extension_supported(extension)
     os.makedirs(path.parent, exist_ok=True)
-    with open(path, mode="w", encoding="utf-8", newline="\n") as config_file:
-        if extension == EXTENSION_TOML:
-            toml.dump(config_data, config_file)
-        elif extension == EXTENSION_JSON:
+    if extension == EXTENSION_TOML:
+        with open(path, "wb") as config_file:
+            tomli_w.dump(config_data, config_file)
+    elif extension == EXTENSION_JSON:
+        with open(path, "w", encoding="utf-8", newline="\n") as config_file:
             json.dump(config_data, config_file,
                       allow_nan=False, separators=JSON_SEPERATORS)
 
