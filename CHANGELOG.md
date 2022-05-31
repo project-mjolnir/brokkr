@@ -1,7 +1,7 @@
 # Brokkr Changelog
 
 
-## Version 0.4.0 Alpha 2 (2020-02-17)
+## Version 0.4.0 Alpha 2 (2021-02-17)
 
 Alpha release with the following changes:
 
@@ -135,7 +135,7 @@ Under the Hood:
 
 ## Version 0.2.5 (2020-01-24)
 
-Bugfix release with the following change:
+Bugfix release with the following changes:
 
 * Fix serious persistent error after disconnect/reconnecting charge controller
 * Improve serial port selection alg and ignore built-in ARM serial port
