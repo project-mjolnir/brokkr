@@ -1,6 +1,50 @@
 # Brokkr Changelog
 
 
+## Version 0.4.0 (2022-06-03)
+
+Stable release supporting Python 3.6-3.10.
+
+### Summary of changes since 0.3.x
+
+This is an overview of what's new in Brokkr 0.4.0 relative to 0.3.x stable.
+See the individual alpha release entries for full details.
+The remaining sections discuss the changes since the last alpha.
+
+* Add input and output queues to tie together multiple pipelines
+* Add support for TCP and arbitrary network packets as inputs
+* Add arbitrary binary decode on input and writing on output
+* Add external drive discovery, mounting and selection
+* Add ``install-scripts`` command to install symlinks to system scripts
+* Add ``netcat`` command to interactively send and receive network data
+
+### Core features
+
+* Add support for many new service installation options & per-mode services
+* Detect when not invoked from Brokkr's own CLI and ignore CLI args in config
+
+### Bug fixes
+
+* Fix FileOutputStep bug when processing unhashable DataValue types
+* Fix multiple bugs and issues with service installation
+
+### Infrastructure
+
+* Migrate from toml to tomli for better perf, maintenance & TOML 1.0.0 support
+* Modernize packaging infrastructure for PEP 517 w/pyproject.toml & setup.cfg
+* Officially document support for Python 3.10 (now supports 3.6-3.10)
+* Add detailed Contributing Guide and greatly expand Readme
+
+### Under the hood
+
+* Add hook to run custom callback on multiprocess worker start
+* Add extra debug logging during filepath rendering
+* Fix/suppress new Pylint messages & add a suite of extension checkers
+* Update Release Guide to use more modern and robust procedure
+* Further related refactoring
+
+
+
 ## Version 0.4.0 Alpha 2 (2021-02-17)
 
 Alpha release with the following changes:
