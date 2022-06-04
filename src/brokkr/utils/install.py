@@ -10,13 +10,6 @@ from pathlib import Path
 import subprocess
 import sys
 
-# Third party imports
-try:
-    import serviceinstaller
-except ModuleNotFoundError:  # If its not installed, eg. on non-Linux platforms
-    # pylint: disable=invalid-name
-    serviceinstaller = None
-
 # Local imports
 import brokkr.pipeline.builder
 import brokkr.start
@@ -100,13 +93,24 @@ def _write_os_config_file(file_contents, filename, output_path):
     return output_path
 
 
-def _install_service(service_kwargs, platform=None, user_account=None):
-    if serviceinstaller is None:
-        raise ModuleNotFoundError("Serviceinstaller must be installed.")
-    if user_account is not None:
-        service_kwargs = copy.deepcopy(service_kwargs)
-        service_kwargs["service_settings"]["Service"]["User"] = user_account
-    serviceinstaller.install_service(**service_kwargs, platform=platform)
+def _install_service(
+        service_config,
+        account=None,
+        extra_args=None,
+        **serviceinstaller_kwargs,
+        ):
+    import serviceinstaller  # pylint: disable=import-outside-toplevel
+
+    service_config = copy.deepcopy(service_config)
+    settings = service_config["service_settings"]["Service"]
+
+    if extra_args:
+        settings["ExecStart"] = settings["ExecStart"] + " " + extra_args
+    if account is not None:
+        settings["User"] = account
+
+    serviceinstaller.install_service(
+        **service_config, **serviceinstaller_kwargs)
 
 
 @brokkr.utils.log.basic_logging

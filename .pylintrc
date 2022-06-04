@@ -28,7 +28,21 @@ limit-inference-results=100
 
 # List of plugins (as comma separated values of python module names) to load,
 # usually to register additional checkers.
-load-plugins=
+load-plugins=pylint.extensions.bad_builtin,
+             pylint.extensions.check_elif,
+             pylint.extensions.code_style,
+             pylint.extensions.comparetozero,
+             pylint.extensions.comparison_placement,
+             pylint.extensions.confusing_elif,
+             # pylint.extensions.consider_ternary_expression,  # Used a lot currently
+             # pylint.extensions.docparams,  # Enable when finished adding docstrings
+             pylint.extensions.docstyle,
+             pylint.extensions.empty_comment,
+             pylint.extensions.emptystring,
+             pylint.extensions.for_any_all,
+             pylint.extensions.overlapping_exceptions,
+             pylint.extensions.private_import,
+             pylint.extensions.redefined_variable_type,
 
 # Pickle collected data for later comparisons.
 persistent=yes
@@ -66,13 +80,17 @@ enable=all
 # --enable=similarities". If you want to run only the classes checker, but have
 # no Warning level messages displayed, use "--disable=all --enable=classes
 # --disable=W".
-disable=missing-function-docstring,
-        missing-class-docstring,
-        too-few-public-methods,
-        import-error,
-        locally-disabled,
-        file-ignored,
-        suppressed-message,
+disable=locally-disabled,  # Allow checks to be locally disabled
+        file-ignored,  # Allow files to be ignore
+        suppressed-message,  # Allow messages to be suppressed
+        import-error,  # Ignore errors importing packages not in the current env
+        consider-using-assignment-expr,  # Don't require := for Python <3.8 compat
+        too-few-public-methods,  # Allow classes with just data
+        missing-function-docstring,  # Ignore missing function docstrings for now
+        missing-class-docstring,  # Ignore missing class docstrings for now
+        docstring-first-line-empty,  # Accept current style of module docstrings
+        consider-using-namedtuple-or-dataclass,  # Maybe in the future...
+        consider-using-tuple,  # Only for "style consistency"
 
 
 [REPORTS]

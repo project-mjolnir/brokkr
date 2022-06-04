@@ -55,6 +55,7 @@ def format_data(
         # Build list of values to print per data object
         data_componets = [f"{name}:", f"{value}"]
         if not getattr(data_value, "is_na", data_value == "NA"):
+            # Add details for data that is not NA
             if unit:
                 data_componets.append(f"{unit}")
             if (uncertainty not in (None, False)
@@ -65,7 +66,9 @@ def format_data(
                     data_componets.append(f"{unit}")
             if raw_value is not None and include_raw:
                 data_componets.append(f"(Raw: {raw_value!r})")
+        # pylint: disable-next=confusing-consecutive-elif
         elif getattr(data_value, "value", data_value) != "NA":
+            # Mark data as NA if is_na set but doesn't have a value of NA
             data_componets.append("(NA)")
         data_item = " ".join(data_componets)
         output_data_list.append(data_item)
@@ -264,17 +267,22 @@ def render_output_filename(
         all_filename_kwargs["drive_path"] = str(drive_path)
 
     # Add master output path to output path if is relative
-    output_path = Path(output_path.format(**all_filename_kwargs))
+    output_path = Path(str(output_path).format(**all_filename_kwargs))
+    LOGGER.debug("Intermediate output path: %s", output_path.as_posix())
     if not output_path.is_absolute():
         output_path_root = Path(
             CONFIG["general"]["output_path_client"].as_posix().format(
                 system_name=METADATA["name"]))
         if output_path_root:
             output_path = output_path_root / output_path
+            LOGGER.debug(
+                "Added root %r to relative output path",
+                output_path_root.as_posix())
     output_path = brokkr.utils.misc.convert_path(output_path)
 
     rendered_filename = filename_template.format(**all_filename_kwargs)
-    output_path = (Path(output_path) / rendered_filename)
+    LOGGER.debug("Rendered filename: %r", rendered_filename)
+    output_path = output_path / rendered_filename
 
     # Add file extension if it has not yet been affixed and is passed
     if extension is not None and not output_path.suffix:

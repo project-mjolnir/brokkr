@@ -265,11 +265,19 @@ def generate_argparser_main():
 
     for service_parser in service_parsers:
         service_parser.add_argument(
-            "--user-account",
-            help="User to run the installed service as, if not the current")
+            "--account",
+            help="User account to run the service under, if not the current")
         service_parser.add_argument(
-            "--platform", choices={"linux", },
+            "--output-path",
+            help="Path to write the service file, if not the platform default")
+        service_parser.add_argument(
+            "--skip-enable", action="store_true",
+            help="Skip enabling/disabling services, just write service file")
+        service_parser.add_argument(
+            "--platform", choices=("linux", ),
             help="Manually override automatic platform detection")
+        service_parser.add_argument(
+            "--extra-args", help="Extra args to pass when starting service")
 
     return parser_main
 
@@ -334,6 +342,8 @@ def dispatch_command(subcommand, parsed_args):
 
 
 def main():
+    import brokkr.utils.misc  # pylint: disable=import-outside-toplevel
+    brokkr.utils.misc.set_cli_invoked(True)
     subcommand, parsed_args = parse_args()
     dispatch_command(subcommand, vars(parsed_args))
 

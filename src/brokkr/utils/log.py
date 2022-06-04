@@ -89,7 +89,7 @@ def setup_log_levels(log_config, file_level=None, console_level=None):
                 log_config["root"]["handlers"].append(handler)
     levels_tocheck = (level for level in (
         file_level, console_level, log_config["root"]["level"]
-        ) if (level == 0 or level))
+        ) if (level == 0 or level))  # pylint: disable=compare-to-zero
     level_min = min((int(getattr(logging, str(level_name), level_name))
                      for level_name in levels_tocheck))
     log_config["root"]["level"] = level_min

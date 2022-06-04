@@ -12,11 +12,13 @@ from brokkr.constants import (
     PACKAGE_NAME,
     SYSTEM_NAME_DEFAULT,
     )
+import brokkr.utils.misc
 
 
 CONFIG_HANDLER_FACTORY = brokkr.config.base.ConfigHandlerFactory(
     local_config_path=CONFIG_PATH_LOCAL,
     config_version=CONFIG_VERSION,
+    ignore_cli_args=(not brokkr.utils.misc.get_cli_invoked()),
     )
 
 

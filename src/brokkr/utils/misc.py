@@ -21,15 +21,16 @@ import packaging.version
 # Local imports
 import brokkr
 from brokkr.constants import (
-    SLEEP_TICK_S,
     LEVEL_NAME_SYSTEM,
+    SLEEP_TICK_S,
     SYSTEM_NAME_DEFAULT,
     )
 
 
-# Constants for run periodic
 NS_IN_S = int(1e9)
-SIGNALS_SET = ["SIG" + signame for signame in {"TERM", "HUP", "INT", "BREAK"}]
+SIGNALS_SET = ["SIG" + signame for signame in ["TERM", "HUP", "INT", "BREAK"]]
+
+CLI_INVOKED_ENV_VAR = "BROKKR_CLI_INVOKED"
 
 
 # --- Time functions --- #
@@ -147,6 +148,14 @@ def convert_path(path):
     path = Path(
         str(path).replace("~", "~" + os.getenv("SUDO_USER", ""))).expanduser()
     return path
+
+
+def get_cli_invoked():
+    return bool(os.environ.get(CLI_INVOKED_ENV_VAR, False))
+
+
+def set_cli_invoked(value=True):
+    os.environ[CLI_INVOKED_ENV_VAR] = str(value) if value else ""
 
 
 # --- System path utilities --- #

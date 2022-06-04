@@ -13,8 +13,8 @@ import os
 from pathlib import Path
 
 # Third party imports
-import toml
-import toml.decoder
+import tomli
+import tomli_w
 
 # Local imports
 from brokkr.constants import (
@@ -81,8 +81,9 @@ def read_config_file(path, extension=None, logger=None):
     check_extension_supported(extension)
     if extension == EXTENSION_TOML:
         try:
-            config_data = toml.load(path)
-        except toml.decoder.TomlDecodeError as e:
+            with open(path, mode="rb") as toml_file:
+                config_data = tomli.load(toml_file)
+        except tomli.TOMLDecodeError as e:
             if logger is not None:
                 logger.error("%s reading TOML config file %r: %s",
                              type(e).__name__, path.as_posix(), e)
@@ -110,10 +111,11 @@ def write_config_file(config_data, path, extension=None):
         extension = Path(path).suffix.strip(".")
     check_extension_supported(extension)
     os.makedirs(path.parent, exist_ok=True)
-    with open(path, mode="w", encoding="utf-8", newline="\n") as config_file:
-        if extension == EXTENSION_TOML:
-            toml.dump(config_data, config_file)
-        elif extension == EXTENSION_JSON:
+    if extension == EXTENSION_TOML:
+        with open(path, "wb") as config_file:
+            tomli_w.dump(config_data, config_file)
+    elif extension == EXTENSION_JSON:
+        with open(path, "w", encoding="utf-8", newline="\n") as config_file:
             json.dump(config_data, config_file,
                       allow_nan=False, separators=JSON_SEPERATORS)
 
@@ -503,11 +505,13 @@ class ConfigHandlerFactory(brokkr.utils.misc.AutoReprMixin):
             self,
             level_presets=None,
             overlays=None,
+            ignore_cli_args=False,
             **default_type_kwargs,
                 ):
-        self.level_presets = (CONFIG_LEVEL_PRESETS if level_presets is None
-                              else level_presets)
+        self.level_presets = (
+            CONFIG_LEVEL_PRESETS if level_presets is None else level_presets)
         self.overlays = overlays
+        self.ignore_cli_args = ignore_cli_args
         self.default_type_kwargs = default_type_kwargs
 
     def create_config_handler(self, name, config_levels, **type_kwargs):
@@ -534,6 +538,9 @@ class ConfigHandlerFactory(brokkr.utils.misc.AutoReprMixin):
                     level_args["name"] = level_args.get("name", config_level)
                 config_level = level_class(
                     config_type=config_type, **level_args)
+            if (self.ignore_cli_args
+                    and isinstance(config_level, CLIArgsConfigLevel)):
+                continue
             rendered_config_levels.append(config_level)
 
         config_handler = ConfigHandler(config_type=config_type,

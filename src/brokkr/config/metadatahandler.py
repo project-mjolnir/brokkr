@@ -19,6 +19,7 @@ SYSTEM_PATH = brokkr.utils.misc.get_system_path(SYSTEMPATH_CONFIG)
 CONFIG_HANDLER_FACTORY = brokkr.config.base.ConfigHandlerFactory(
     preset_config_path=SYSTEM_PATH,
     config_version=CONFIG_VERSION,
+    ignore_cli_args=(not brokkr.utils.misc.get_cli_invoked()),
     )
 
 

@@ -111,7 +111,7 @@ def setup_socket(  # pylint: disable=dangerous-default-value
             getattr(sock, action)(address_tuple)
     except Exception as e:
         if isinstance(e, OSError):
-            # pylint: disable=no-member
+            # pylint: disable=no-member, useless-suppression
             if error_codes_suppress and (
                     isinstance(e, socket.timeout)
                     or (e.errno
@@ -145,7 +145,7 @@ def recieve_all(
                 <= (timeout_s * brokkr.utils.misc.NS_IN_S))):
         try:
             chunk = sock.recv(buffer_size)
-            if len(chunks) == 0:
+            if not chunks:
                 LOGGER.debug(
                     "First chunk of network data recieved of length %s bytes",
                     len(chunk))
